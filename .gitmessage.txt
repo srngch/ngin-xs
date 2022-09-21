@@ -1,0 +1,26 @@
+
+######### ######### ######### ######### ######### $ <- 50
+# type[(scope)]: Subject under 50 characters[(#issueNum)]
+#
+# Body
+# under 72 characters per line
+# 'what' and 'why', not 'how'
+#
+# Footer
+######### ######### ######### ######### ######### ######### ######### ##$ <- 72
+### Subject
+#   "If applied, this commit will.. {subject}"
+#   Capitalize first letter, imperative, end without a period
+### Types
+#   feat     : a new feature is introduced with the changes
+#   fix      : a bug fix has occurred
+#   refactor : refactored code that neither fixes a bug nor adds a feature
+#   docs     : documentation
+#   style    : code formatting(ex: white space, semi-colons)
+#   test     : including new or correcting previous tests
+#   chore    : changes that do not relate to src or test files(ex: package manager, updating dependencies)
+### Footer
+# Resolves: #0
+# See also: #0, #0
+# Co-authored-by: name <name@mail.com>
+######################
