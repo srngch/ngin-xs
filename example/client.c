@@ -10,9 +10,9 @@
 
 int	main(void)
 {
-	int	client_socket;
+	int					client_socket;
 	struct sockaddr_in	server_address; // 구조체는 netinet/in.h 참고
-	int	ret;
+	int					ret;
 
 	// int socket(int domain, int type, int protocol);
 	// 1. domain: Protocol family - define 종류는 sys/socket.h 내용과 주석 참고
@@ -42,13 +42,35 @@ int	main(void)
 	}
 	// send, recv
 	// ssize_t send(int socket, const void *buffer, size_t length, int flags);
-	const char* str_buffer = "Hello from client.";
-	ret = send(client_socket, str_buffer, strlen(str_buffer + 1), 0);
-	if (ret == -1)
-	{
-		printf("fail: send()\n");
-		close(client_socket);
-		exit(EXIT_FAILURE);
+	const char	*str_buffer = "1234567890";
+	int			scan_buf_len = 1024;
+	char		*scan_buf = (char *)malloc(sizeof(char) * scan_buf_len);
+	int			buf_len = 5;
+	char		*buf = (char *)malloc(sizeof(char) * buf_len + 1);
+	printf("Input >");
+	while(scanf("%s", scan_buf) != EOF)
+	{	
+		ret = send(client_socket, scan_buf, strlen(scan_buf), 0);
+		if (ret == -1)
+		{
+			printf("fail: send()\n");
+			close(client_socket);
+			exit(EXIT_FAILURE);
+		}
+		int received_len = 0;
+		while (received_len < strlen(scan_buf))
+		{
+			ret = recv(client_socket, buf, buf_len, 0);
+			received_len += ret;
+			if (ret == -1)
+			{
+				printf("fail(%d): recv()\n", errno);
+				close(client_socket);
+				exit(EXIT_FAILURE);
+			}
+			buf[ret] = '\0';
+			printf("client received(%d): %s\n", ret, buf);
+		}
 	}
 	close(client_socket);
 	return (0);

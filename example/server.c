@@ -20,6 +20,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/errno.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -28,12 +29,12 @@
 
 int	main(void)
 {
-	int	server_socket;
-	int	client_socket;
+	int					server_socket;
+	int					client_socket;
 	struct sockaddr_in	server_address; // 구조체는 netinet/in.h 참고
 	struct sockaddr_in	client_address;
-	socklen_t	address_len;
-	int	ret;
+	socklen_t			address_len;
+	int					ret;
 
 	// int socket(int domain, int type, int protocol);
 	// 1. domain: Protocol family - define 종류는 sys/socket.h 내용과 주석 참고
@@ -73,7 +74,7 @@ int	main(void)
 	ret = bind(server_socket, (const struct sockaddr *)&server_address, sizeof(server_address));
 	if (ret == -1)
 	{
-		printf("fail: bind()\n");
+		printf("fail(%d): bind()\n", errno);
 		close(server_socket);
 		exit(EXIT_FAILURE);
 	}
@@ -91,9 +92,10 @@ int	main(void)
 	}
 
 	// int accept(int socket, struct sockaddr *restrict address, socklen_t *restrict address_len);
-	while (1) {
+	while (1)
+	{
 		address_len = sizeof(client_address);
-		client_socket = accept(server_socket, (struct sockaddr *)&client_address, &address_len);
+		client_socket = accept(server_socket, (struct sockaddr *)&client_address, &address_len); // 클라이언트가 접속할 때까지 block된 상태로 대기
 		printf("(accept) client_socket: %d\n", client_socket);
 		if (ret == -1)
 		{
@@ -103,20 +105,28 @@ int	main(void)
 		}
 		// send, recv
 		// ssize_t recv(int socket, void *buffer, size_t length, int flags);
-		int buf_len = 1024;
-
-		char *buf = (char *)malloc(sizeof(char) * buf_len);
-		ret = recv(client_socket, buf, buf_len - 1, 0);
-		buf[ret] = '\0';
-		if (ret == -1)
+		int		buf_len = 5;
+		char	*buf = (char *)malloc(sizeof(char) * buf_len + 1);
+		while((ret = recv(client_socket, buf, buf_len, 0)) != 0)
 		{
-			printf("fail: recv()\n");
-			close(client_socket);
-			exit(EXIT_FAILURE);
+			if (ret == -1)
+			{
+				printf("fail(%d): recv()\n", errno);
+				close(client_socket);
+				exit(EXIT_FAILURE);
+			}
+			buf[ret] = '\0';
+			printf("server received(%d): %s\n", ret, buf);
+			ret = send(client_socket, buf, ret, 0);
+			if (ret == -1)
+			{
+				printf("fail: send()\n");
+				close(client_socket);
+				exit(EXIT_FAILURE);
+			}
 		}
-		printf("result: %s\n", buf);
 		close(client_socket);
 	}
-
+	close(server_socket);
 	return (0);
 }
