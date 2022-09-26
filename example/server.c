@@ -1,5 +1,3 @@
-
-
 // 1. socket() API가 종료점을 나타내는 소켓 설명자를 리턴합니다. 이 명령문은 또한 이 소켓에 TCP 전송(SOCK_STREAM)을 사용하는 AE_INET6(Internet Protocol version 6) 주소 계열이 사용됨을 식별합니다.
 // 2. setsockopt() API는 필수 대기 시간이 만료되기 전에 서버가 다시 시작되면 애플리케이션이 로컬 주소를 다시 사용할 수 있도록 합니다.
 // 3. ioctl() API가 소켓을 비차단으로 설정합니다. 수신 연결에 대한 모든 소켓은 청취 소켓으로부터 해당 상태를 상속하므로 이들 또한 비차단입니다.
@@ -26,11 +24,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <poll.h>
 
 int	main(void)
 {
-	int					server_socket;
-	int					client_socket;
+	int					listen_socket;
+	int					connect_socket;
 	struct sockaddr_in	server_address; // 구조체는 netinet/in.h 참고
 	struct sockaddr_in	client_address;
 	socklen_t			address_len;
@@ -41,8 +40,9 @@ int	main(void)
 	// 2. type: 데이터 전송방식, define 종류는 sys/socket.h 내용과 주석 참고
 	// 3. protocol: domain과 type에 의해 결정되기 때문에 항상 0
 	// return: 새 소켓의 fd, 오류는 -1
-	server_socket = socket(PF_INET, SOCK_STREAM, 0);
-	if (server_socket == -1)
+	listen_socket = socket(PF_INET, SOCK_STREAM, 0);
+	printf("listen_socket: %d\n", listen_socket);
+	if (listen_socket == -1)
 	{
 		printf("fail: socket()\n");
 		exit(EXIT_FAILURE);
@@ -71,11 +71,11 @@ int	main(void)
 	server_address.sin_family = PF_INET;
 	server_address.sin_port = htons(4242);
 	server_address.sin_addr.s_addr = htonl(INADDR_ANY);// ip address(0.0.0.0). 컴퓨터의 랜카드 중 사용가능한 랜카드의 IP주소
-	ret = bind(server_socket, (const struct sockaddr *)&server_address, sizeof(server_address));
+	ret = bind(listen_socket, (const struct sockaddr *)&server_address, sizeof(server_address));
 	if (ret == -1)
 	{
 		printf("fail(%d): bind()\n", errno);
-		close(server_socket);
+		close(listen_socket);
 		exit(EXIT_FAILURE);
 	}
 	printf("len: %u | family: %u | port: %u | addr: %u\n", server_address.sin_len, server_address.sin_family, server_address.sin_port, server_address.sin_addr.s_addr);
@@ -83,50 +83,108 @@ int	main(void)
 	// int listen(int socket, int backlog);
 	// backlog: 대기할 큐의 사이즈
 	// return: 성공은 0, 오류는 -1
-	ret = listen(server_socket, 2);
+	ret = listen(listen_socket, 2);
 	if (ret == -1)
 	{
 		printf("fail: listen()\n");
-		close(server_socket);
+		close(listen_socket);
 		exit(EXIT_FAILURE);
 	}
 
+	int pollfds_len = 100;
+	struct pollfd	pollfds[pollfds_len];
+	int i;
+	
+	pollfds[0].fd = listen_socket;
+	pollfds[0].events = POLLIN | POLLOUT;
+	pollfds[0].revents = 0;
+
+	for (i = 1; i < pollfds_len; i++)
+		pollfds[i].fd = -1;
+
+	// int poll(struct pollfd fds[], nfds_t nfds, int timeout);
 	// int accept(int socket, struct sockaddr *restrict address, socklen_t *restrict address_len);
+	address_len = sizeof(client_address);
 	while (1)
 	{
-		address_len = sizeof(client_address);
-		client_socket = accept(server_socket, (struct sockaddr *)&client_address, &address_len); // 클라이언트가 접속할 때까지 block된 상태로 대기
-		printf("(accept) client_socket: %d\n", client_socket);
+		ret = poll(pollfds, pollfds_len, -1);
 		if (ret == -1)
 		{
-			printf("fail: accept()\n");
-			close(server_socket);
+			printf("fail: poll()\n");
+			close(listen_socket);
 			exit(EXIT_FAILURE);
 		}
-		// send, recv
-		// ssize_t recv(int socket, void *buffer, size_t length, int flags);
-		int		buf_len = 5;
-		char	*buf = (char *)malloc(sizeof(char) * buf_len + 1);
-		while((ret = recv(client_socket, buf, buf_len, 0)) != 0)
+		
+		if (pollfds[0].revents & POLLIN) // 새로운 클라이언트 요청 들어옴
 		{
+			printf("POLLIN\n");
+			connect_socket = accept(listen_socket, (struct sockaddr *)&client_address, &address_len); // 클라이언트가 접속할 때까지 block된 상태로 대기
 			if (ret == -1)
 			{
-				printf("fail(%d): recv()\n", errno);
-				close(client_socket);
+				printf("fail: accept()\n");
+				close(listen_socket);
 				exit(EXIT_FAILURE);
 			}
-			buf[ret] = '\0';
-			printf("server received(%d): %s\n", ret, buf);
-			ret = send(client_socket, buf, ret, 0);
-			if (ret == -1)
+
+			// 들어온 요청을 비어있는 pollfds에 등록
+			for (i = 1; i < pollfds_len; i++)
 			{
-				printf("fail: send()\n");
-				close(client_socket);
-				exit(EXIT_FAILURE);
+				if (pollfds[i].fd == -1)
+				{
+					pollfds[i].fd = connect_socket;
+					pollfds[i].events = POLLIN | POLLOUT;
+					pollfds[i].revents = 0;
+					break;
+				}
 			}
 		}
-		close(client_socket);
+
+		for (i = 1; i < pollfds_len; i++)
+		{
+			// 연결된 클라이언트 fd에서 이벤트가 발생했는지 확인한다.
+			if (pollfds[i].revents == 0)
+				continue ;
+			if (pollfds[i].revents & POLLIN)
+			{
+				printf("POLLIN i: %d\n", i);
+				// echo
+				// ssize_t recv(int socket, void *buffer, size_t length, int flags);
+				int		buf_len = 5;
+				char	*buf = (char *)malloc(sizeof(char) * buf_len + 1);
+				while((ret = recv(connect_socket, buf, buf_len, 0)) != 0)
+				{
+					if (ret == -1)
+					{
+						printf("fail(%d): recv()\n", errno);
+						close(connect_socket);
+						exit(EXIT_FAILURE);
+					}
+					buf[ret] = '\0';
+					printf("server received(%d): %s\n", ret, buf);
+					ret = send(connect_socket, buf, ret, 0);
+					if (ret == -1)
+					{
+						printf("fail: send()\n");
+						close(connect_socket);
+						exit(EXIT_FAILURE);
+					}
+				}
+			}
+			else if (pollfds[i].revents & POLLOUT)
+			{
+				// printf("POLLOUT i: %d\n", i);
+				// ?
+				// printf("POLLOUT!!\n");
+			}
+			else
+			{
+				// pollfds 초기화
+				close(pollfds[i].fd);
+				pollfds[i].fd = -1;
+				pollfds[i].revents = 0;
+			}
+		}
 	}
-	close(server_socket);
+	close(listen_socket);
 	return (0);
 }
