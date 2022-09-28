@@ -35,6 +35,7 @@ int	main(void)
 	struct sockaddr_in	client_address;
 	socklen_t			address_len;
 	int					ret;
+	int					yes = 1;	// For setsockopt() SO_REUSEADDR, below
 
 	// int socket(int domain, int type, int protocol);
 	// 1. domain: Protocol family - define 종류는 sys/socket.h 내용과 주석 참고
@@ -72,6 +73,10 @@ int	main(void)
 	server_address.sin_family = PF_INET;
 	server_address.sin_port = htons(4242);
 	server_address.sin_addr.s_addr = htonl(INADDR_ANY);// ip address(0.0.0.0). 컴퓨터의 랜카드 중 사용가능한 랜카드의 IP주소
+
+	// int setsockopt(int socket, int level, int option_name, const void *option_value, socklen_t option_len);
+	// address already in use(EADDRINUSE) 에러 피하기
+	setsockopt(listen_socket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 	ret = bind(listen_socket, (const struct sockaddr *)&server_address, sizeof(server_address));
 	if (ret == -1)
 	{
