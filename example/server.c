@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <poll.h>
+#include <fcntl.h>
 
 int	main(void)
 {
@@ -114,12 +115,11 @@ int	main(void)
 			close(listen_socket);
 			exit(EXIT_FAILURE);
 		}
-		
 		if (pollfds[0].revents & POLLIN) // 새로운 클라이언트 요청 들어옴
 		{
 			printf("POLLIN\n");
 			connect_socket = accept(listen_socket, (struct sockaddr *)&client_address, &address_len); // 클라이언트가 접속할 때까지 block된 상태로 대기
-			if (ret == -1)
+			if (connect_socket == -1)
 			{
 				printf("fail: accept()\n");
 				close(listen_socket);
@@ -134,7 +134,7 @@ int	main(void)
 					pollfds[i].fd = connect_socket;
 					pollfds[i].events = POLLIN | POLLOUT;
 					pollfds[i].revents = 0;
-					break;
+					break ;
 				}
 			}
 		}
@@ -144,44 +144,44 @@ int	main(void)
 			// 연결된 클라이언트 fd에서 이벤트가 발생했는지 확인한다.
 			if (pollfds[i].revents == 0)
 				continue ;
-			if (pollfds[i].revents & POLLIN)
+			if (pollfds[i].revents & POLLHUP)
+			{
+				// pollfds 초기화
+				close(pollfds[i].fd);
+				pollfds[i].fd = -1;
+				pollfds[i].revents = 0;
+				printf("socket closed.\n");
+			}
+			else if (pollfds[i].revents == pollfds[i].events)
 			{
 				printf("POLLIN i: %d\n", i);
 				// echo
 				// ssize_t recv(int socket, void *buffer, size_t length, int flags);
 				int		buf_len = 5;
 				char	*buf = (char *)malloc(sizeof(char) * buf_len + 1);
-				while((ret = recv(connect_socket, buf, buf_len, 0)) != 0)
+				ret = recv(pollfds[i].fd, buf, buf_len, 0);
+				if (ret == 0)
 				{
-					if (ret == -1)
-					{
-						printf("fail(%d): recv()\n", errno);
-						close(connect_socket);
-						exit(EXIT_FAILURE);
-					}
-					buf[ret] = '\0';
-					printf("server received(%d): %s\n", ret, buf);
-					ret = send(connect_socket, buf, ret, 0);
-					if (ret == -1)
-					{
-						printf("fail: send()\n");
-						close(connect_socket);
-						exit(EXIT_FAILURE);
-					}
+					printf("Client finished connection.\n");
+					// pollfds 초기화
+					close(pollfds[i].fd);
+					pollfds[i].fd = -1;
+					pollfds[i].revents = 0;
+					continue ;
 				}
-			}
-			else if (pollfds[i].revents & POLLOUT)
-			{
-				// printf("POLLOUT i: %d\n", i);
-				// ?
-				// printf("POLLOUT!!\n");
-			}
-			else
-			{
-				// pollfds 초기화
-				close(pollfds[i].fd);
-				pollfds[i].fd = -1;
-				pollfds[i].revents = 0;
+				if (ret == -1)
+				{
+					printf("fail(%d): recv()\n", errno);
+					continue ;
+				}
+				buf[ret] = '\0';
+				printf("server received(%d): %s\n", ret, buf);
+				ret = send(pollfds[i].fd, buf, ret, 0);
+				if (ret == -1)
+				{
+					printf("fail: send()\n");
+					continue ;
+				}
 			}
 		}
 	}
