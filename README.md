@@ -39,12 +39,16 @@ NGIN-XS is a simple, lightweight, and fast web server written in C++.
 
 ### 2022-09-28
 
-- Fix bug when multiple clients request connection: [code](https://github.com/srngch/ngin-xs/commit/59191f716e7169a5c5fd36d710b3b0417c2a0940)
+- Fixed bug when multiple clients request connection: [code](https://github.com/srngch/ngin-xs/commit/59191f716e7169a5c5fd36d710b3b0417c2a0940)
   - Close socket and initialize fd & revents when POLLHUP event occurs
-  - Remove while loop in recv()
-- Fix bug regarding to EADDRINUSE: [code](https://github.com/srngch/ngin-xs/commit/b6cc8b2da0165fbd7955a64daa59b6a69a5f0b47)
-  - Add close(listen_socket) when error occurs
-  - Add setsockopt() to reuse port already in use
+  - Removed while loop in recv()
+- Fixed bug regarding to EADDRINUSE: [code](https://github.com/srngch/ngin-xs/commit/b6cc8b2da0165fbd7955a64daa59b6a69a5f0b47)
+  - Added close(listen_socket) when error occurs
+  - Added setsockopt() to reuse port already in use
 - Specified classes
   - Member variables
   - Member functions
+
+### 2022-09-29
+
+- Made a simple server program: [Issue](https://github.com/srngch/ngin-xs/issues/1), [PR](https://github.com/srngch/ngin-xs/pull/2)
