@@ -45,6 +45,7 @@ bool Worker::work() {
 		return FT_FALSE;
 	} else if (pollfd_->revents == pollfd_->events) {
 		ret = recv();
+		// TODO: make request object
 		if (ret == FT_FALSE)
 			return ret;
 		send();
