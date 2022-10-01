@@ -8,7 +8,9 @@
 #include <iostream>
 #include <cctype>
 #include <algorithm>
+#include <exception>
 #include "macro.hpp"
+#include "utils.hpp"
 
 class Request {
 private:
@@ -19,7 +21,7 @@ private:
 	std::string								body_;
 
 	void	parse(const std::vector<std::string> &splitedMessage);
-	std::vector<std::string>				split(const std::string &str, std::string delim);
+	// ft_bool	validate();
 
 public:
 	Request(const std::string &originalMessage);
