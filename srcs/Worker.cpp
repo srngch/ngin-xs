@@ -34,27 +34,33 @@ void	Worker::setPollfd(struct pollfd *pollfd) {
 	pollfd_->revents = 0;
 }
 
-bool Worker::work() {
+ft_bool Worker::work() {
 	int		ret = FT_TRUE;
 
-	if (pollfd_->revents == 0)
-		return FT_TRUE;
-	if (pollfd_->revents & POLLHUP) {
-		resetPollfd();
-		std::cout << "socket closed." << std::endl;
-		return FT_FALSE;
-	} else if (pollfd_->revents == pollfd_->events) {
-		ret = recv();
-		// TODO: make request object
-		if (ret == FT_FALSE)
+	try {
+		if (pollfd_->revents == 0)
+			return FT_TRUE;
+		if (pollfd_->revents & POLLHUP) {
+			resetPollfd();
+			std::cout << "socket closed." << std::endl;
+			return FT_FALSE;
+		} else if (pollfd_->revents == pollfd_->events) {
+			ret = recv();
+			if (ret == FT_FALSE)
+				return ret;
+			send(buf_);
 			return ret;
-		send();
+		}
 		return ret;
+	} catch (std::exception &e) {
+		std::cerr << e.what() << std::endl;
+		Response response(HTTP_BAD_REQUEST, fileToString(std::string(ERROR_PAGES_PATH) + "400.html"));
+		send(response.createMessage().c_str());
+		return FT_TRUE;
 	}
-	return ret;
 }
 
-bool Worker::recv() {
+ft_bool Worker::recv() {
 	int ret;
 	
 	ret = ::recv(pollfd_->fd, buf_, BUFFER_LENGTH, 0);
@@ -67,13 +73,14 @@ bool Worker::recv() {
 		throw WorkerException("fail: recv()\n");
 	buf_[ret] = '\0';
 	std::cout << "server received(" << ret << "): " << buf_ << std::endl;
+	Request request(buf_);
 	return FT_TRUE;
 }
 
-void Worker::send() {
+void Worker::send(const char *str) {
 	int	ret = FT_TRUE;
 
-	ret = ::send(pollfd_->fd, buf_, BUFFER_LENGTH, 0);
+	ret = ::send(pollfd_->fd, str, std::strlen(str), 0);
 	if (ret == FT_ERROR)
 		throw WorkerException("fail: send()\n");
 }
