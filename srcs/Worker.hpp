@@ -13,19 +13,20 @@
 #include <exception>
 #include <iostream>
 #include "macro.hpp"
+#include "Request.hpp"
 
-#define BUFFER_LENGTH 5
+#define BUFFER_LENGTH 1024
 
 class Worker {
 private:
 	int				connectSocket_;
 	char			buf_[BUFFER_LENGTH];
 	struct pollfd	*pollfd_;
-
 	// Request			*request;
 	// Response			*response;
 
 	bool	recv();
+	// void	unchunk();
 	void	send();
 	void	resetPollfd();
 
