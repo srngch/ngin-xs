@@ -3,7 +3,7 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic
 INCLUDE_FLAGS = -I srcs
 TARGET = webserv
 
-SRCS_FILES = main.cpp Master.cpp Worker.cpp Request.cpp
+SRCS_FILES = main.cpp Master.cpp Worker.cpp Request.cpp Response.cpp utils.cpp
 SRCS = $(addprefix ./srcs/, $(SRCS_FILES))
 OBJS = $(SRCS:.cpp=.o)
 

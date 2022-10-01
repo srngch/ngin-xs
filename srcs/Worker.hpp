@@ -14,6 +14,7 @@
 #include <iostream>
 #include "macro.hpp"
 #include "Request.hpp"
+#include "Response.hpp"
 
 #define BUFFER_LENGTH 1024
 
@@ -22,12 +23,11 @@ private:
 	int				connectSocket_;
 	char			buf_[BUFFER_LENGTH];
 	struct pollfd	*pollfd_;
-	// Request			*request;
 	// Response			*response;
 
-	bool	recv();
+	ft_bool	recv();
 	// void	unchunk();
-	void	send();
+	void	send(const char *str);
 	void	resetPollfd();
 
 public:
@@ -35,7 +35,7 @@ public:
 	~Worker();
 	
 	void	setPollfd(struct pollfd *pollfd);
-	bool	work();
+	ft_bool	work();
 	
 	class WorkerException : public std::exception {
 	private:
