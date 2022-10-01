@@ -30,7 +30,7 @@ Request::Request(const std::string &originalMessage) {
 	
 	std::cout << "===============" << std::endl;
 	std::cout << "body_: " << body_ << std::endl;
-	// validate
+	// TODO: validate
 }
 
 Request::~Request() {}
@@ -48,6 +48,7 @@ void	Request::parse(const std::vector<std::string> &splitedMessage) {
 	// headers
 	while (iter->length() != 0) {
 		splitedHeaderLine = split(*iter, ": ");
+		std::transform(splitedHeaderLine[0].begin(), splitedHeaderLine[0].end(), splitedHeaderLine[0].begin(), ::tolower);
 		headers_.insert(std::pair<std::string, std::string>(splitedHeaderLine[0], splitedHeaderLine[1]));
 		iter++;
 	}

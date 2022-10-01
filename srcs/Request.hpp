@@ -6,6 +6,8 @@
 #include <vector>
 #include <iterator>
 #include <iostream>
+#include <cctype>
+#include <algorithm>
 #include "macro.hpp"
 
 class Request {
