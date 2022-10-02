@@ -21,11 +21,17 @@ private:
 	std::string								body_;
 
 	void	parse(const std::vector<std::string> &splitedMessage);
-	// ft_bool	validate();
 
 public:
 	Request(const std::string &originalMessage);
 	~Request();
+
+	const std::string								&getMethod();
+	const std::string								&getUri();
+	const std::string								&getVersion();
+	const std::multimap<std::string, std::string>	&getHeaders();
+	const std::vector<std::string>					*getHeaderValues(std::string fieldName);
+	const std::string								&getBody();
 };
 
 #endif

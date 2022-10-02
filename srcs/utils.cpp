@@ -32,3 +32,8 @@ std::string fileToString(const std::string filePath) {
 	}
 	return str;
 }
+
+ft_bool isIncluded(const std::string &value, const std::vector<std::string> &array)
+{
+	return (std::find(array.begin(), array.end(), value) != array.end());
+}

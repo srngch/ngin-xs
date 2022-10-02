@@ -18,5 +18,6 @@ std::string ntos (T n)
 
 std::vector<std::string> split(const std::string &str, std::string delim);
 std::string fileToString(const std::string filePath);
+ft_bool isIncluded(const std::string &value, const std::vector<std::string> &array);
 
 #endif
