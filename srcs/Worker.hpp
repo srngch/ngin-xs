@@ -23,12 +23,13 @@ private:
 	int				connectSocket_;
 	char			buf_[BUFFER_LENGTH];
 	struct pollfd	*pollfd_;
-	// Response			*response;
+	std::string		statusCode_;
 
 	ft_bool	recv();
 	// void	unchunk();
 	void	send(const char *str);
 	void	resetPollfd();
+	void	validate(Request &request);
 
 public:
 	Worker(int listenSocket);
@@ -43,6 +44,33 @@ public:
 	public:
 		WorkerException(const std::string str);
 		~WorkerException() throw();
+		virtual const char *what() const throw();
+	};
+
+	class InvalidMethodException : public std::exception {
+	private:
+		std::string message_;
+	public:
+		InvalidMethodException(const std::string str);
+		~InvalidMethodException() throw();
+		virtual const char *what() const throw();
+	};
+
+	class InvalidVersionException : public std::exception {
+	private:
+		std::string message_;
+	public:
+		InvalidVersionException(const std::string str);
+		~InvalidVersionException() throw();
+		virtual const char *what() const throw();
+	};
+
+	class InvalidHostHeaderException : public std::exception {
+	private:
+		std::string message_;
+	public:
+		InvalidHostHeaderException(const std::string str);
+		~InvalidHostHeaderException() throw();
 		virtual const char *what() const throw();
 	};
 };

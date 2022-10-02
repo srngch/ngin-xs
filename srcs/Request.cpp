@@ -60,3 +60,38 @@ void	Request::parse(const std::vector<std::string> &splitedMessage) {
 	iter++;
 	body_ = *iter;
 }
+
+const std::string &Request::getMethod() {
+	return method_;
+}
+
+const std::string &Request::getUri() {
+	return uri_;
+}
+
+const std::string &Request::getVersion() {
+	return version_;
+}
+
+const std::multimap<std::string, std::string> &Request::getHeaders() {
+	return headers_;
+}
+
+const std::vector<std::string>	*Request::getHeaderValues(std::string fieldName) {
+	std::vector<std::string> *headerValues = new std::vector<std::string>;
+	std::pair <std::multimap<std::string, std::string>::iterator, std::multimap<std::string, std::string>::iterator> ret;
+
+	ret = headers_.equal_range(fieldName);
+	for (
+		std::multimap<std::string, std::string>::iterator it=ret.first;
+		it!=ret.second;
+		++it
+	)
+	headerValues->push_back(it->second);
+
+	return headerValues;
+}
+
+const std::string &Request::getBody() {
+	return body_;
+}
