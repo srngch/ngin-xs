@@ -19,7 +19,13 @@ std::vector<std::string> split(const std::string &str, std::string delim) {
 	return splitedMessage;
 }
 
-std::string fileToString(const std::string filePath) {
+ft_bool isFileExist(const std::string &filePath)
+{
+    std::ifstream file(filePath);
+    return file.good();
+}
+
+std::string fileToString(const std::string &filePath) {
 	std::string		str = "";
 	std::ifstream	openFile(filePath);
 
@@ -36,4 +42,10 @@ std::string fileToString(const std::string filePath) {
 ft_bool isIncluded(const std::string &value, const std::vector<std::string> &array)
 {
 	return (std::find(array.begin(), array.end(), value) != array.end());
+}
+
+ft_bool isDirectory(const std::string &filePath)
+{
+	struct stat	buffer;
+	return (stat(filePath.c_str(), &buffer) == 0);
 }

@@ -41,6 +41,16 @@ const char *Worker::InvalidHostHeaderException::what() const throw() {
 	return message_.c_str();
 }
 
+Worker::FileNotFoundException::FileNotFoundException(const std::string str) {
+	message_ = str;
+}
+
+Worker::FileNotFoundException::~FileNotFoundException() throw() {}
+
+const char *Worker::FileNotFoundException::what() const throw() {
+	return message_.c_str();
+}
+
 Worker::Worker(int listenSocket) {
 	struct sockaddr_in	clientAddress;
 	socklen_t			addressLen;
@@ -55,6 +65,7 @@ Worker::Worker(int listenSocket) {
 
 Worker::~Worker() {
 	resetPollfd();
+	delete request_;
 }
 
 void	Worker::setPollfd(struct pollfd *pollfd) {
@@ -78,11 +89,23 @@ ft_bool Worker::work() {
 			ret = recv();
 			if (ret == FT_FALSE)
 				return ret;
-			// 
-			send(buf_);
+			if (request_->getMethod() == "GET") {
+				std::string filePath = std::string(WEB_ROOT) + request_->getUri();
+				if (isDirectory(filePath))
+					filePath += "/index.html"; // TODO: read default file from config
+				if (isFileExist(filePath) == FT_FALSE)
+					throw FileNotFoundException("File not found");
+				Response response(HTTP_OK, fileToString(filePath));
+				send(response.createMessage().c_str());
+			}
 			return ret;
 		}
 		return ret;
+	} catch(FileNotFoundException &e) {
+		std::cerr << e.what() << std::endl;
+		Response response(HTTP_NOT_FOUND, fileToString(std::string(ERROR_PAGES_PATH) + "404.html"));
+		send(response.createMessage().c_str());
+		return FT_TRUE;
 	} catch(InvalidMethodException &e) {
 		std::cerr << e.what() << std::endl;
 		Response response(HTTP_METHOD_NOT_ALLOWED, fileToString(std::string(ERROR_PAGES_PATH) + "405.html"));
@@ -114,8 +137,8 @@ ft_bool Worker::recv() {
 		throw WorkerException("fail: recv()\n");
 	buf_[ret] = '\0';
 	std::cout << "server received(" << ret << "): " << buf_ << std::endl;
-	Request request(buf_);
-	validate(request);
+	request_ = new Request(buf_);
+	validate(*request_);
 	return FT_TRUE;
 }
 

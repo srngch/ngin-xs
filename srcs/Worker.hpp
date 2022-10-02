@@ -23,7 +23,7 @@ private:
 	int				connectSocket_;
 	char			buf_[BUFFER_LENGTH];
 	struct pollfd	*pollfd_;
-	std::string		statusCode_;
+	Request			*request_;
 
 	ft_bool	recv();
 	// void	unchunk();
@@ -71,6 +71,15 @@ public:
 	public:
 		InvalidHostHeaderException(const std::string str);
 		~InvalidHostHeaderException() throw();
+		virtual const char *what() const throw();
+	};
+
+	class FileNotFoundException : public std::exception {
+	private:
+		std::string message_;
+	public:
+		FileNotFoundException(const std::string str);
+		~FileNotFoundException() throw();
 		virtual const char *what() const throw();
 	};
 };
