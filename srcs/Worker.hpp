@@ -12,6 +12,8 @@
 #include <fcntl.h>
 #include <exception>
 #include <iostream>
+#include <fstream>
+#include <cstdio>
 #include "macro.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
@@ -29,7 +31,8 @@ private:
 	// void	unchunk();
 	void	send(const char *str);
 	void	resetPollfd();
-	void	validate(Request &request);
+	void	validate();
+	std::string	executeCgiProgram(const std::string &filePath);
 
 public:
 	Worker(int listenSocket);
@@ -37,13 +40,31 @@ public:
 	
 	void	setPollfd(struct pollfd *pollfd);
 	ft_bool	work();
-	
-	class WorkerException : public std::exception {
+
+	class BadRequestException : public std::exception {
 	private:
 		std::string message_;
 	public:
-		WorkerException(const std::string str);
-		~WorkerException() throw();
+		BadRequestException(const std::string str);
+		~BadRequestException() throw();
+		virtual const char *what() const throw();
+	};
+
+	class ForbiddenException : public std::exception {
+	private:
+		std::string message_;
+	public:
+		ForbiddenException(const std::string str);
+		~ForbiddenException() throw();
+		virtual const char *what() const throw();
+	};
+
+	class FileNotFoundException : public std::exception {
+	private:
+		std::string message_;
+	public:
+		FileNotFoundException(const std::string str);
+		~FileNotFoundException() throw();
 		virtual const char *what() const throw();
 	};
 
@@ -62,24 +83,6 @@ public:
 	public:
 		InvalidVersionException(const std::string str);
 		~InvalidVersionException() throw();
-		virtual const char *what() const throw();
-	};
-
-	class InvalidHostHeaderException : public std::exception {
-	private:
-		std::string message_;
-	public:
-		InvalidHostHeaderException(const std::string str);
-		~InvalidHostHeaderException() throw();
-		virtual const char *what() const throw();
-	};
-
-	class FileNotFoundException : public std::exception {
-	private:
-		std::string message_;
-	public:
-		FileNotFoundException(const std::string str);
-		~FileNotFoundException() throw();
 		virtual const char *what() const throw();
 	};
 };

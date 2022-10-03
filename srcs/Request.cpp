@@ -17,8 +17,8 @@ Request::Request(const std::string &originalMessage) {
 	parse(splitedMessage);
 
 	std::cout << "[parsing result]" << std::endl;
-	std::cout << "method_: " << method_ << "|" << typeid(method_).name()<< std::endl;
-	std::cout << "uri_: " << uri_ << "|" << typeid(uri_).name() << std::endl;
+	std::cout << "method_: " << method_ << std::endl;
+	std::cout << "uri_: " << uri_ << std::endl;
 	std::cout << "version_: " << version_ << std::endl;
 	
 	std::cout << "===============" << std::endl;

@@ -22,5 +22,6 @@ ft_bool isFileExist(const std::string &filePath);
 std::string fileToString(const std::string &filePath);
 ft_bool isIncluded(const std::string &value, const std::vector<std::string> &array);
 ft_bool isDirectory(const std::string &filePath);
+ft_bool	isCgi(const std::string &filePath);
 
 #endif
