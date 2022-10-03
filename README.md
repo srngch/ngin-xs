@@ -62,3 +62,7 @@ NGIN-XS is a simple, lightweight, and fast web server written in C++.
 
 - Implemented GET method for static files: [Issue](https://github.com/srngch/ngin-xs/issues/9), [PR](https://github.com/srngch/ngin-xs/pull/12)
 - Implemented request validation: [Issue](https://github.com/srngch/ngin-xs/issues/10), [PR](https://github.com/srngch/ngin-xs/pull/11)
+
+### 2022-10-03
+
+- Implement calling CGI program with GET: [Issue](https://github.com/srngch/ngin-xs/issues/15), [PR](https://github.com/srngch/ngin-xs/pull/16)
