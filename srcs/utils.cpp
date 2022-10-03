@@ -47,5 +47,18 @@ ft_bool isIncluded(const std::string &value, const std::vector<std::string> &arr
 ft_bool isDirectory(const std::string &filePath)
 {
 	struct stat	buffer;
-	return (stat(filePath.c_str(), &buffer) == 0);
+
+	if (stat(filePath.c_str(), &buffer) == -1)
+		return FT_FALSE;
+	if (buffer.st_mode & S_IFDIR)
+		return FT_TRUE;
+	return FT_FALSE;
+}
+
+ft_bool	isCgi(const std::string &filePath) {
+	if (filePath.length() < 3)
+		return FT_FALSE;
+	if (filePath.substr(filePath.length() - 3, std::string::npos) == ".py")
+		return FT_TRUE;
+	return FT_FALSE;
 }

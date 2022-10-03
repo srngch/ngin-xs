@@ -1,13 +1,32 @@
 #include "Worker.hpp"
 
-Worker::WorkerException::WorkerException(const std::string str) {
+Worker::BadRequestException::BadRequestException(const std::string str) {
 	message_ = str;
 }
 
-Worker::WorkerException::~WorkerException() throw() {}
+Worker::BadRequestException::~BadRequestException() throw() {}
 
+const char *Worker::BadRequestException::what() const throw() {
+	return message_.c_str();
+}
 
-const char *Worker::WorkerException::what() const throw() {
+Worker::ForbiddenException::ForbiddenException(const std::string str) {
+	message_ = str;
+}
+
+Worker::ForbiddenException::~ForbiddenException() throw() {}
+
+const char *Worker::ForbiddenException::what() const throw() {
+	return message_.c_str();
+}
+
+Worker::FileNotFoundException::FileNotFoundException(const std::string str) {
+	message_ = str;
+}
+
+Worker::FileNotFoundException::~FileNotFoundException() throw() {}
+
+const char *Worker::FileNotFoundException::what() const throw() {
 	return message_.c_str();
 }
 
@@ -31,26 +50,6 @@ const char *Worker::InvalidVersionException::what() const throw() {
 	return message_.c_str();
 }
 
-Worker::InvalidHostHeaderException::InvalidHostHeaderException(const std::string str) {
-	message_ = str;
-}
-
-Worker::InvalidHostHeaderException::~InvalidHostHeaderException() throw() {}
-
-const char *Worker::InvalidHostHeaderException::what() const throw() {
-	return message_.c_str();
-}
-
-Worker::FileNotFoundException::FileNotFoundException(const std::string str) {
-	message_ = str;
-}
-
-Worker::FileNotFoundException::~FileNotFoundException() throw() {}
-
-const char *Worker::FileNotFoundException::what() const throw() {
-	return message_.c_str();
-}
-
 Worker::Worker(int listenSocket) {
 	struct sockaddr_in	clientAddress;
 	socklen_t			addressLen;
@@ -59,7 +58,7 @@ Worker::Worker(int listenSocket) {
 	connectSocket_ = accept(listenSocket, (struct sockaddr *)&clientAddress, &addressLen);
 	if (connectSocket_ == -1) {
 		close(listenSocket);
-		throw WorkerException("fail: accept()\n");
+		throw std::runtime_error("fail: accept()\n");
 	}
 }
 
@@ -73,6 +72,48 @@ void	Worker::setPollfd(struct pollfd *pollfd) {
 	pollfd_->fd = connectSocket_;
 	pollfd_->events = POLLIN | POLLOUT;
 	pollfd_->revents = 0;
+}
+
+std::string	Worker::executeCgiProgram(const std::string &filePath) {
+	char	*args[3];
+	pid_t	pid;
+	int		infile;
+	int		outfile;
+	int		status;
+
+	if (access(filePath.c_str(), R_OK))
+		throw ForbiddenException("Permission denied");
+	if (!isFileExist(filePath))
+		throw FileNotFoundException("File not found(cgi)");
+	infile = open(CGI_INFILE, O_WRONLY | O_CREAT, CGI_FILE_MODE);
+	if (infile == FT_ERROR)
+		throw std::runtime_error("Infile open failed");
+	write(infile, request_->getBody().c_str(), request_->getBody().length());
+	outfile = open(CGI_OUTFILE, O_WRONLY | O_CREAT, CGI_FILE_MODE);
+	if (outfile == FT_ERROR) {
+		close(infile);
+		throw std::runtime_error("Outfile open failed");
+	}
+	pid = fork();
+	if (pid < 0) {
+		throw std::runtime_error("Fork failed");
+	} else if (pid == 0) {
+		if (dup2(infile, STDIN_FILENO) == FT_ERROR)
+			exit(EXIT_FAILURE);
+		if (dup2(outfile, STDOUT_FILENO) == FT_ERROR)
+			exit(EXIT_FAILURE);
+		args[0] = const_cast<char *>(std::string(PYTHON_PATH).c_str());
+		args[1] = const_cast<char *>(filePath.c_str());
+		args[2] = nullptr;
+		if (execve(PYTHON_PATH, args, nullptr) == FT_ERROR) // TODO: set env
+			exit(EXIT_FAILURE);
+	}
+	waitpid(pid, &status, 0);
+	close(infile);
+	close(outfile);
+	if (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_FAILURE)
+		throw std::runtime_error("CGI program execution failed");
+	return fileToString(CGI_OUTFILE);
 }
 
 ft_bool Worker::work() {
@@ -93,6 +134,14 @@ ft_bool Worker::work() {
 				std::string filePath = std::string(WEB_ROOT) + request_->getUri();
 				if (isDirectory(filePath))
 					filePath += "/index.html"; // TODO: read default file from config
+				if (isCgi(filePath)) {
+					std::string outFile = executeCgiProgram(filePath);
+					Response response(HTTP_OK, outFile);
+					send(response.createMessage().c_str());
+					remove(CGI_INFILE);
+					remove(CGI_OUTFILE);
+					return ret;
+				}
 				if (isFileExist(filePath) == FT_FALSE)
 					throw FileNotFoundException("File not found");
 				Response response(HTTP_OK, fileToString(filePath));
@@ -101,6 +150,16 @@ ft_bool Worker::work() {
 			return ret;
 		}
 		return ret;
+	} catch(BadRequestException &e) {
+		std::cerr << e.what() << std::endl;
+		Response response(HTTP_BAD_REQUEST, fileToString(std::string(ERROR_PAGES_PATH) + "400.html"));
+		send(response.createMessage().c_str());
+		return FT_TRUE;
+	} catch(ForbiddenException &e) {
+		std::cerr << e.what() << std::endl;
+		Response response(HTTP_FORBIDDEN, fileToString(std::string(ERROR_PAGES_PATH) + "403.html"));
+		send(response.createMessage().c_str());
+		return FT_TRUE;
 	} catch(FileNotFoundException &e) {
 		std::cerr << e.what() << std::endl;
 		Response response(HTTP_NOT_FOUND, fileToString(std::string(ERROR_PAGES_PATH) + "404.html"));
@@ -118,7 +177,7 @@ ft_bool Worker::work() {
 		return FT_TRUE;
 	} catch (std::exception &e) {
 		std::cerr << e.what() << std::endl;
-		Response response(HTTP_BAD_REQUEST, fileToString(std::string(ERROR_PAGES_PATH) + "400.html"));
+		Response response(HTTP_INTERNAL_SERVER_ERROR, fileToString(std::string(ERROR_PAGES_PATH) + "500.html"));
 		send(response.createMessage().c_str());
 		return FT_TRUE;
 	}
@@ -134,27 +193,27 @@ ft_bool Worker::recv() {
 		return FT_FALSE;
 	}
 	if (ret == FT_ERROR)
-		throw WorkerException("fail: recv()\n");
+		throw std::runtime_error("fail: recv()\n");
 	buf_[ret] = '\0';
 	std::cout << "server received(" << ret << "): " << buf_ << std::endl;
 	request_ = new Request(buf_);
-	validate(*request_);
+	validate();
 	return FT_TRUE;
 }
 
-void Worker::validate(Request &request) {
+void Worker::validate() {
 	std::vector<std::string> allowedMethods;
 
 	allowedMethods.push_back("GET");
 	allowedMethods.push_back("POST");
 	allowedMethods.push_back("DELETE");
-	if (!isIncluded(request.getMethod(), allowedMethods))
+	if (!isIncluded(request_->getMethod(), allowedMethods))
 		throw InvalidMethodException("Invalid method");
-	if (request.getVersion() != "HTTP/1.1")
+	if (request_->getVersion() != "HTTP/1.1")
 		throw InvalidVersionException("HTTP version is not 1.1");
-	const std::vector<std::string> *headerValues = request.getHeaderValues("host");
+	const std::vector<std::string> *headerValues = request_->getHeaderValues("host");
 	if (headerValues->size() != 1)
-		throw InvalidHostHeaderException("Invalid Host header");
+		throw BadRequestException("Invalid Host header");
 	delete headerValues;
 }
 
@@ -163,7 +222,7 @@ void Worker::send(const char *str) {
 
 	ret = ::send(pollfd_->fd, str, std::strlen(str), 0);
 	if (ret == FT_ERROR)
-		throw WorkerException("fail: send()\n");
+		throw std::runtime_error("fail: send()\n");
 }
 
 void Worker::resetPollfd() {
