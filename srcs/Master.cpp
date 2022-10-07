@@ -10,12 +10,13 @@ const char *Master::MasterException::what() const throw() {
 	return message_.c_str();
 }
 
-Master::Master() {
+Master::Master(char **env) {
 	struct sockaddr_in	serverAddress;
 	
 	init(serverAddress);
 	bind(serverAddress);
 	listen();
+	setEnv(env);
 }
 
 Master::~Master() {
@@ -26,6 +27,17 @@ Master::~Master() {
 		delete *itBegin;
 		++itBegin;
 	}
+}
+
+void Master::setEnv(char **originalEnv) {
+	while (originalEnv && *originalEnv) {
+		env_.push_back(std::string(*originalEnv));
+		originalEnv++;
+	}
+}
+
+void Master::addEnv(std::string new_env) {
+	env_.push_back(new_env);
 }
 
 void	Master::init(struct sockaddr_in &serverAddress) {
@@ -81,7 +93,7 @@ void	Master::run() {
 			throw MasterException("fail: poll()\n");
 		}
 		if (pollfds_[0].revents & POLLIN) {
-			Worker	*worker = new Worker(listenSocket_);
+			Worker	*worker = new Worker(env_, listenSocket_);
 			worker->setPollfd(findEmptyPollfd());
 			workers_.push_back(worker);
 		}

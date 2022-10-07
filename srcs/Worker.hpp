@@ -19,14 +19,15 @@
 #include "Response.hpp"
 #include "autoindex/Autoindex.hpp"
 
-#define BUFFER_LENGTH 1024
+#define BUFFER_LENGTH 50000
 
 class Worker {
 private:
-	int				connectSocket_;
-	char			buf_[BUFFER_LENGTH];
-	struct pollfd	*pollfd_;
-	Request			*request_;
+	std::vector<std::string>	env_;
+	int							connectSocket_;
+	char						buf_[BUFFER_LENGTH];
+	struct pollfd				*pollfd_;
+	Request						*request_;
 
 	ft_bool	recv();
 	// void	unchunk();
@@ -34,11 +35,13 @@ private:
 	void	resetPollfd();
 	void	validate();
 	std::string	executeCgiProgram(const std::string &filePath);
+	char	**makeCgiEnv();
 
 public:
-	Worker(int listenSocket);
+	Worker(std::vector<std::string> env, int listenSocket);
 	~Worker();
 	
+	char	**getEnv();
 	void	setPollfd(struct pollfd *pollfd);
 	ft_bool	work();
 
