@@ -62,3 +62,25 @@ ft_bool	isCgi(const std::string &filePath) {
 		return FT_TRUE;
 	return FT_FALSE;
 }
+
+ft_bool sortAutoindexes(Autoindex &a1, Autoindex &a2) {
+	if ((a1.getIsDirectory() && a2.getIsDirectory())
+		|| (!a1.getIsDirectory() && !a2.getIsDirectory())) {
+		return a1.getName() < a2.getName();
+		}
+	else
+		return a1.getIsDirectory() > a2.getIsDirectory();
+}
+
+std::string	createPadding(int width, int length) {
+	std::string	result;
+
+	for (int i = 0; i < width - length; i++) {
+		result += " ";
+	}
+	return result;
+}
+
+std::string createPaddedString(int width, const std::string &str) {
+	return createPadding(width, str.length()) + str;
+}

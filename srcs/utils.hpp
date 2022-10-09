@@ -6,7 +6,9 @@
 #include <fstream>
 #include <sstream>
 #include <sys/stat.h>
+#include <iostream>
 #include "macro.hpp"
+#include "Autoindex.hpp"
 
 template <typename T>
 std::string ntos (T n)
@@ -23,5 +25,8 @@ std::string fileToString(const std::string &filePath);
 ft_bool isIncluded(const std::string &value, const std::vector<std::string> &array);
 ft_bool isDirectory(const std::string &filePath);
 ft_bool	isCgi(const std::string &filePath);
+ft_bool	sortAutoindexes(Autoindex &a1, Autoindex &a2);
+std::string	createPadding(int width, int length);
+std::string createPaddedString(int width, const std::string &str);
 
 #endif

@@ -14,9 +14,13 @@
 #include <iostream>
 #include <fstream>
 #include <cstdio>
+#include <dirent.h>
+#include <ctime>
+#include <algorithm>
 #include "macro.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
+#include "Autoindex.hpp"
 
 #define BUFFER_LENGTH 1024
 
@@ -33,6 +37,7 @@ private:
 	void	resetPollfd();
 	void	validate();
 	std::string	executeCgiProgram(const std::string &filePath);
+	std::string	autoindex(const std::string &filePath);
 
 public:
 	Worker(int listenSocket);
