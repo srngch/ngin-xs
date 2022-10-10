@@ -1,22 +1,21 @@
 #!/usr/local/bin/python3
 
-import cgi, os, sys
+import cgi, os
 import datetime
 import cgitb; cgitb.enable()
 
-# cgi.test()
+## get environ content-length
+content_length = int(os.environ.get('CONTENT_LENGTH'))
 
-# A nested FieldStorage instance holds the file
 form = cgi.FieldStorage()
-content = form['content'].value
+content = form['file']
 
 # Test if the file was uploaded
 if content:
     # strip leading path from file name
     # to avoid directory traversal attacks
     fn = os.path.basename(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
-    file = open(os.getcwd() + '/html/upload/' + fn, 'w')
-    file.write(content)
+    open(os.getcwd() + '/html/upload/' + fn, 'wb').write(content)
     message = 'The file "' + fn + '" was uploaded successfully'
 
 else:
