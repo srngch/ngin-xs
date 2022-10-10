@@ -3,7 +3,8 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic
 INCLUDE_FLAGS = -I srcs
 TARGET = webserv
 
-SRCS_FILES = main.cpp Master.cpp Worker.cpp Request.cpp Response.cpp utils.cpp \
+SRCS_FILES = main.cpp utils.cpp \
+			Master.cpp Worker.cpp Request.cpp Response.cpp Cgi.cpp \
 			autoindex/AutoindexData.cpp autoindex/Autoindex.cpp
 SRCS = $(addprefix ./srcs/, $(SRCS_FILES))
 OBJS = $(SRCS:.cpp=.o)
@@ -13,7 +14,7 @@ OBJS = $(SRCS:.cpp=.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CXXFLAGS) $(INCLUDE_FLAGS) $(OBJS) -o $(TARGET) 
+	$(CC) $(CXXFLAGS) $(INCLUDE_FLAGS) $(OBJS) -o $(TARGET)
 
 .PHONY: clean
 clean:

@@ -17,13 +17,13 @@
 #include "macro.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
+#include "Cgi.hpp"
 #include "autoindex/Autoindex.hpp"
 
 #define BUFFER_LENGTH 50000
 
 class Worker {
 private:
-	std::vector<std::string>	env_;
 	int							connectSocket_;
 	char						buf_[BUFFER_LENGTH];
 	struct pollfd				*pollfd_;
@@ -34,14 +34,11 @@ private:
 	void	send(const char *str);
 	void	resetPollfd();
 	void	validate();
-	std::string	executeCgiProgram(const std::string &filePath);
-	char	**makeCgiEnv();
 
 public:
-	Worker(std::vector<std::string> env, int listenSocket);
+	Worker(int listenSocket);
 	~Worker();
-	
-	char	**getEnv();
+
 	void	setPollfd(struct pollfd *pollfd);
 	ft_bool	work();
 
