@@ -12,7 +12,6 @@
 #include <fcntl.h>
 #include <vector>
 #include <iostream>
-// #include <cstdbool> C++ 11
 #include <exception>
 #include "Worker.hpp"
 #include "macro.hpp"
@@ -21,10 +20,11 @@
 
 class Master {
 private:
-	int					listenSocket_;
-	std::vector<Worker *>	workers_;
-	// Config			config_;
-	struct pollfd		pollfds_[POLLFDSLEN];
+	std::vector<std::string>	env_;
+	int							listenSocket_;
+	std::vector<Worker *>		workers_;
+	struct pollfd				pollfds_[POLLFDSLEN];
+	// Config					config_;
 
 	void	init(struct sockaddr_in &serverAddress);
 	void	bind(struct sockaddr_in &serverAddress);
@@ -32,10 +32,13 @@ private:
 	struct pollfd *findEmptyPollfd();
 
 public:
-	Master();
+	Master(char **env);
 	~Master();
 	
 	void	run();
+
+	void	setEnv(char **originalEnv);
+	void	addEnv(std::string new_env);
 	
 	class MasterException : public std::exception {
 	private:

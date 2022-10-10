@@ -52,9 +52,8 @@ const char *Worker::InvalidVersionException::what() const throw() {
 
 Worker::Worker(int listenSocket) {
 	struct sockaddr_in	clientAddress;
-	socklen_t			addressLen;
+	socklen_t			addressLen = sizeof(clientAddress);
 
-	addressLen = sizeof(clientAddress);
 	connectSocket_ = accept(listenSocket, (struct sockaddr *)&clientAddress, &addressLen);
 	if (connectSocket_ == -1) {
 		close(listenSocket);
@@ -72,48 +71,6 @@ void	Worker::setPollfd(struct pollfd *pollfd) {
 	pollfd_->fd = connectSocket_;
 	pollfd_->events = POLLIN | POLLOUT;
 	pollfd_->revents = 0;
-}
-
-std::string	Worker::executeCgiProgram(const std::string &filePath) {
-	char	*args[3];
-	pid_t	pid;
-	int		infile;
-	int		outfile;
-	int		status;
-
-	if (access(filePath.c_str(), R_OK))
-		throw ForbiddenException("Permission denied");
-	if (!isFileExist(filePath))
-		throw FileNotFoundException("File not found(cgi)");
-	infile = open(CGI_INFILE, O_WRONLY | O_CREAT, CGI_FILE_MODE);
-	if (infile == FT_ERROR)
-		throw std::runtime_error("Infile open failed");
-	write(infile, request_->getBody().c_str(), request_->getBody().length());
-	outfile = open(CGI_OUTFILE, O_WRONLY | O_CREAT, CGI_FILE_MODE);
-	if (outfile == FT_ERROR) {
-		close(infile);
-		throw std::runtime_error("Outfile open failed");
-	}
-	pid = fork();
-	if (pid < 0) {
-		throw std::runtime_error("Fork failed");
-	} else if (pid == 0) {
-		if (dup2(infile, STDIN_FILENO) == FT_ERROR)
-			exit(EXIT_FAILURE);
-		if (dup2(outfile, STDOUT_FILENO) == FT_ERROR)
-			exit(EXIT_FAILURE);
-		args[0] = const_cast<char *>(std::string(PYTHON_PATH).c_str());
-		args[1] = const_cast<char *>(filePath.c_str());
-		args[2] = nullptr;
-		if (execve(PYTHON_PATH, args, nullptr) == FT_ERROR) // TODO: set env
-			exit(EXIT_FAILURE);
-	}
-	waitpid(pid, &status, 0);
-	close(infile);
-	close(outfile);
-	if (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_FAILURE)
-		throw std::runtime_error("CGI program execution failed");
-	return fileToString(CGI_OUTFILE);
 }
 
 ft_bool Worker::work() {
@@ -135,17 +92,27 @@ ft_bool Worker::work() {
 				if (isDirectory(filePath))
 					filePath += "/index.html"; // TODO: read default file from config
 				if (isCgi(filePath)) {
-					std::string outFile = executeCgiProgram(filePath);
-					Response response(HTTP_OK, outFile);
+					Cgi cgi(request_);
+					std::string result = cgi.execute();
+					Response response(HTTP_OK, result);
 					send(response.createMessage().c_str());
-					remove(CGI_INFILE);
-					remove(CGI_OUTFILE);
 					return ret;
 				}
 				if (isFileExist(filePath) == FT_FALSE)
 					throw FileNotFoundException("File not found");
 				Response response(HTTP_OK, fileToString(filePath));
 				send(response.createMessage().c_str());
+			}
+			if (request_->getMethod() == "POST") {
+				std::string filePath = std::string(WEB_ROOT) + request_->getUri();
+				// TODO: validate filePath
+				if (isCgi(filePath)) {
+					Cgi cgi(request_);
+					std::string result = cgi.execute();
+					Response response(HTTP_CREATED, result);
+					send(response.createMessage().c_str());
+					return ret;
+				}
 			}
 			return ret;
 		}
@@ -185,7 +152,7 @@ ft_bool Worker::work() {
 
 ft_bool Worker::recv() {
 	int ret;
-	
+
 	ret = ::recv(pollfd_->fd, buf_, BUFFER_LENGTH, 0);
 	if (ret == FT_FALSE) {
 		resetPollfd();

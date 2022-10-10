@@ -7,11 +7,16 @@
 #define FT_ERROR	-1
 #define ft_bool		int
 
+// pipe
+#define FT_PIPEIN		1
+#define FT_PIPEOUT	0
+
 // Ngin-xs
 #define CRLF		"\r\n"
 
 // Response Status
 #define	HTTP_OK						"200 OK"
+#define HTTP_CREATED				"201 CREATED"
 #define HTTP_BAD_REQUEST			"400 Bad Request"
 #define HTTP_FORBIDDEN				"403 Forbidden"
 #define HTTP_NOT_FOUND				"404 Not Found"
@@ -26,5 +31,6 @@
 #define	CGI_INFILE "./infile.tmp"
 #define	CGI_OUTFILE "./outfile.tmp"
 #define CGI_FILE_MODE 0644
+#define CGI_READ_BUF_SIZE 1024
 
 #endif
