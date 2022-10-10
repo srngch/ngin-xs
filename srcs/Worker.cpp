@@ -169,7 +169,8 @@ ft_bool Worker::recv() {
 }
 
 void Worker::validate() {
-	std::vector<std::string> allowedMethods;
+	std::vector<std::string>	allowedMethods;
+	std::string					headerValue;
 
 	allowedMethods.push_back("GET");
 	allowedMethods.push_back("POST");
@@ -178,10 +179,11 @@ void Worker::validate() {
 		throw InvalidMethodException("Invalid method");
 	if (request_->getVersion() != "HTTP/1.1")
 		throw InvalidVersionException("HTTP version is not 1.1");
-	const std::vector<std::string> *headerValues = request_->getHeaderValues("host");
-	if (headerValues->size() != 1)
-		throw BadRequestException("Invalid Host header");
-	delete headerValues;
+	try {
+		headerValue = request_->getHeaderValue("host");
+	} catch (std::invalid_argument &e) {
+		throw BadRequestException(e.what());
+	}
 }
 
 void Worker::send(const char *str) {

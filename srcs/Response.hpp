@@ -17,7 +17,7 @@ class Response {
 private:
 	int										statusCode_;
 	std::string								statusLine_;
-	std::multimap<std::string, std::string>	headers_;
+	std::map<std::string, std::string>		headers_;
 	std::string								body_;
 
 	void makeDefaultHeaders();
