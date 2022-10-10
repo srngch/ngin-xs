@@ -17,6 +17,7 @@
 #include "macro.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
+#include "autoindex/Autoindex.hpp"
 
 #define BUFFER_LENGTH 1024
 

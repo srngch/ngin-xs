@@ -62,3 +62,16 @@ ft_bool	isCgi(const std::string &filePath) {
 		return FT_TRUE;
 	return FT_FALSE;
 }
+
+std::string	createPadding(int width, int length) {
+	std::string	result;
+
+	for (int i = 0; i < width - length; i++) {
+		result += " ";
+	}
+	return result;
+}
+
+std::string createPaddedString(int width, const std::string &str) {
+	return createPadding(width, str.length()) + str;
+}
