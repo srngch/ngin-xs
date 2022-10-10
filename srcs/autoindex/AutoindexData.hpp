@@ -1,10 +1,10 @@
-#ifndef __AUTOINDEX_HPP__
-#define __AUTOINDEX_HPP__
+#ifndef __AutoindexData_HPP__
+#define __AutoindexData_HPP__
 
 #include <string>
-#include "macro.hpp"
+#include "../macro.hpp"
 
-class Autoindex {
+class AutoindexData {
 private:
 	std::string	name_;
 	std::string	date_;
@@ -13,8 +13,8 @@ private:
 	ft_bool		isDirectory_;
 
 public:
-	Autoindex();
-	~Autoindex();
+	AutoindexData();
+	~AutoindexData();
 
 	void	setName(const std::string &name);
 	void	setDate(const std::string &date);

@@ -116,75 +116,8 @@ std::string	Worker::executeCgiProgram(const std::string &filePath) {
 	return fileToString(CGI_OUTFILE);
 }
 
-std::string Worker::autoindex(const std::string &filePath) {
-	DIR						*dir;
-	struct dirent			*entry;
-	Autoindex				ai;
-	std::string				fullPath;
-	struct stat				fileStat;
-	struct tm				*tm;
-	char					dateBuf[20];
-	std::vector<Autoindex>	autoindexes;
-	std::string				result;
-	std::vector<Autoindex>::iterator	it;
-
-	dir = opendir(filePath.c_str());
-	if (!dir)
-		throw std::runtime_error("autoindex: Directory opening failed");
-	while ((entry = readdir(dir)) != nullptr) {
-		ai.setName(entry->d_name);
-		ai.setIsDirectory(FT_FALSE);
-		fullPath = filePath + "/" + entry->d_name;
-		if (isDirectory(fullPath)) {
-			ai.setName(ai.getName() + "/");
-			ai.setIsDirectory(FT_TRUE);
-		}
-		if (ai.getName().length() > 50) {
-			ai.setName(ai.getName().substr(0, 47));
-			ai.setName(ai.getName() + "..>");
-		}
-		stat(fullPath.c_str(), &fileStat);
-		tm = gmtime(&fileStat.st_mtime);
-		strftime(dateBuf, 20, "%d-%b-%Y %H:%M", tm);
-		ai.setDate(dateBuf);
-		ai.setSize(fileStat.st_size);
-		ai.setPath(request_->getUri() + entry->d_name);
-		if (ai.getIsDirectory())
-			ai.setPath(ai.getPath() + "/");
-		if (ai.getName() != "./")
-			autoindexes.push_back(ai);
-	}
-	std::sort(autoindexes.begin(), autoindexes.end(), sortAutoindexes);
-	closedir(dir);
-	result += "<html> \
-			<head> \
-				<title>Index of " + request_->getUri() + "</title> \
-			</head> \
-			<body> \
-				<h1>Index of " + request_->getUri() + "</h1> \
-				<hr> \
-				<pre>";
-	for (it = autoindexes.begin(); it != autoindexes.end(); it++) {
-		result += "<a href=\"" + it->getPath() + "\">" \
-			+ it->getName() + "</a>" \
-			+ createPadding(50, it->getName().length()) + " " \
-			+ it->getDate() + " ";
-		if (it->getIsDirectory())
-			result += createPaddedString(19, "-");
-		else
-			result += createPaddedString(19, ntos(it->getSize()));
-		result += "\n";
-	}
-	result += "</pre> \
-				<hr> \
-			</body> \
-		</html>";
-	return result;
-}
-
 ft_bool Worker::work() {
 	int		ret = FT_TRUE;
-	std::string	result;
 
 	try {
 		if (pollfd_->revents == 0)
@@ -199,9 +132,8 @@ ft_bool Worker::work() {
 				return ret;
 			if (request_->getMethod() == "GET") {
 				std::string filePath = std::string(WEB_ROOT) + request_->getUri();
-				// if (isDirectory(filePath)) {	// TODO: autoindex 설정이 없는지 체크
-				// 	filePath += "/index.html"; // TODO: read default file from config
-				// }
+				if (isDirectory(filePath))
+					filePath += "/index.html"; // TODO: read default file from config
 				if (isCgi(filePath)) {
 					std::string outFile = executeCgiProgram(filePath);
 					Response response(HTTP_OK, outFile);
@@ -210,13 +142,9 @@ ft_bool Worker::work() {
 					remove(CGI_OUTFILE);
 					return ret;
 				}
-				if (isDirectory(filePath) && request_->getUri().substr(0, 7) == "/upload")	// TODO: autoindex 설정이 있는지 체크
-					result = autoindex(filePath);
-				else if (isFileExist(filePath))
-					result = fileToString(filePath);
-				else
+				if (isFileExist(filePath) == FT_FALSE)
 					throw FileNotFoundException("File not found");
-				Response response(HTTP_OK, result);
+				Response response(HTTP_OK, fileToString(filePath));
 				send(response.createMessage().c_str());
 			}
 			return ret;
