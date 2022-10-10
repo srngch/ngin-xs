@@ -93,8 +93,8 @@ ft_bool Worker::work() {
 					filePath += "/index.html"; // TODO: read default file from config
 				if (isCgi(filePath)) {
 					Cgi cgi(request_);
-					std::string outFile = cgi.execute();
-					Response response(HTTP_OK, outFile);
+					std::string result = cgi.execute();
+					Response response(HTTP_OK, result);
 					send(response.createMessage().c_str());
 					return ret;
 				}
@@ -108,8 +108,8 @@ ft_bool Worker::work() {
 				// TODO: validate filePath
 				if (isCgi(filePath)) {
 					Cgi cgi(request_);
-					std::string outFile = cgi.execute();
-					Response response(HTTP_CREATED, outFile);
+					std::string result = cgi.execute();
+					Response response(HTTP_CREATED, result);
 					send(response.createMessage().c_str());
 					return ret;
 				}
