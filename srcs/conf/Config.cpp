@@ -48,11 +48,23 @@ std::vector<std::string>	Config::readAndSplit(std::string filePathStr) {
 }
 
 void	Config::parseConfigFile(char *filePath) {
-	std::vector<std::string>	lines;
+	std::vector<std::string>	tokens;
+	int							tokenSize;
 
-	lines = readAndSplit(filePath);
-	for (std::vector<std::string>::iterator it = lines.begin(); it != lines.end(); it++)
+	tokens = readAndSplit(filePath);
+	for (std::vector<std::string>::iterator it = tokens.begin(); it != tokens.end(); it++)
 		std::cout << *it << std::endl;
+	tokenSize = tokens.size();
+	for (int i = 0; i < tokenSize; i++) {
+		if (tokens[i] == "server") {
+			if (tokens[++i] != "{")
+				throw std::runtime_error("Wrong formatted configuration file.\n");
+			ServerBlock	tmpServerBlock;
+			tmpServerBlock.parseServerBlock(tokens, i);
+			serverBlocks_.push_back(tmpServerBlock);
+		} else
+			throw std::runtime_error("Wrong directive type in configuration file.\n");
+	}
 }
 
 Config::Config() {}

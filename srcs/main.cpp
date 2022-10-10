@@ -5,7 +5,12 @@
 int	main(int argc, char **argv) {
 	if (argc != 2)
 		return 1;
-	Config conf = Config(argv[1]);
+	try {
+		Config conf = Config(argv[1]);
+	}
+	catch (std::exception &e){
+		e.what()
+	}
 	// try {
 	// 	Master master;
 	// 	master.run();

@@ -13,6 +13,8 @@ private:
 public:
 	LocationBlock();
 	~LocationBlock();
+
+	void					parseLocationBlock(std::vector<std::string> &tokens, int &i);
 };
 
 #endif
