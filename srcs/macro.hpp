@@ -7,6 +7,10 @@
 #define FT_ERROR	-1
 #define ft_bool		int
 
+// pipe
+#define FT_PIPEIN		1
+#define FT_PIPEOUT	0
+
 // Ngin-xs
 #define CRLF		"\r\n"
 
@@ -27,5 +31,6 @@
 #define	CGI_INFILE "./infile.tmp"
 #define	CGI_OUTFILE "./outfile.tmp"
 #define CGI_FILE_MODE 0644
+#define CGI_READ_BUF_SIZE 1024
 
 #endif
