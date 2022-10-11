@@ -12,10 +12,8 @@ void Cgi::setEnv() {
 	// if (request_->getAuthType())
 	// 	env_.push_back("AUTH_TYPE=" + request_->getAuthType());
 
-	if (request_->getHeaderValues("content-length")->size() != 0)
-		env_.push_back("CONTENT_LENGTH=" + (*request_->getHeaderValues("content-length"))[0]);
-	if (request_->getHeaderValues("content-type")->size() != 0)
-		env_.push_back("CONTENT_TYPE=" + (*request_->getHeaderValues("content-type"))[0]);
+	env_.push_back("CONTENT_LENGTH=" + request_->getHeaderValue("content-length"));
+	env_.push_back("CONTENT_TYPE=" + request_->getHeaderValue("content-type"));
 
 	env_.push_back("GATEWAY_INTERFACE=CGI/1.1");
 

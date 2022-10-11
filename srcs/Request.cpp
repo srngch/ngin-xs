@@ -11,7 +11,8 @@
 // {"username":"test","hashed_password":"hashed_password"}
 
 Request::Request(const std::string &originalMessage) {
-	std::vector<std::string> splitedMessage;
+	std::vector<std::string>						splitedMessage;
+	std::map<std::string, std::string>::iterator	iter;
 	
 	splitedMessage = split(originalMessage, CRLF);
 	parse(splitedMessage);
@@ -20,10 +21,8 @@ Request::Request(const std::string &originalMessage) {
 	std::cout << "method_: " << method_ << std::endl;
 	std::cout << "uri_: " << uri_ << std::endl;
 	std::cout << "version_: " << version_ << std::endl;
-	
 	std::cout << "===============" << std::endl;
 
-	std::multimap<std::string, std::string>::iterator iter;
 	for (iter = headers_.begin(); iter != headers_.end(); iter++)
 		std::cout << iter->first << " | " << iter->second << std::endl;
 	
@@ -73,23 +72,15 @@ const std::string &Request::getVersion() {
 	return version_;
 }
 
-const std::multimap<std::string, std::string> &Request::getHeaders() {
+const std::map<std::string, std::string> &Request::getHeaders() {
 	return headers_;
 }
 
-const std::vector<std::string>	*Request::getHeaderValues(std::string fieldName) {
-	std::vector<std::string> *headerValues = new std::vector<std::string>;
-	std::pair <std::multimap<std::string, std::string>::iterator, std::multimap<std::string, std::string>::iterator> ret;
-
-	ret = headers_.equal_range(fieldName);
-	for (
-		std::multimap<std::string, std::string>::iterator it=ret.first;
-		it!=ret.second;
-		++it
-	)
-	headerValues->push_back(it->second);
-
-	return headerValues;
+const std::string &Request::getHeaderValue(std::string fieldName) {
+	std::map<std::string, std::string>::iterator it = headers_.find(fieldName);
+	if (it == headers_.end())
+		throw std::invalid_argument("Field name " + fieldName + " does not exist");
+	return it->second;
 }
 
 const std::string &Request::getBody() {
