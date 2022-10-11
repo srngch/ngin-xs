@@ -12,13 +12,15 @@ void Cgi::setEnv() {
 	// if (request_->getAuthType())
 	// 	env_.push_back("AUTH_TYPE=" + request_->getAuthType());
 
+	std::string uri = request_->getUri()->getOriginalUri();
+
 	env_.push_back("CONTENT_LENGTH=" + request_->getHeaderValue("content-length"));
 	env_.push_back("CONTENT_TYPE=" + request_->getHeaderValue("content-type"));
 
 	env_.push_back("GATEWAY_INTERFACE=CGI/1.1");
 
-	env_.push_back("PATH_INFO=" + request_->getUri()); // TODO: get pathInfo from request
-	env_.push_back("PATH_TRANSLATED=" + std::string(WEB_ROOT) + request_->getUri());
+	env_.push_back("PATH_INFO=" + uri); // TODO: get pathInfo from request
+	env_.push_back("PATH_TRANSLATED=" + std::string(WEB_ROOT) + uri);
 	// if (request_->getQueryString())
 		env_.push_back("QUERY_STRING="); // TODO: + request_->getQueryString()
 
@@ -26,7 +28,7 @@ void Cgi::setEnv() {
 	// env_.push_back("REMOTE_IDENT=");
 	// env_.push_back("REMOTE_USER=");
 	env_.push_back("REQUEST_METHOD=" + request_->getMethod());
-	env_.push_back("REQUEST_URI=" + request_->getUri());
+	env_.push_back("REQUEST_URI=" + uri);
 
 	// env_.push_back("SCRIPT_NAME=");
 
@@ -100,7 +102,7 @@ std::string	Cgi::execute() {
 		if (dup2(devNull, STDERR_FILENO) == FT_ERROR)
 			exit(EXIT_FAILURE);
 
-		execve(std::string(WEB_ROOT + request_->getUri()).c_str(), NULL, getEnv());
+		execve(std::string(WEB_ROOT + request_->getUri()->getOriginalUri()).c_str(), NULL, getEnv());
 
 		/* if execve() failed */
 		exit(EXIT_FAILURE);

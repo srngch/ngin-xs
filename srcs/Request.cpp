@@ -19,7 +19,6 @@ Request::Request(const std::string &originalMessage) {
 
 	std::cout << "[parsing result]" << std::endl;
 	std::cout << "method_: " << method_ << std::endl;
-	std::cout << "uri_: " << uri_ << std::endl;
 	std::cout << "version_: " << version_ << std::endl;
 	std::cout << "===============" << std::endl;
 
@@ -30,7 +29,9 @@ Request::Request(const std::string &originalMessage) {
 	std::cout << "body_: " << body_ << std::endl;
 }
 
-Request::~Request() {}
+Request::~Request() {
+	delete uri_;
+}
 
 // ft_bool Request::validate() {
 
@@ -45,7 +46,7 @@ void	Request::parse(const std::vector<std::string> &splitedMessage) {
 	if (splitedRequstLine.size() != 3)
 		throw std::runtime_error("parse error");
 	method_ = splitedRequstLine[0];
-	uri_ = splitedRequstLine[1];
+	uri_ = new Uri(splitedRequstLine[1]);
 	version_ = splitedRequstLine[2];
 	iter++;
 	// headers
@@ -64,7 +65,7 @@ const std::string &Request::getMethod() {
 	return method_;
 }
 
-const std::string &Request::getUri() {
+const Uri *Request::getUri() {
 	return uri_;
 }
 

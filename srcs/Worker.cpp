@@ -87,8 +87,8 @@ ft_bool Worker::work() {
 			ret = recv();
 			if (ret == FT_FALSE)
 				return ret;
+			std::string filePath = std::string(WEB_ROOT) + request_->getUri()->getOriginalUri();
 			if (request_->getMethod() == "GET") {
-				std::string filePath = std::string(WEB_ROOT) + request_->getUri();
 				if (isDirectory(filePath))
 					filePath += "/index.html"; // TODO: read default file from config
 				if (isCgi(filePath)) {
@@ -104,7 +104,6 @@ ft_bool Worker::work() {
 				send(response.createMessage().c_str());
 			}
 			if (request_->getMethod() == "POST") {
-				std::string filePath = std::string(WEB_ROOT) + request_->getUri();
 				// TODO: validate filePath
 				if (isCgi(filePath)) {
 					Cgi cgi(request_);
