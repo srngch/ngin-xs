@@ -87,6 +87,7 @@ ft_bool Worker::work() {
 			ret = recv();
 			if (ret == FT_FALSE)
 				return ret;
+			// TODO: Config 체크해서 요청 URI가 허용하는 메소드인지 체크
 			std::string filePath = std::string(WEB_ROOT) + request_->getUri()->getOriginalUri();
 			if (request_->getMethod() == "GET") {
 				if (isDirectory(filePath))
@@ -103,15 +104,24 @@ ft_bool Worker::work() {
 				Response response(HTTP_OK, fileToString(filePath));
 				send(response.createMessage().c_str());
 			}
-			if (request_->getMethod() == "POST") {
+			else if (request_->getMethod() == "POST") {
 				// TODO: validate filePath
 				if (isCgi(filePath)) {
 					Cgi cgi(request_);
 					std::string result = cgi.execute();
 					Response response(HTTP_CREATED, result);
 					send(response.createMessage().c_str());
-					return ret;
 				}
+			}
+			else if (request_->getMethod() == "DELETE") {
+				if (isFileExist(filePath) == FT_FALSE)
+					throw FileNotFoundException("File not found");
+				if (isDirectory(filePath) == FT_TRUE)
+					throw ForbiddenException("Forbidden");
+				if (unlink(filePath.c_str()))
+					throw std::runtime_error("Delete failed");
+				Response response(HTTP_NO_CONTENT, "");
+				send(response.createMessage().c_str());
 			}
 			return ret;
 		}

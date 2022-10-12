@@ -17,6 +17,7 @@
 // Response Status
 #define	HTTP_OK						"200 OK"
 #define HTTP_CREATED				"201 CREATED"
+#define HTTP_NO_CONTENT				"204 No Content"
 #define HTTP_BAD_REQUEST			"400 Bad Request"
 #define HTTP_FORBIDDEN				"403 Forbidden"
 #define HTTP_NOT_FOUND				"404 Not Found"
