@@ -4,7 +4,7 @@ INCLUDE_FLAGS = -I srcs
 TARGET = webserv
 
 SRCS_FILES = main.cpp Master.cpp Worker.cpp Request.cpp Response.cpp utils.cpp \
-			conf/Config.cpp conf/ServerBlock.cpp conf/LocationBlock.cpp
+			conf/Config.cpp conf/Block.cpp conf/utils.cpp
 SRCS = $(addprefix ./srcs/, $(SRCS_FILES))
 OBJS = $(SRCS:.cpp=.o)
 

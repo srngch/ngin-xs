@@ -3,22 +3,25 @@
 
 # define BUFFER_SIZE 1600
 
-# include "ServerBlock.hpp"
+# include "Block.hpp"
 # include <vector>
 
 class Config {
 private:
-	std::vector<ServerBlock>	serverBlocks_;
+	std::vector<Block>	serverBlocks_;
+
 	std::vector<std::string> 	splitLines(const std::string &str, std::string delim);
-	std::vector<std::string>	readAndSplit(std::string filePathStr);
-	void						parseConfigFile(char *filePath);
+	std::vector<std::string>	readAndSplit(const char *filePath);
+	void						parseConfigFile(const char *filePath);
 
 public:
 	Config();
 	Config(char *filePath);
 	~Config();
 
-	std::vector<ServerBlock>	getServerBlocks();
+	std::vector<Block>			getServerBlocks();
+	// Block						&getServerBlock(int port);
+	// Block						&getLocationBlock(std::string uri);
 };
 
 #endif
