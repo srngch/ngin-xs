@@ -14,7 +14,7 @@ void Cgi::setEnv() {
 
 	std::string uri = request_->getUri()->getOriginalUri();
 
-	env_.push_back("CONTENT_LENGTH=" + request_->getHeaderValue("content-length"));
+	env_.push_back("CONTENT_LENGTH=" + ntos(request_->getBody().length()));
 	env_.push_back("CONTENT_TYPE=" + request_->getHeaderValue("content-type"));
 
 	env_.push_back("GATEWAY_INTERFACE=CGI/1.1");

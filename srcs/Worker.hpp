@@ -14,26 +14,33 @@
 #include <iostream>
 #include <fstream>
 #include <cstdio>
+#include <string>
 #include "macro.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
 #include "Cgi.hpp"
 #include "autoindex/Autoindex.hpp"
 
-#define BUFFER_LENGTH 50000
+#define BUFFER_LENGTH 1024
 
 class Worker {
 private:
 	int							connectSocket_;
-	char						buf_[BUFFER_LENGTH];
 	struct pollfd				*pollfd_;
 	Request						*request_;
+	std::string					filePath_;
+	std::string					originalHeader_;
+	std::string					originalBody_;
+	ft_bool						isHeaderSet_;
+	ft_bool						isRecvCompleted_;
 
 	ft_bool	recv();
-	// void	unchunk();
 	void	send(const char *str);
 	void	resetPollfd();
 	void	validate();
+	ft_bool	executeGet();
+	ft_bool	executePost();
+	ft_bool	executeDelete();
 
 public:
 	Worker(int listenSocket);
@@ -75,6 +82,15 @@ public:
 	public:
 		InvalidMethodException(const std::string str);
 		~InvalidMethodException() throw();
+		virtual const char *what() const throw();
+	};
+
+	class NotImplementedException : public std::exception {
+	private:
+		std::string message_;
+	public:
+		NotImplementedException(const std::string str);
+		~NotImplementedException() throw();
 		virtual const char *what() const throw();
 	};
 

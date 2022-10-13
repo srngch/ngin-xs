@@ -26,5 +26,6 @@ ft_bool isDirectory(const std::string &filePath);
 ft_bool	isCgi(const std::string &filePath);
 std::string	createPadding(int width, int length);
 std::string createPaddedString(int width, const std::string &str);
+size_t	hexStringToNumber(std::string s);
 
 #endif
