@@ -78,3 +78,8 @@ NGIN-XS is a simple, lightweight, and fast web server written in C++.
 
 - Implement DELETE method: [Issue](https://github.com/srngch/ngin-xs/issues/21), [PR](https://github.com/srngch/ngin-xs/pull/28)
 - [WIP] Parse configuration file: [Issue](https://github.com/srngch/ngin-xs/issues/18)
+
+### 2022-10-13
+
+- Handle chunked response: [Issue](https://github.com/srngch/ngin-xs/issues/30), [PR](https://github.com/srngch/ngin-xs/pull/33)
+- [WIP] Parse configuration file: [Issue](https://github.com/srngch/ngin-xs/issues/18)
