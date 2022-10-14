@@ -1,5 +1,5 @@
 CC = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic -g
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic
 INCLUDE_FLAGS = -I srcs
 TARGET = webserv
 
