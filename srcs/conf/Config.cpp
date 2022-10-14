@@ -42,7 +42,6 @@ void Config::parseConfigFile(const char *filePath) {
 			Block	tmpServerBlock;
 
 			tmpServerBlock.parseServerBlock(tokens, ++i);
-			// tmpServerBlock.printBlock();
 			serverBlocks_.push_back(tmpServerBlock);
 		} else
 			throw std::runtime_error("Wrong directive type in configuration file.\n");

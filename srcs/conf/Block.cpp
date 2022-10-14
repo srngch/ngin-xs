@@ -1,16 +1,16 @@
 #include "Block.hpp"
 
-Block::Block() : parent_(nullptr), listenPort_(""), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
+Block::Block() : parent_(nullptr), host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
 	setServerDirectivesMap();
 }
 
-Block::Block(Block *parent) : listenPort_(""), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
+Block::Block(Block *parent) : host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
 	parent_ = parent;
 	setLocationDirectivesMap();
 }
 
 void Block::setServerDirectivesMap() {
-	directivesMap_["listen"] = &Block::setListenPort;
+	directivesMap_["listen"] = &Block::setHostPort;
 	directivesMap_["server_name"] = &Block::setServerNames;
 	directivesMap_["root"] = &Block::setWebRoot;
 	directivesMap_["client_max_body_size"] = &Block::setClientMaxBodySize;
@@ -165,10 +165,14 @@ void Block::setIndex(std::vector<std::string> args) {
 	index_ = args[0];
 }
 
-void Block::setListenPort(std::vector<std::string> args) {
+void Block::setHostPort(std::vector<std::string> args) {
+	std::vector<std::string>	hostport;
+
 	if (args.size() != 1)
 		throw std::runtime_error("Invalid configuration file: port\n");
-	listenPort_ = args[0];
+	hostport = parseHostPort(args[0]);
+	host_ = hostport[0];
+	port_ = atoi(hostport[1].c_str());
 }
 
 void Block::setServerNames(std::vector<std::string> args) {
@@ -222,11 +226,19 @@ void Block::setAutoIndex(std::vector<std::string> args) {
 	autoIndex_ = args[0];
 }
 
-const std::string &Block::getListenPort() const{
-	if (listenPort_ != "")
-		return listenPort_;
-	else if (listenPort_ == "" && parent_)
-		return (parent_->getListenPort());
+const std::string &Block::getHost() const {
+	if (host_ != "")
+		return host_;
+	else if (host_ == "" && parent_)
+		return (parent_->getHost());
+	throw std::runtime_error("Invalid configuration file: no port set\n");
+}
+
+const int &Block::getPort() const {
+	if (port_)
+		return port_;
+	else if (port_ == 0 && parent_)
+		return (parent_->getPort());
 	throw std::runtime_error("Invalid configuration file: no port set\n");
 }
 
@@ -317,7 +329,8 @@ void Block::printBlock() {
 	std::set<std::string>::iterator			itset;
 	std::map<int, std::string>::iterator	itmap;
 
-	std::cout << "Port: " << listenPort_ << std::endl;
+	std::cout << "Host: " << host_ << std::endl;
+	std::cout << "Port: " << port_ << std::endl;
 	std::cout << "Server names: ";
 	for (itset = serverNames_.begin(); itset != serverNames_.end(); itset++)
 		std::cout << *itset << " ";
