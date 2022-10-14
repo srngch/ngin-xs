@@ -18,7 +18,6 @@ private:
 	std::vector<Block>					locationBlocks_;
 	directivesMap						directivesMap_;
 
-	//TODO: host:port 나누어 저장
 	std::string							host_;
 	int									port_;
 	std::set<std::string>				serverNames_;

@@ -342,8 +342,4 @@ void Block::printBlock() {
 	std::cout << "Error pages: " << std::endl;
 	for (itmap = errorPages_.begin(); itmap != errorPages_.end(); itmap++)
 		std::cout << itmap->first << " " << itmap->second << std::endl;
-	// std::cout << "Cgi: ";
-	// for (itset = cgi_.begin(); itset != cgi_.end(); itset++)
-	// 	std::cout << *itset << " ";
-	// std::cout << std::endl;
 }
