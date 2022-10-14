@@ -1,10 +1,10 @@
 #include "Block.hpp"
 
-Block::Block() : parent_(nullptr), listenPort_(""), webRoot_(""), clientBodyMaxSize_(0), uri_(""), index_(""), autoIndex_("") {
+Block::Block() : parent_(nullptr), listenPort_(""), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
 	setServerDirectivesMap();
 }
 
-Block::Block(Block *parent) : listenPort_(""), webRoot_(""), clientBodyMaxSize_(0), uri_(""), index_(""), autoIndex_("") {
+Block::Block(Block *parent) : listenPort_(""), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
 	parent_ = parent;
 	setLocationDirectivesMap();
 }
@@ -13,8 +13,7 @@ void Block::setServerDirectivesMap() {
 	directivesMap_["listen"] = &Block::setListenPort;
 	directivesMap_["server_name"] = &Block::setServerNames;
 	directivesMap_["root"] = &Block::setWebRoot;
-	directivesMap_["limit_except"] = &Block::setAllowedMethods;
-	directivesMap_["client_body_buffer_size"] = &Block::setClientBodySize;
+	directivesMap_["client_max_body_size"] = &Block::setClientMaxBodySize;
 	directivesMap_["error_page"] = &Block::setErrorPages;
 }
 
@@ -38,7 +37,10 @@ ft_bool	Block::check_validation(std::vector<std::string> &tokens, int &i, std::s
 	if (i + 1 == static_cast<int>(tokens.size()))
 		throw std::runtime_error("Invalid configuration file: semi-colon should not be the end of the file.\n");
 	// ";" 뒤에 오는 토큰이 "}" 이면 유효
-	if (tokens[i + 1] == "}")
+	if (!strcmp(tokens[i + 1].c_str(), "}"))
+		return FT_TRUE;
+	// ";" 뒤에 오는 토큰이 location 이면 유효
+	if (!strcmp(tokens[i + 1].c_str(), "location"))
 		return FT_TRUE;
 	// ";" 뒤에 오는 토큰이 지시자가 아니면 유효하지 않음
 	it = directivesMap_.find(tokens[i + 1]);
@@ -202,10 +204,10 @@ void Block::setAllowedMethods(std::vector<std::string> args) {
 		allowedMethods_.insert(*it);
 }
 
-void Block::setClientBodySize(std::vector<std::string> args) {
+void Block::setClientMaxBodySize(std::vector<std::string> args) {
 	if (args.size() != 1)
 		throw std::runtime_error("Invalid configuration file: port\n");
-	clientBodyMaxSize_= atoi(args[0].c_str());
+	clientMaxBodySize_= atoi(args[0].c_str());
 }
 
 void Block::setErrorPages(std::vector<std::string> args) {
@@ -220,7 +222,7 @@ void Block::setAutoIndex(std::vector<std::string> args) {
 	autoIndex_ = args[0];
 }
 
-std::string	Block::getListenPort() {
+const std::string &Block::getListenPort() const{
 	if (listenPort_ != "")
 		return listenPort_;
 	else if (listenPort_ == "" && parent_)
@@ -228,7 +230,7 @@ std::string	Block::getListenPort() {
 	throw std::runtime_error("Invalid configuration file: no port set\n");
 }
 
-std::set<std::string> Block::getServerNames() {
+const std::set<std::string> &Block::getServerNames() const {
 	if (!serverNames_.empty())
 		return serverNames_;
 	else if (serverNames_.empty() && parent_)
@@ -236,7 +238,7 @@ std::set<std::string> Block::getServerNames() {
 	throw std::runtime_error("Invalid configuration file: no server names set\n");
 }
 
-std::string	Block::getWebRoot() {
+const std::string &Block::getWebRoot() const {
 	if (webRoot_ != "")
 		return webRoot_;
 	else if (webRoot_ == "" && parent_)
@@ -244,7 +246,7 @@ std::string	Block::getWebRoot() {
 	throw std::runtime_error("Invalid configuration file: no web root set\n");
 }
 
-std::set<std::string> Block::getAllowedMethods() {
+const std::set<std::string> &Block::getAllowedMethods() const {
 	if (!allowedMethods_.empty())
 		return allowedMethods_;
 	else if (allowedMethods_.empty() && parent_)
@@ -252,15 +254,15 @@ std::set<std::string> Block::getAllowedMethods() {
 	throw std::runtime_error("Invalid configuration file: no allowed methods set\n");
 }
 
-int Block::getClientBodySize() {
-	if (clientBodyMaxSize_)
-		return clientBodyMaxSize_;
-	else if (clientBodyMaxSize_  == 0 && parent_)
-		return (parent_->getClientBodySize());
+const int &Block::getClientMaxBodySize() const {
+	if (clientMaxBodySize_)
+		return clientMaxBodySize_;
+	else if (clientMaxBodySize_  == 0 && parent_)
+		return (parent_->getClientMaxBodySize());
 	throw std::runtime_error("Invalid configuration file: no client body size set\n");
 }
 
-std::map<int, std::string> Block::getErrorPages() {
+const std::map<int, std::string> &Block::getErrorPages() const{
 	if (!errorPages_.empty())
 		return (errorPages_);
 	else if (errorPages_.empty() && parent_)
@@ -268,7 +270,7 @@ std::map<int, std::string> Block::getErrorPages() {
 	throw std::runtime_error("Invalid configuration file: no error pages set\n");
 }
 
-std::string Block::getErrorPage(int num) {
+const std::string &Block::getErrorPage(int num) const {
 	std::map<int, std::string>				pages;
 	std::map<int, std::string>::iterator	it;
 
@@ -279,7 +281,7 @@ std::string Block::getErrorPage(int num) {
 	return (it->second);
 }
 
-std::string Block::getUri() {
+const std::string &Block::getUri() const {
 	if (uri_ != "")
 		return (uri_);
 	else if (uri_ == "" && parent_)
@@ -287,7 +289,7 @@ std::string Block::getUri() {
 	throw std::runtime_error("Invalid configuration file: no uri set\n");
 }
 
-std::string Block::getIndex() {
+const std::string &Block::getIndex() const {
 	if (index_ != "")
 		return (index_);
 	else if (index_ == "" && parent_)
@@ -295,7 +297,7 @@ std::string Block::getIndex() {
 	throw std::runtime_error("Invalid configuration file: no uri set\n");
 }
 
-std::string Block::getAutoIndex() {
+const std::string &Block::getAutoIndex() const {
 	if (autoIndex_ != "")
 		return (autoIndex_);
 	else if (autoIndex_ == "" && parent_)
@@ -303,7 +305,7 @@ std::string Block::getAutoIndex() {
 	throw std::runtime_error("Invalid configuration file: no autoindex set\n");
 }
 
-std::set<std::string> Block::getCgi() {
+const std::set<std::string> &Block::getCgi() const {
 	if (!cgi_.empty())
 		return (cgi_);
 	else if (cgi_.empty() && parent_)
@@ -316,23 +318,19 @@ void Block::printBlock() {
 	std::map<int, std::string>::iterator	itmap;
 
 	std::cout << "Port: " << listenPort_ << std::endl;
-	// std::cout << "Server names: ";
-	// for (itset = serverNames_.begin(); itset != serverNames_.end(); itset++)
-	// 	std::cout << *itset << " ";
-	// std::cout << std::endl;
+	std::cout << "Server names: ";
+	for (itset = serverNames_.begin(); itset != serverNames_.end(); itset++)
+		std::cout << *itset << " ";
+	std::cout << std::endl;
 	std::cout << "Web root: ";
 	std::cout << webRoot_ << std::endl;
-	// std::cout << "Allowed methods: ";
-	// for (it = allowedMethods_.begin(); it != allowedMethods_.end(); it++)
-	// 	std::cout << *it << " ";
-	// std::cout << std::endl;
 	std::cout << "Client body size: ";
-	std::cout << clientBodyMaxSize_ << std::endl;
-	// std::cout << "Error pages: " << std::endl;
-	// for (itmap = errorPages_.begin(); itmap != errorPages_.end(); it++)
-	// 	std::cout << itmap->first << " " << itmap->second << std::endl;
+	std::cout << clientMaxBodySize_ << std::endl;
+	std::cout << "Error pages: " << std::endl;
+	for (itmap = errorPages_.begin(); itmap != errorPages_.end(); itmap++)
+		std::cout << itmap->first << " " << itmap->second << std::endl;
 	// std::cout << "Cgi: ";
-	// for (it = cgi_.begin(); it != cgi_.end(); it++)
-	// 	std::cout << *it << " ";
+	// for (itset = cgi_.begin(); itset != cgi_.end(); itset++)
+	// 	std::cout << *itset << " ";
 	// std::cout << std::endl;
 }

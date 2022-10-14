@@ -49,7 +49,7 @@ void Config::parseConfigFile(const char *filePath) {
 	}
 }
 
-std::vector<Block> Config::getServerBlocks() {
+const std::vector<Block> &Config::getServerBlocks() const {
 	return serverBlocks_;
 }
 

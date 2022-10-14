@@ -6,9 +6,12 @@ int	main(int argc, char **argv) {
 	if (argc != 2)
 		return 1;
 	try {
-		Config conf = Config(argv[1]);
+		std::vector<Block>				serverblocks;	
 		std::vector<Block>::iterator	it;
-		for (it = conf.getServerBlocks().begin(); it != conf.getServerBlocks().end(); it++)
+	
+		Config conf = Config(argv[1]);
+		serverblocks = conf.getServerBlocks();
+		for (it = serverblocks.begin(); it != serverblocks.end(); it++)
 			it->printBlock();
 	}
 	catch (std::exception &e){

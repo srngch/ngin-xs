@@ -24,7 +24,7 @@ private:
 	std::set<std::string>		serverNames_;
 	std::string					webRoot_;
 	std::set<std::string>		allowedMethods_;
-	int							clientBodyMaxSize_;
+	int							clientMaxBodySize_;
 	std::map<int, std::string>	errorPages_;
 	std::string					uri_;
 	std::string					index_;
@@ -51,7 +51,7 @@ public:
 	// ServerBlock, LocationBlock 공통
 	void						setWebRoot(std::vector<std::string> args);
 	void						setAllowedMethods(std::vector<std::string> args);
-	void						setClientBodySize(std::vector<std::string> args);
+	void						setClientMaxBodySize(std::vector<std::string> args);
 	void						setErrorPages(std::vector<std::string> args);
 	// LocationBlock 만 해당
 	void						setUri(std::string uri);
@@ -59,20 +59,20 @@ public:
 	void						setAutoIndex(std::vector<std::string> args);
 	void						setCgi(std::vector<std::string> args);
 
-	std::string					getListenPort();
-	std::set<std::string>		getServerNames();
-	std::string					getWebRoot();
-	std::set<std::string>		getAllowedMethods();
-	int							getClientBodySize();
-	std::map<int, std::string>	getErrorPages();
-	std::string					getErrorPage(int num);
+	const std::string					&getListenPort() const;
+	const std::set<std::string>			&getServerNames() const;
+	const std::string					&getWebRoot() const;
+	const std::set<std::string>			&getAllowedMethods() const;
+	const int							&getClientMaxBodySize() const;
+	const std::map<int, std::string>	&getErrorPages() const;
+	const std::string					&getErrorPage(int num) const;
 
-	std::string					getUri();
-	std::string					getIndex();
-	std::string					getAutoIndex();
-	std::set<std::string>		getCgi();
+	const std::string					&getUri() const;
+	const std::string					&getIndex() const; 
+	const std::string					&getAutoIndex() const;
+	const std::set<std::string>			&getCgi() const;
 
-	void						printBlock();
+	void								printBlock();
 };
 
 #endif
