@@ -19,8 +19,8 @@ void Response::makeDefaultHeaders() {
 }
 
 std::string	Response::createMessage() {
-	std::string	message;
-	std::multimap<std::string, std::string>::iterator	it;
+	std::string										message;
+	std::map<std::string, std::string>::iterator	it;
 
 	message = statusLine_ + CRLF;
 	for (it = headers_.begin(); it != headers_.end(); it++)

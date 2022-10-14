@@ -1,0 +1,24 @@
+<html>
+  <body>
+    <h2>form</h2>
+    <h3>POST</h3>
+    <pre>/upload.py</pre></h4>
+    <form action="/upload.py" method="post">
+      <label for="content">content</label>
+      <input type="text" name="content" />
+      <input type="submit" value="submit" />
+    </form>
+    <h4><pre>/readstdin.py</pre></h4>
+    <form action="/readstdin.py" method="post">
+      <label for="content">content</label>
+      <input type="text" name="content" />
+      <input type="submit" value="submit" />
+    </form>
+    <h4><pre>/form.py</pre></h4>
+    <form action="/form.py" method="post" enctype="multipart/form-data">
+      <label for="content">file</label>
+      <input type="file" name="file" />
+      <input type="submit" value="submit" />
+    </form>
+  </body>
+</html>

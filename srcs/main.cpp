@@ -2,7 +2,7 @@
 #include "Request.hpp"
 #include "conf/Config.hpp"
 
-int	main(int argc, char **argv) {
+int	main(int argc, char **argv, char **env) {
 	if (argc != 2)
 		return 1;
 	try {
@@ -13,15 +13,20 @@ int	main(int argc, char **argv) {
 		serverblocks = conf.getServerBlocks();
 		for (it = serverblocks.begin(); it != serverblocks.end(); it++)
 			it->printBlock();
+  } catch (std::exception &e) {
+		std::cout << e.what() << std::endl;
 	}
-	catch (std::exception &e){
-		e.what();
-	}
-	// try {
-	// 	Master master;
-	// 	master.run();
-	// } catch (std::exception &e) {
-	// 	std::cout << e.what() << std::endl;
-	// }
-	return 0;
+      
+  try {
+	   Master master(env);
+     // print env
+     // char **envs = master.getEnv();
+     // while (envs && *envs) {
+     // 	std::cout << *envs << std::endl;
+     // 	envs++;
+     // }
+		 master.run();
+	   } catch (std::exception &e) {
+		   std::cout << e.what() << std::endl;
+	   }
 }

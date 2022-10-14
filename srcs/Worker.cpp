@@ -40,6 +40,16 @@ const char *Worker::InvalidMethodException::what() const throw() {
 	return message_.c_str();
 }
 
+Worker::NotImplementedException::NotImplementedException(const std::string str) {
+	message_ = str;
+}
+
+Worker::NotImplementedException::~NotImplementedException() throw() {}
+
+const char *Worker::NotImplementedException::what() const throw() {
+	return message_.c_str();
+}
+
 Worker::InvalidVersionException::InvalidVersionException(const std::string str) {
 	message_ = str;
 }
@@ -50,11 +60,11 @@ const char *Worker::InvalidVersionException::what() const throw() {
 	return message_.c_str();
 }
 
-Worker::Worker(int listenSocket) {
+Worker::Worker(int listenSocket)
+	: isHeaderSet_(FT_FALSE), isRecvCompleted_(FT_FALSE) {
 	struct sockaddr_in	clientAddress;
-	socklen_t			addressLen;
+	socklen_t			addressLen = sizeof(clientAddress);
 
-	addressLen = sizeof(clientAddress);
 	connectSocket_ = accept(listenSocket, (struct sockaddr *)&clientAddress, &addressLen);
 	if (connectSocket_ == -1) {
 		close(listenSocket);
@@ -74,50 +84,8 @@ void	Worker::setPollfd(struct pollfd *pollfd) {
 	pollfd_->revents = 0;
 }
 
-std::string	Worker::executeCgiProgram(const std::string &filePath) {
-	char	*args[3];
-	pid_t	pid;
-	int		infile;
-	int		outfile;
-	int		status;
-
-	if (access(filePath.c_str(), R_OK))
-		throw ForbiddenException("Permission denied");
-	if (!isFileExist(filePath))
-		throw FileNotFoundException("File not found(cgi)");
-	infile = open(CGI_INFILE, O_WRONLY | O_CREAT, CGI_FILE_MODE);
-	if (infile == FT_ERROR)
-		throw std::runtime_error("Infile open failed");
-	write(infile, request_->getBody().c_str(), request_->getBody().length());
-	outfile = open(CGI_OUTFILE, O_WRONLY | O_CREAT, CGI_FILE_MODE);
-	if (outfile == FT_ERROR) {
-		close(infile);
-		throw std::runtime_error("Outfile open failed");
-	}
-	pid = fork();
-	if (pid < 0) {
-		throw std::runtime_error("Fork failed");
-	} else if (pid == 0) {
-		if (dup2(infile, STDIN_FILENO) == FT_ERROR)
-			exit(EXIT_FAILURE);
-		if (dup2(outfile, STDOUT_FILENO) == FT_ERROR)
-			exit(EXIT_FAILURE);
-		args[0] = const_cast<char *>(std::string(PYTHON_PATH).c_str());
-		args[1] = const_cast<char *>(filePath.c_str());
-		args[2] = nullptr;
-		if (execve(PYTHON_PATH, args, nullptr) == FT_ERROR) // TODO: set env
-			exit(EXIT_FAILURE);
-	}
-	waitpid(pid, &status, 0);
-	close(infile);
-	close(outfile);
-	if (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_FAILURE)
-		throw std::runtime_error("CGI program execution failed");
-	return fileToString(CGI_OUTFILE);
-}
-
 ft_bool Worker::work() {
-	int		ret = FT_TRUE;
+	ft_bool	ret = FT_TRUE;
 
 	try {
 		if (pollfd_->revents == 0)
@@ -130,24 +98,20 @@ ft_bool Worker::work() {
 			ret = recv();
 			if (ret == FT_FALSE)
 				return ret;
-			if (request_->getMethod() == "GET") {
-				std::string filePath = std::string(WEB_ROOT) + request_->getUri();
-				if (isDirectory(filePath))
-					filePath += "/index.html"; // TODO: read default file from config
-				if (isCgi(filePath)) {
-					std::string outFile = executeCgiProgram(filePath);
-					Response response(HTTP_OK, outFile);
-					send(response.createMessage().c_str());
-					remove(CGI_INFILE);
-					remove(CGI_OUTFILE);
-					return ret;
-				}
-				if (isFileExist(filePath) == FT_FALSE)
-					throw FileNotFoundException("File not found");
-				Response response(HTTP_OK, fileToString(filePath));
-				send(response.createMessage().c_str());
-			}
-			return ret;
+		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
+			request_->setBody(originalBody_);
+			validate();
+			isRecvCompleted_ = FT_FALSE;
+			// std::cout << "originalHeader_: " << originalHeader_ << std::endl;
+			// std::cout << "originalBody_: " << originalBody_ << std::endl;
+			// TODO: Config 체크해서 요청 URI가 허용하는 메소드인지 체크
+			filePath_ = std::string(WEB_ROOT) + request_->getUri()->getOriginalUri();
+			if (request_->getMethod() == "GET")
+				return executeGet();
+			if (request_->getMethod() == "POST")
+				return executePost();
+			if (request_->getMethod() == "DELETE")
+				return executeDelete();
 		}
 		return ret;
 	} catch(BadRequestException &e) {
@@ -170,13 +134,18 @@ ft_bool Worker::work() {
 		Response response(HTTP_METHOD_NOT_ALLOWED, fileToString(std::string(ERROR_PAGES_PATH) + "405.html"));
 		send(response.createMessage().c_str());
 		return FT_TRUE;
+	} catch(NotImplementedException &e) {
+		std::cerr << e.what() << std::endl;
+		Response response(HTTP_NOT_IMPLEMENTED, fileToString(std::string(ERROR_PAGES_PATH) + "501.html"));
+		send(response.createMessage().c_str());
+		return FT_TRUE;
 	} catch(InvalidVersionException &e) {
 		std::cerr << e.what() << std::endl;
 		Response response(HTTP_VERSION_NOT_SUPPORTED, fileToString(std::string(ERROR_PAGES_PATH) + "505.html"));
 		send(response.createMessage().c_str());
 		return FT_TRUE;
 	} catch (std::exception &e) {
-		std::cerr << e.what() << std::endl;
+		std::cerr << "std::exception: " << e.what() << std::endl;
 		Response response(HTTP_INTERNAL_SERVER_ERROR, fileToString(std::string(ERROR_PAGES_PATH) + "500.html"));
 		send(response.createMessage().c_str());
 		return FT_TRUE;
@@ -184,9 +153,52 @@ ft_bool Worker::work() {
 }
 
 ft_bool Worker::recv() {
-	int ret;
-	
-	ret = ::recv(pollfd_->fd, buf_, BUFFER_LENGTH, 0);
+	int 		ret;
+	char		buf[BUFFER_LENGTH];
+	std::size_t	index;
+	std::string	transferEncoding;
+
+	memset(buf, 0, BUFFER_LENGTH);
+	ret = ::recv(pollfd_->fd, buf, BUFFER_LENGTH - 1, 0);
+	buf[ret] = '\0';
+	// std::cout << "server received(" << ret << "): " << buf << std::endl;
+	if (isHeaderSet_ == FT_FALSE) {
+		originalHeader_ += buf;
+		index = originalHeader_.find(EMPTY_LINE);
+		if (index != std::string::npos) {
+			isHeaderSet_ = FT_TRUE;
+			originalBody_ = originalHeader_.substr(index + strlen(EMPTY_LINE), std::string::npos);
+			originalHeader_ = originalHeader_.substr(0, index);
+			request_ = new Request(originalHeader_);
+			if (
+				ret < BUFFER_LENGTH && 
+				originalBody_.length() <= std::size_t(atoi(request_->getHeaderValue("content-length").c_str()))
+			)
+				isRecvCompleted_ = FT_TRUE;
+			transferEncoding = request_->getHeaderValue("transfer-encoding");
+			if (
+				transferEncoding == "chunked" &&
+				originalBody_.find(EMPTY_LINE) != std::string::npos
+			)
+				isRecvCompleted_ = FT_TRUE;
+		}
+	} else if (isRecvCompleted_ == FT_FALSE) {
+		originalBody_ += buf;
+		transferEncoding = request_->getHeaderValue("transfer-encoding");
+		if (transferEncoding == "chunked") {
+			if (request_->getHeaderValue("content-length").length() > 0)
+				throw BadRequestException("recv: Chunked message with content length");
+			index = originalBody_.find(EMPTY_LINE);
+			if (index != std::string::npos) {
+				originalBody_ = originalBody_.substr(0, index);
+				isRecvCompleted_ = FT_TRUE;
+			}
+		} else if (transferEncoding.length() > 0 && transferEncoding != "chunked") {
+			throw NotImplementedException("Not Implemented");
+		} else if (originalBody_.length() >= std::size_t(atoi(request_->getHeaderValue("content-length").c_str()))) {
+			isRecvCompleted_ = FT_TRUE;
+		}
+	}
 	if (ret == FT_FALSE) {
 		resetPollfd();
 		std::cout << "Client finished connection." << std::endl;
@@ -194,15 +206,11 @@ ft_bool Worker::recv() {
 	}
 	if (ret == FT_ERROR)
 		throw std::runtime_error("fail: recv()\n");
-	buf_[ret] = '\0';
-	std::cout << "server received(" << ret << "): " << buf_ << std::endl;
-	request_ = new Request(buf_);
-	validate();
 	return FT_TRUE;
 }
 
 void Worker::validate() {
-	std::vector<std::string> allowedMethods;
+	std::vector<std::string>	allowedMethods;
 
 	allowedMethods.push_back("GET");
 	allowedMethods.push_back("POST");
@@ -211,10 +219,48 @@ void Worker::validate() {
 		throw InvalidMethodException("Invalid method");
 	if (request_->getVersion() != "HTTP/1.1")
 		throw InvalidVersionException("HTTP version is not 1.1");
-	const std::vector<std::string> *headerValues = request_->getHeaderValues("host");
-	if (headerValues->size() != 1)
-		throw BadRequestException("Invalid Host header");
-	delete headerValues;
+	if (request_->getHeaderValue("host").length() == 0)
+		throw BadRequestException("Host header does not exist"); 
+}
+
+ft_bool Worker::executeGet() {
+	if (isDirectory(filePath_))
+		filePath_ += "/index.html"; // TODO: read default file from config
+	if (isCgi(filePath_)) {
+		Cgi cgi(request_);
+		std::string result = cgi.execute();
+		Response response(HTTP_OK, result);
+		send(response.createMessage().c_str());
+		return FT_TRUE;
+	}
+	if (isFileExist(filePath_) == FT_FALSE)
+		throw FileNotFoundException("File not found");
+	Response response(HTTP_OK, fileToString(filePath_));
+	send(response.createMessage().c_str());
+	return FT_TRUE;
+}
+
+ft_bool Worker::executePost() {
+	// TODO: validate filePath
+	if (isCgi(filePath_)) {
+		Cgi cgi(request_);
+		std::string result = cgi.execute();
+		Response response(HTTP_CREATED, result);
+		send(response.createMessage().c_str());
+	}
+	return FT_TRUE;
+}
+
+ft_bool Worker::executeDelete() {
+	if (isFileExist(filePath_) == FT_FALSE)
+		throw FileNotFoundException("File not found");
+	if (isDirectory(filePath_) == FT_TRUE)
+		throw ForbiddenException("Forbidden");
+	if (unlink(filePath_.c_str()))
+		throw std::runtime_error("Delete failed");
+	Response response(HTTP_NO_CONTENT, "");
+	send(response.createMessage().c_str());
+	return FT_TRUE;
 }
 
 void Worker::send(const char *str) {

@@ -10,12 +10,13 @@ const char *Master::MasterException::what() const throw() {
 	return message_.c_str();
 }
 
-Master::Master() {
+Master::Master(char **env) {
 	struct sockaddr_in	serverAddress;
-	
+
 	init(serverAddress);
 	bind(serverAddress);
 	listen();
+	setEnv(env);
 }
 
 Master::~Master() {
@@ -28,9 +29,20 @@ Master::~Master() {
 	}
 }
 
+void Master::setEnv(char **originalEnv) {
+	while (originalEnv && *originalEnv) {
+		env_.push_back(std::string(*originalEnv));
+		originalEnv++;
+	}
+}
+
+void Master::addEnv(std::string new_env) {
+	env_.push_back(new_env);
+}
+
 void	Master::init(struct sockaddr_in &serverAddress) {
 	int yes = 1;
-	
+
 	listenSocket_ = socket(PF_INET, SOCK_STREAM, 0);
 	std::cout << "listenSocket: " << listenSocket_ << std::endl;
 	if (listenSocket_ == FT_ERROR)
@@ -55,7 +67,7 @@ void	Master::bind(struct sockaddr_in &serverAddress) {
 
 void	Master::listen() {
 	int ret;
-	
+
 	ret = ::listen(listenSocket_, 2);
 	if (ret == -1) {
 		close(listenSocket_);
@@ -66,7 +78,7 @@ void	Master::listen() {
 void	Master::run() {
 	int	i;
 	int	ret;
-	
+
 	pollfds_[0].fd = listenSocket_;
 	pollfds_[0].events = POLLIN | POLLOUT;
 	pollfds_[0].revents = 0;
@@ -92,7 +104,7 @@ void	Master::run() {
 		while (itBegin != itEnd) {
 			ret = (*itBegin)->work();
 			if (ret == FT_FALSE) {
-				delete *itBegin; 
+				delete *itBegin;
 				itBegin = workers_.erase(itBegin);
 				continue ;
 			}
