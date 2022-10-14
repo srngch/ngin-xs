@@ -21,18 +21,24 @@ private:
 	std::map<std::string, std::string>	headers_;
 	std::string							body_;
 
-	void	parse(const std::vector<std::string> &splitedMessage);
+	void	parseHeader(const std::vector<std::string> &splitedMessage);
+	void	parseChunkedBody(const std::string &originalBody);
+
+	Request();
 
 public:
-	Request(const std::string &originalMessage);
+	Request(const std::string &header);
 	~Request();
 
 	const std::string							&getMethod();
 	const Uri									*getUri();
 	const std::string							&getVersion();
 	const std::map<std::string, std::string>	&getHeaders();
-	const std::string							&getHeaderValue(std::string fieldName);
+	const std::string							getHeaderValue(std::string fieldName);
 	const std::string							&getBody();
+
+	void	setBody(std::string &body);
+	void	appendHeader(std::string fieldName, std::string value);
 };
 
 #endif

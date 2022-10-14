@@ -75,3 +75,12 @@ std::string	createPadding(int width, int length) {
 std::string createPaddedString(int width, const std::string &str) {
 	return createPadding(width, str.length()) + str;
 }
+
+size_t	hexStringToNumber(std::string s) {
+	size_t				n;
+	std::stringstream	ss;
+
+	ss << std::hex << s;
+	ss >> n;
+	return n;
+}
