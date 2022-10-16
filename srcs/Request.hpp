@@ -20,14 +20,15 @@ private:
 	std::string							version_;
 	std::map<std::string, std::string>	headers_;
 	std::string							body_;
+	std::string							filePath_;
+	std::string							originalHeader_;
+	std::string							originalBody_;
 
 	void	parseHeader(const std::vector<std::string> &splitedMessage);
-	void	parseChunkedBody(const std::string &originalBody);
-
-	Request();
+	void	parseChunkedBody();
 
 public:
-	Request(const std::string &header);
+	Request();
 	~Request();
 
 	const std::string							&getMethod();
@@ -36,9 +37,20 @@ public:
 	const std::map<std::string, std::string>	&getHeaders();
 	const std::string							getHeaderValue(std::string fieldName);
 	const std::string							&getBody();
+	const std::string							&getFilePath();
+	const std::string							&getOriginalHeader();
+	const std::string							&getOriginalBody();
 
-	void	setBody(std::string &body);
-	void	appendHeader(std::string fieldName, std::string value);
+	std::size_t	getContentLengthNumber();
+	
+	void	setBody();
+	void	setHeaders();
+	void	setFilePath(const std::string &webRoot);
+	void	setOriginalHeader(const std::string &originalHeader);
+	void	setOriginalBody(const std::string &originalBody);
+
+	void	appendOriginalHeader(const std::string &buf);
+	void	appendOriginalBody(const std::string &buf);
 };
 
 #endif

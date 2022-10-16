@@ -10,18 +10,8 @@
 // \r\n
 // {"username":"test","hashed_password":"hashed_password"}
 
-Request::Request() {}
-
-Request::Request(const std::string &header) {
-	std::vector<std::string>						splitedMessage;
-	std::map<std::string, std::string>::iterator	iter;
-	
-	splitedMessage = split(header, CRLF);
-	parseHeader(splitedMessage);
-
-	for (iter = headers_.begin(); iter != headers_.end(); iter++)
-		std::cout << iter->first << " | " << iter->second << std::endl;
-}
+Request::Request()
+	: uri_(nullptr) {}
 
 Request::~Request() {
 	delete uri_;
@@ -48,8 +38,8 @@ void	Request::parseHeader(const std::vector<std::string> &splitedMessage) {
 	}
 }
 
-void	Request::parseChunkedBody(const std::string &originalBody) {
-	std::vector<std::string>			splitedBody = split(originalBody, CRLF);
+void	Request::parseChunkedBody() {
+	std::vector<std::string>			splitedBody = split(originalBody_, CRLF);
 	std::vector<std::string>::iterator	it;
 	size_t								length;
 
@@ -89,17 +79,61 @@ const std::string &Request::getBody() {
 	return body_;
 }
 
-void	Request::setBody(std::string &body) {
+const std::string &Request::getFilePath() {
+	return filePath_;
+}
+
+const std::string &Request::getOriginalHeader() {
+	return originalHeader_;
+}
+
+const std::string &Request::getOriginalBody() {
+	return originalBody_;
+}
+
+std::size_t Request::getContentLengthNumber() {
+	return atoi(getHeaderValue("content-length").c_str());
+}
+
+
+void	Request::setBody() {
 	if (getHeaderValue("transfer-encoding") == "chunked") {
-		parseChunkedBody(body);
+		parseChunkedBody();
 	} else {
-		std::size_t contentLength = atoi(getHeaderValue("content-length").c_str());
-		body_ = body.substr(0, contentLength);
+		std::size_t contentLength = getContentLengthNumber();
+		body_ = originalBody_.substr(0, contentLength);
 	}
 	// std::cout << "==============" << std::endl;
 	// std::cout << "body_: " << body_ << std::endl;
 }
 
-void	Request::appendHeader(std::string fieldName, std::string value) {
-	headers_.insert(std::pair<std::string, std::string>(fieldName, value));
+void Request::setHeaders() {
+	std::vector<std::string>						splitedMessage;
+	std::map<std::string, std::string>::iterator	iter;
+	
+	splitedMessage = split(originalHeader_, CRLF);
+	parseHeader(splitedMessage);
+
+	for (iter = headers_.begin(); iter != headers_.end(); iter++)
+		std::cout << iter->first << " | " << iter->second << std::endl;
+}
+
+void Request::setFilePath(const std::string &webRoot) {
+	filePath_ = webRoot + uri_->getOriginalUri();
+}
+
+void Request::setOriginalHeader(const std::string &originalHeader) {
+	originalHeader_ = originalHeader;
+}
+
+void Request::setOriginalBody(const std::string &originalBody) {
+	originalBody_ = originalBody;
+}
+
+void Request::appendOriginalHeader(const std::string &buf) {
+	originalHeader_ += buf;
+}
+
+void Request::appendOriginalBody(const std::string &buf) {
+	originalBody_ += buf;
 }

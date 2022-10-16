@@ -26,6 +26,7 @@ public:
 	Response(std::string status, std::string body);
 	~Response();
 	std::string	createMessage();
+	void	appendHeader(std::string fieldName, std::string value);
 };
 
 #endif

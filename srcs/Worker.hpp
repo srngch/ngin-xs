@@ -28,9 +28,6 @@ private:
 	int							connectSocket_;
 	struct pollfd				*pollfd_;
 	Request						*request_;
-	std::string					filePath_;
-	std::string					originalHeader_;
-	std::string					originalBody_;
 	ft_bool						isHeaderSet_;
 	ft_bool						isRecvCompleted_;
 
@@ -41,6 +38,9 @@ private:
 	ft_bool	executeGet();
 	ft_bool	executePost();
 	ft_bool	executeDelete();
+	void	redirect(const std::string &des);
+
+	Worker();
 
 public:
 	Worker(int listenSocket);

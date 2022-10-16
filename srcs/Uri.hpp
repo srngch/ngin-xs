@@ -13,7 +13,7 @@ class Uri {
 private:
 	std::string originalUri_;
 	std::string	uriDir_;
-	std::string	dir_;
+	std::string	dir_;	// 실제 디렉토리 (redirect 설정이 있는 경우 uriDir와 다른 값)
 	std::string	basename_;
 	std::string	pathInfo_;
 	std::string	queryString_;

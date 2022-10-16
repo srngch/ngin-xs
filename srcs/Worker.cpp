@@ -60,8 +60,10 @@ const char *Worker::InvalidVersionException::what() const throw() {
 	return message_.c_str();
 }
 
+Worker::Worker() {}
+
 Worker::Worker(int listenSocket)
-	: isHeaderSet_(FT_FALSE), isRecvCompleted_(FT_FALSE) {
+	: request_(nullptr), isHeaderSet_(FT_FALSE), isRecvCompleted_(FT_FALSE) {
 	struct sockaddr_in	clientAddress;
 	socklen_t			addressLen = sizeof(clientAddress);
 
@@ -99,13 +101,12 @@ ft_bool Worker::work() {
 			if (ret == FT_FALSE)
 				return ret;
 		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
-			request_->setBody(originalBody_);
+			request_->setBody();
 			validate();
+			isHeaderSet_ = FT_FALSE;
 			isRecvCompleted_ = FT_FALSE;
-			// std::cout << "originalHeader_: " << originalHeader_ << std::endl;
-			// std::cout << "originalBody_: " << originalBody_ << std::endl;
 			// TODO: Config 체크해서 요청 URI가 허용하는 메소드인지 체크
-			filePath_ = std::string(WEB_ROOT) + request_->getUri()->getOriginalUri();
+			request_->setFilePath(std::string(WEB_ROOT));
 			if (request_->getMethod() == "GET")
 				return executeGet();
 			if (request_->getMethod() == "POST")
@@ -157,45 +158,46 @@ ft_bool Worker::recv() {
 	char		buf[BUFFER_LENGTH];
 	std::size_t	index;
 	std::string	transferEncoding;
+	std::string	originalHeader;
+	std::string	originalBody;
 
 	memset(buf, 0, BUFFER_LENGTH);
 	ret = ::recv(pollfd_->fd, buf, BUFFER_LENGTH - 1, 0);
 	buf[ret] = '\0';
 	// std::cout << "server received(" << ret << "): " << buf << std::endl;
 	if (isHeaderSet_ == FT_FALSE) {
-		originalHeader_ += buf;
-		index = originalHeader_.find(EMPTY_LINE);
+		delete request_;
+		request_ = new Request();
+		request_->appendOriginalHeader(buf);
+		originalHeader = request_->getOriginalHeader();
+		index = originalHeader.find(EMPTY_LINE);
 		if (index != std::string::npos) {
 			isHeaderSet_ = FT_TRUE;
-			originalBody_ = originalHeader_.substr(index + strlen(EMPTY_LINE), std::string::npos);
-			originalHeader_ = originalHeader_.substr(0, index);
-			request_ = new Request(originalHeader_);
-			if (
-				ret < BUFFER_LENGTH && 
-				originalBody_.length() <= std::size_t(atoi(request_->getHeaderValue("content-length").c_str()))
-			)
+			request_->setOriginalBody(originalHeader.substr(index + strlen(EMPTY_LINE), std::string::npos));
+			request_->setOriginalHeader(originalHeader.substr(0, index));
+			request_->setHeaders();
+			originalBody = request_->getOriginalBody();
+			if (ret < BUFFER_LENGTH && originalBody.length() <= request_->getContentLengthNumber())
 				isRecvCompleted_ = FT_TRUE;
-			transferEncoding = request_->getHeaderValue("transfer-encoding");
-			if (
-				transferEncoding == "chunked" &&
-				originalBody_.find(EMPTY_LINE) != std::string::npos
-			)
+			if (request_->getHeaderValue("transfer-encoding") == "chunked"
+				&& originalBody.find(EMPTY_LINE) != std::string::npos)
 				isRecvCompleted_ = FT_TRUE;
 		}
 	} else if (isRecvCompleted_ == FT_FALSE) {
-		originalBody_ += buf;
+		request_->appendOriginalBody(buf);
 		transferEncoding = request_->getHeaderValue("transfer-encoding");
+		originalBody = request_->getOriginalBody();
 		if (transferEncoding == "chunked") {
 			if (request_->getHeaderValue("content-length").length() > 0)
 				throw BadRequestException("recv: Chunked message with content length");
-			index = originalBody_.find(EMPTY_LINE);
+			index = originalBody.find(EMPTY_LINE);
 			if (index != std::string::npos) {
-				originalBody_ = originalBody_.substr(0, index);
+				request_->setOriginalBody(originalBody.substr(0, index));
 				isRecvCompleted_ = FT_TRUE;
 			}
 		} else if (transferEncoding.length() > 0 && transferEncoding != "chunked") {
 			throw NotImplementedException("Not Implemented");
-		} else if (originalBody_.length() >= std::size_t(atoi(request_->getHeaderValue("content-length").c_str()))) {
+		} else if (originalBody.length() >= request_->getContentLengthNumber()) {
 			isRecvCompleted_ = FT_TRUE;
 		}
 	}
@@ -224,25 +226,32 @@ void Worker::validate() {
 }
 
 ft_bool Worker::executeGet() {
-	if (isDirectory(filePath_))
-		filePath_ += "/index.html"; // TODO: read default file from config
-	if (isCgi(filePath_)) {
+	std::string	filePath;
+
+	filePath = request_->getFilePath();
+	if (isDirectory(filePath) && request_->getUri()->getBaseName().length() > 0) {
+		redirect("http://" + request_->getHeaderValue("host") + request_->getUri()->getOriginalUri() + "/");
+		return FT_TRUE;
+	}
+	if (isDirectory(filePath))
+		filePath += "index.html"; // TODO: read default file from config
+	if (isCgi(filePath)) {
 		Cgi cgi(request_);
 		std::string result = cgi.execute();
 		Response response(HTTP_OK, result);
 		send(response.createMessage().c_str());
 		return FT_TRUE;
 	}
-	if (isFileExist(filePath_) == FT_FALSE)
+	if (isFileExist(filePath) == FT_FALSE)
 		throw FileNotFoundException("File not found");
-	Response response(HTTP_OK, fileToString(filePath_));
+	Response response(HTTP_OK, fileToString(filePath));
 	send(response.createMessage().c_str());
 	return FT_TRUE;
 }
 
 ft_bool Worker::executePost() {
 	// TODO: validate filePath
-	if (isCgi(filePath_)) {
+	if (isCgi(request_->getFilePath())) {
 		Cgi cgi(request_);
 		std::string result = cgi.execute();
 		Response response(HTTP_CREATED, result);
@@ -252,15 +261,24 @@ ft_bool Worker::executePost() {
 }
 
 ft_bool Worker::executeDelete() {
-	if (isFileExist(filePath_) == FT_FALSE)
+	std::string	filePath;
+
+	filePath = request_->getFilePath();
+	if (isFileExist(filePath) == FT_FALSE)
 		throw FileNotFoundException("File not found");
-	if (isDirectory(filePath_) == FT_TRUE)
+	if (isDirectory(filePath) == FT_TRUE)
 		throw ForbiddenException("Forbidden");
-	if (unlink(filePath_.c_str()))
+	if (unlink(filePath.c_str()))
 		throw std::runtime_error("Delete failed");
 	Response response(HTTP_NO_CONTENT, "");
 	send(response.createMessage().c_str());
 	return FT_TRUE;
+}
+
+void	Worker::redirect(const std::string &dest) {
+	Response response(HTTP_MOVED_PERMANENTLY, "");
+	response.appendHeader("location", dest);
+	send(response.createMessage().c_str());
 }
 
 void Worker::send(const char *str) {
