@@ -29,3 +29,7 @@ std::string	Response::createMessage() {
 	message += body_;
 	return message;
 }
+
+void	Response::appendHeader(std::string fieldName, std::string value) {
+	headers_.insert(std::pair<std::string, std::string>(fieldName, value));
+}
