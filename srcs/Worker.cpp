@@ -230,7 +230,7 @@ ft_bool Worker::executeGet() {
 
 	filePath = request_->getFilePath();
 	if (isDirectory(filePath) && request_->getUri()->getBaseName().length() > 0) {
-		redirect("http://" + request_->getHeaderValue("host") + request_->getUri()->getOriginalUri() + "/");
+		redirect(request_->getUri()->getOriginalUri() + "/");
 		return FT_TRUE;
 	}
 	if (isDirectory(filePath))
