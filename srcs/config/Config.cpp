@@ -1,9 +1,4 @@
 #include "Config.hpp"
-#include "../macro.hpp"
-#include "utils.hpp"
-#include <iostream>
-#include <unistd.h>
-#include <fcntl.h>
 
 std::vector<std::string> Config::readAndSplit(const char *filePath) {
 	char						buffer[BUFFER_SIZE + 1];

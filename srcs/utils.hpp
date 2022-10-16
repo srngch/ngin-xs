@@ -19,6 +19,8 @@ std::string ntos (T n)
 }
 
 std::vector<std::string> split(const std::string &str, std::string delim);
+// split 과 동일한 역할을 하지만, delimiter(예: abc)가 통째로 구분점이 되는 것이 아니라 각 문자(a, b, c)가 구분점이 된다는 것이 차이
+std::vector<std::string> parseLine(const std::string &str, std::string delim);
 ft_bool isFileExist(const std::string &filePath);
 std::string fileToString(const std::string &filePath);
 ft_bool isIncluded(const std::string &value, const std::vector<std::string> &array);

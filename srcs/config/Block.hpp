@@ -8,7 +8,7 @@
 # include <vector>
 # include <map>
 # include "../macro.hpp"
-# include "utils.hpp"
+# include "../utils.hpp"
 
 #define directivesMap std::map<std::string, void (Block::*)(std::vector<std::string>)>
 
@@ -31,6 +31,7 @@ private:
 	std::set<std::string>				cgi_;
 
 	ft_bool								check_validation(std::vector<std::string> &tokens, int &index, std::string &directive);
+	std::vector<std::string>			parseHostPort(const std::string &arg);
 
 public:
 	Block();

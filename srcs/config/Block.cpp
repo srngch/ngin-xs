@@ -1,5 +1,43 @@
 #include "Block.hpp"
 
+ft_bool	Block::check_validation(std::vector<std::string> &tokens, int &i, std::string &directive) {
+	directivesMap::iterator	it;
+
+	// ";" 뒤에 오는 토큰이 없이 파일의 끝이면 에러
+	if (i + 1 == static_cast<int>(tokens.size()))
+		throw std::runtime_error("Invalid configuration file: semi-colon should not be the end of the file.\n");
+	// ";" 뒤에 오는 토큰이 "}" 이면 유효
+	if (!strcmp(tokens[i + 1].c_str(), "}"))
+		return FT_TRUE;
+	// ";" 뒤에 오는 토큰이 location 이면 유효
+	if (!strcmp(tokens[i + 1].c_str(), "location"))
+		return FT_TRUE;
+	// ";" 뒤에 오는 토큰이 지시자가 아니면 유효하지 않음
+	it = directivesMap_.find(tokens[i + 1]);
+	if (it == directivesMap_.end())
+		throw std::runtime_error("Invalid configuration file: directive or } should exist after semi-colon.\n");
+	// directive 가 저장되어 있지 않으면 에러
+	if (directive == "")
+		throw std::runtime_error("Invalid configuration file: directive should exist before semi-colon.\n");
+	return FT_TRUE;
+}
+
+std::vector<std::string> Block::parseHostPort(const std::string &arg) {
+	size_t						pos;
+	std::vector<std::string>	args;
+
+	pos = arg.find(":");
+	// x.x.x.x:80 과 같은 형태가 아니면 에러
+	if (pos == std::string::npos || pos == 0 || pos == arg.length() - 1)
+		throw std::runtime_error("Wrong formatted configuration file: Listen x.x.x.x:port\n");
+	// host(x.x.x.x)
+	args.push_back(arg.substr(0, pos));
+	// port(80)
+	args.push_back(arg.substr(pos + 1, arg.length() - 1 - pos));
+
+	return args;
+}
+
 Block::Block() : parent_(nullptr), host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
 	setServerDirectivesMap();
 }
@@ -28,28 +66,6 @@ void Block::setLocationDirectivesMap() {
 
 directivesMap Block::getDirectivesMap() {
 	return directivesMap_;
-}
-
-ft_bool	Block::check_validation(std::vector<std::string> &tokens, int &i, std::string &directive) {
-	directivesMap::iterator	it;
-
-	// ";" 뒤에 오는 토큰이 없이 파일의 끝이면 에러
-	if (i + 1 == static_cast<int>(tokens.size()))
-		throw std::runtime_error("Invalid configuration file: semi-colon should not be the end of the file.\n");
-	// ";" 뒤에 오는 토큰이 "}" 이면 유효
-	if (!strcmp(tokens[i + 1].c_str(), "}"))
-		return FT_TRUE;
-	// ";" 뒤에 오는 토큰이 location 이면 유효
-	if (!strcmp(tokens[i + 1].c_str(), "location"))
-		return FT_TRUE;
-	// ";" 뒤에 오는 토큰이 지시자가 아니면 유효하지 않음
-	it = directivesMap_.find(tokens[i + 1]);
-	if (it == directivesMap_.end())
-		throw std::runtime_error("Invalid configuration file: directive or } should exist after semi-colon.\n");
-	// directive 가 저장되어 있지 않으면 에러
-	if (directive == "")
-		throw std::runtime_error("Invalid configuration file: directive should exist before semi-colon.\n");
-	return FT_TRUE;
 }
 
 ft_bool Block::has_semi_colon(std::vector<std::string> &tokens, int &i, std::vector<std::string> *args, std::string &directive) {
