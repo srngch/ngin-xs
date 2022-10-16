@@ -21,9 +21,9 @@ public:
 	Config(char *filePath);
 	~Config();
 
-	const std::vector<Block>	&getServerBlocks() const;
-	// Block						&getServerBlock(int port);
-	// Block						&getLocationBlock(std::string uri);
+	const std::vector<Block>	&getServerBlocks();
+	const Block					&getServerBlock(int port);
+	const Block					&getLocationBlock(std::string uri);
 };
 
 #endif

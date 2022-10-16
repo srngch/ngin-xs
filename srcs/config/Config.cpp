@@ -43,13 +43,19 @@ void Config::parseConfigFile(const char *filePath) {
 	}
 }
 
-const std::vector<Block> &Config::getServerBlocks() const {
+const std::vector<Block> &Config::getServerBlocks() {
 	return serverBlocks_;
 }
 
-// Block &Config::getServerBlock(int port) {}
+const Block &Config::getServerBlock(int port) {
+	std::vector<Block>::iterator	it;
 
-// Block &Config::getLocationBlock(std::string uri) {}
+	for (it = serverBlocks_.begin(); it != serverBlocks_.end(); it++) {
+		if (it->getPort() == port)
+			return (*it);
+	}
+	return serverBlocks_[0];
+}
 
 Config::Config() {}
 

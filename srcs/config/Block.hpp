@@ -36,6 +36,7 @@ private:
 public:
 	Block();
 	Block(Block *parent);
+	Block &operator=(const Block &origin);
 	
 	void								setServerDirectivesMap();
 	void								setLocationDirectivesMap();
@@ -59,6 +60,8 @@ public:
 	void								setAutoIndex(std::vector<std::string> args);
 	void								setCgi(std::vector<std::string> args);
 
+	Block								*getParent() const;
+	const std::vector<Block>			&getLocationBlocks() const;
 	const std::string					&getHost() const;
 	const int							&getPort() const;
 	const std::set<std::string>			&getServerNames() const;
@@ -73,7 +76,22 @@ public:
 	const std::string					&getAutoIndex() const;
 	const std::set<std::string>			&getCgi() const;
 
+	const Block							&getLocationBlock(std::string uri);
 	void								printBlock();
+
+	class InvalidConfigFileException : public std::exception {
+	private:
+		std::string						message_;
+	public:
+		InvalidConfigFileException(const std::string msg);
+		virtual const char *what() const throw();
+		~InvalidConfigFileException() throw();
+	};
+
+	class InvalidLocationBlockException : public std::exception {
+		virtual const char *what() const throw();
+	};
+
 };
 
 #endif
