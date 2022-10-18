@@ -2,9 +2,10 @@
 
 import cgi, os, sys
 import datetime
-import cgitb
+import cgitb; cgitb.enable()
 from mimetypes import guess_extension
-from urllib import request; cgitb.enable()
+
+WEB_UPLOAD = "./html/upload"
 
 try:
     # get environment variables
@@ -23,6 +24,8 @@ try:
     """
     message = ""
     if (request_method == 'POST' and request_uri == '/upload.py'):
+        if not os.path.exists(WEB_UPLOAD):
+            os.makedirs(WEB_UPLOAD)
         if buf:
             fn = os.path.basename(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
             extension = guess_extension(content_type.partition(';')[0].strip())
@@ -34,6 +37,10 @@ try:
         else:
             message = 'No file was uploaded'
 
+    img_tag = ""
+    if (content_type.startswith("image/")):
+        img_tag = f'<img src="/upload/{fn}" alt="uploaded image"/>'
+
     body = f'''<html>
     <head>
         <title>Python CGI</title>
@@ -42,7 +49,6 @@ try:
     <body>
         <h1>python-cgi: {request_uri}</h1>
         <h3>buf</h3>
-        <pre>{buf}</pre>
         <ul>
             <li>path_info: {path_info}</li>
             <li>request_method: {request_method}</li>
@@ -50,11 +56,13 @@ try:
             <li>content_length: {content_length}</li>
             <li>message: {message}</li>
         </ul>
+        {img_tag}
     </body>
     </html>'''
 
 
     print("Content-type: text/html")
+    print(f"Content-Length: {len(body)}")
     print()
     print(body)
 
