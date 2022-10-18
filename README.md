@@ -65,21 +65,42 @@ NGIN-XS is a simple, lightweight, and fast web server written in C++.
 
 ### 2022-10-03
 
-- Implement calling CGI program with GET: [Issue](https://github.com/srngch/ngin-xs/issues/15), [PR](https://github.com/srngch/ngin-xs/pull/16)
+- Implemented calling CGI program with GET: [Issue](https://github.com/srngch/ngin-xs/issues/15), [PR](https://github.com/srngch/ngin-xs/pull/16)
 
 ### 2022-10-10
 
-- Implement autoindex: [Issue](https://github.com/srngch/ngin-xs/issues/17), [PR](https://github.com/srngch/ngin-xs/pull/20)
-- Implement POST method: [Issue](https://github.com/srngch/ngin-xs/issues/14), [PR](https://github.com/srngch/ngin-xs/pull/22)
-- Change header data type: [Issue](https://github.com/srngch/ngin-xs/issues/24), [PR](https://github.com/srngch/ngin-xs/pull/26)
+- Implemented autoindex: [Issue](https://github.com/srngch/ngin-xs/issues/17), [PR](https://github.com/srngch/ngin-xs/pull/20)
+- Implemented POST method: [Issue](https://github.com/srngch/ngin-xs/issues/14), [PR](https://github.com/srngch/ngin-xs/pull/22)
+- Changed header data type: [Issue](https://github.com/srngch/ngin-xs/issues/24), [PR](https://github.com/srngch/ngin-xs/pull/26)
 - [WIP] Parse configuration file: [Issue](https://github.com/srngch/ngin-xs/issues/18)
 
 ### 2022-10-12
 
-- Implement DELETE method: [Issue](https://github.com/srngch/ngin-xs/issues/21), [PR](https://github.com/srngch/ngin-xs/pull/28)
+- Implemented DELETE method: [Issue](https://github.com/srngch/ngin-xs/issues/21), [PR](https://github.com/srngch/ngin-xs/pull/28)
 - [WIP] Parse configuration file: [Issue](https://github.com/srngch/ngin-xs/issues/18)
 
 ### 2022-10-13
 
-- Handle chunked response: [Issue](https://github.com/srngch/ngin-xs/issues/30), [PR](https://github.com/srngch/ngin-xs/pull/33)
+- Handled chunked request: [Issue](https://github.com/srngch/ngin-xs/issues/30), [PR](https://github.com/srngch/ngin-xs/pull/33)
 - [WIP] Parse configuration file: [Issue](https://github.com/srngch/ngin-xs/issues/18)
+
+### 2022-10-14
+
+- Parsed configuration file: [Issue](https://github.com/srngch/ngin-xs/issues/18), [PR](https://github.com/srngch/ngin-xs/pull/35)
+- [WIP] Implement directory path redirection: [Issue](https://github.com/srngch/ngin-xs/issues/19)
+
+### 2022-10-15
+
+- Implemented directory path redirection: [Issue](https://github.com/srngch/ngin-xs/issues/19), [PR](https://github.com/srngch/ngin-xs/pull/36)
+- [WIP] Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34)
+- [WIP] Implement python-cgi: [Issue](https://github.com/srngch/ngin-xs/issues/32)
+
+### 2022-10-17
+
+- [WIP] Implement python-cgi: [Issue](https://github.com/srngch/ngin-xs/issues/32)
+
+### 2022-10-18
+
+- Implemented python-cgi: [Issue](https://github.com/srngch/ngin-xs/issues/32), [PR](https://github.com/srngch/ngin-xs/pull/37)
+- Updated function to set response header: [Issue](https://github.com/srngch/ngin-xs/issues/25), [PR](https://github.com/srngch/ngin-xs/pull/38)
+- [WIP] Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34)
