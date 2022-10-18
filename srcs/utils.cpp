@@ -56,6 +56,14 @@ std::string fileToString(const std::string &filePath) {
 	return str;
 }
 
+std::vector<char> fileToCharV(const std::string &filePath) {
+	std::ifstream	openFile(filePath, std::ios::binary);
+
+	std::vector<char> ret((std::istreambuf_iterator<char>(openFile)), std::istreambuf_iterator<char>());
+	openFile.close();
+	return ret;
+}
+
 ft_bool isIncluded(const std::string &value, const std::vector<std::string> &array)
 {
 	return (std::find(array.begin(), array.end(), value) != array.end());
@@ -100,4 +108,8 @@ size_t	hexStringToNumber(std::string s) {
 	ss << std::hex << s;
 	ss >> n;
 	return n;
+}
+
+std::vector<char> stringToCharV(std::string s) {
+	return std::vector<char>(s.begin(), s.end());
 }

@@ -14,7 +14,10 @@ void Cgi::setEnv() {
 
 	std::string uri = request_->getUri()->getOriginalUri();
 
-	env_.push_back("CONTENT_LENGTH=" + ntos(request_->getBody().length()));
+	std::string content_length = request_->getHeaderValue("content-length");
+	if (content_length == "")
+		content_length = ntos(request_->getBody().size());
+	env_.push_back("CONTENT_LENGTH=" + content_length);
 	env_.push_back("CONTENT_TYPE=" + request_->getHeaderValue("content-type"));
 
 	env_.push_back("GATEWAY_INTERFACE=CGI/1.1");
@@ -102,7 +105,7 @@ std::string	Cgi::execute() {
 		if (dup2(devNull, STDERR_FILENO) == FT_ERROR)
 			exit(EXIT_FAILURE);
 
-		execve(std::string(WEB_ROOT + request_->getUri()->getOriginalUri()).c_str(), NULL, getEnv());
+		execve("./cgi-bin/python-cgi.py", NULL, getEnv()); // TODO: get cgi from config
 
 		/* if execve() failed */
 		exit(EXIT_FAILURE);
@@ -114,9 +117,12 @@ std::string	Cgi::execute() {
 
 	/* if POST method, write request body to child process */
 	if (request_->getMethod() == "POST") {
-		write(writePipe[FT_PIPEIN], request_->getBody().c_str(), request_->getBody().size());
-		// TODO: send eof
-		write(writePipe[FT_PIPEIN], "\0", 1);
+		std::vector<char> body = request_->getBody();
+		std::vector<char>::iterator it = body.begin();
+		while (it != body.end()) {
+			write(writePipe[FT_PIPEIN], &(*it), 1);
+			it++;
+		}
 	}
 	close(writePipe[FT_PIPEIN]);
 

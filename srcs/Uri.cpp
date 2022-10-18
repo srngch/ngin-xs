@@ -45,11 +45,11 @@ Uri::Uri(const std::string &originalUri) {
 	uriDir_ = tmp;
 	dir_ = uriDir_;
 
-	std::cout << "[Uri Class]" << std::endl;
-	std::cout << "uriDir: " << uriDir_ << std::endl;
-	std::cout << "basename_: " << basename_ << std::endl;
-	std::cout << "pathInfo_: " << pathInfo_ << std::endl;
-	std::cout << "queryString_: " << queryString_ << std::endl << std::endl;
+	// std::cout << "[Uri Class]" << std::endl;
+	// std::cout << "uriDir: " << uriDir_ << std::endl;
+	// std::cout << "basename_: " << basename_ << std::endl;
+	// std::cout << "pathInfo_: " << pathInfo_ << std::endl;
+	// std::cout << "queryString_: " << queryString_ << std::endl << std::endl;
 }
 
 Uri::~Uri() {}

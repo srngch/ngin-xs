@@ -18,14 +18,17 @@ private:
 	int										statusCode_;
 	std::string								statusLine_;
 	std::map<std::string, std::string>		headers_;
-	std::string								body_;
+	std::vector<char>						body_;
 
 	void makeDefaultHeaders();
 
 public:
-	Response(std::string status, std::string body);
+	Response(std::string status);
+	Response(std::string status, const std::vector<char> &body);
 	~Response();
-	std::string	createMessage();
+
+	std::vector<char>	createMessage();
+
 	void	appendHeader(std::string fieldName, std::string value);
 };
 

@@ -63,7 +63,7 @@ const char *Worker::InvalidVersionException::what() const throw() {
 Worker::Worker() {}
 
 Worker::Worker(int listenSocket)
-	: request_(nullptr), isHeaderSet_(FT_FALSE), isRecvCompleted_(FT_FALSE) {
+	: request_(nullptr), isHeaderSet_(FT_FALSE), isRecvCompleted_(FT_FALSE), bodyLength_(0) {
 	struct sockaddr_in	clientAddress;
 	socklen_t			addressLen = sizeof(clientAddress);
 
@@ -117,87 +117,91 @@ ft_bool Worker::work() {
 		return ret;
 	} catch(BadRequestException &e) {
 		std::cerr << e.what() << std::endl;
-		Response response(HTTP_BAD_REQUEST, fileToString(std::string(ERROR_PAGES_PATH) + "400.html"));
-		send(response.createMessage().c_str());
+		Response response(HTTP_BAD_REQUEST, fileToCharV(std::string(ERROR_PAGES_PATH) + "400.html"));
+		send(response.createMessage());
 		return FT_TRUE;
 	} catch(ForbiddenException &e) {
 		std::cerr << e.what() << std::endl;
-		Response response(HTTP_FORBIDDEN, fileToString(std::string(ERROR_PAGES_PATH) + "403.html"));
-		send(response.createMessage().c_str());
+		Response response(HTTP_FORBIDDEN, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "403.html")));
+		send(response.createMessage());
 		return FT_TRUE;
 	} catch(FileNotFoundException &e) {
 		std::cerr << e.what() << std::endl;
-		Response response(HTTP_NOT_FOUND, fileToString(std::string(ERROR_PAGES_PATH) + "404.html"));
-		send(response.createMessage().c_str());
+		Response response(HTTP_NOT_FOUND, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "404.html")));
+		send(response.createMessage());
 		return FT_TRUE;
 	} catch(InvalidMethodException &e) {
 		std::cerr << e.what() << std::endl;
-		Response response(HTTP_METHOD_NOT_ALLOWED, fileToString(std::string(ERROR_PAGES_PATH) + "405.html"));
-		send(response.createMessage().c_str());
+		Response response(HTTP_METHOD_NOT_ALLOWED, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "405.html")));
+		send(response.createMessage());
 		return FT_TRUE;
 	} catch(NotImplementedException &e) {
 		std::cerr << e.what() << std::endl;
-		Response response(HTTP_NOT_IMPLEMENTED, fileToString(std::string(ERROR_PAGES_PATH) + "501.html"));
-		send(response.createMessage().c_str());
+		Response response(HTTP_NOT_IMPLEMENTED, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "501.html")));
+		send(response.createMessage());
 		return FT_TRUE;
 	} catch(InvalidVersionException &e) {
 		std::cerr << e.what() << std::endl;
-		Response response(HTTP_VERSION_NOT_SUPPORTED, fileToString(std::string(ERROR_PAGES_PATH) + "505.html"));
-		send(response.createMessage().c_str());
+		Response response(HTTP_VERSION_NOT_SUPPORTED, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "505.html")));
+		send(response.createMessage());
 		return FT_TRUE;
 	} catch (std::exception &e) {
 		std::cerr << "std::exception: " << e.what() << std::endl;
-		Response response(HTTP_INTERNAL_SERVER_ERROR, fileToString(std::string(ERROR_PAGES_PATH) + "500.html"));
-		send(response.createMessage().c_str());
+		Response response(HTTP_INTERNAL_SERVER_ERROR, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "500.html")));
+		send(response.createMessage());
 		return FT_TRUE;
 	}
 }
 
 ft_bool Worker::recv() {
-	int 		ret;
-	char		buf[BUFFER_LENGTH];
-	std::size_t	index;
-	std::string	transferEncoding;
-	std::string	originalHeader;
-	std::string	originalBody;
+	int 						ret;
+	char						buf[BUFFER_LENGTH];
+	std::string					transferEncoding;
+	std::vector<char>			originalHeader;
+	std::vector<char>			originalBody;
+	const char 					*crlf = EMPTY_LINE;
+	std::vector<char>::iterator it;
 
 	memset(buf, 0, BUFFER_LENGTH);
 	ret = ::recv(pollfd_->fd, buf, BUFFER_LENGTH - 1, 0);
 	buf[ret] = '\0';
-	// std::cout << "server received(" << ret << "): " << buf << std::endl;
 	if (isHeaderSet_ == FT_FALSE) {
 		delete request_;
 		request_ = new Request();
-		request_->appendOriginalHeader(buf);
+		request_->appendOriginalHeader(buf, ret);
 		originalHeader = request_->getOriginalHeader();
-		index = originalHeader.find(EMPTY_LINE);
-		if (index != std::string::npos) {
+		it = std::search(originalHeader.begin(), originalHeader.end(), crlf, crlf + strlen(crlf));
+		if (it != originalBody.end()) {
 			isHeaderSet_ = FT_TRUE;
-			request_->setOriginalBody(originalHeader.substr(index + strlen(EMPTY_LINE), std::string::npos));
-			request_->setOriginalHeader(originalHeader.substr(0, index));
+			request_->setOriginalBody(std::vector<char>(it + strlen(EMPTY_LINE), originalHeader.end()));
+			request_->setOriginalHeader(std::vector<char>(originalHeader.begin(), it));
+			bodyLength_ = ret - request_->getOriginalHeader().size() - strlen(EMPTY_LINE);
 			request_->setHeaders();
 			originalBody = request_->getOriginalBody();
-			if (ret < BUFFER_LENGTH && originalBody.length() <= request_->getContentLengthNumber())
+			if (ret < BUFFER_LENGTH && bodyLength_ >= request_->getContentLengthNumber())
 				isRecvCompleted_ = FT_TRUE;
+			it = std::search(originalBody.begin(), originalBody.end(), crlf, crlf + strlen(crlf));
 			if (request_->getHeaderValue("transfer-encoding") == "chunked"
-				&& originalBody.find(EMPTY_LINE) != std::string::npos)
+				&& it == originalBody.end()) {
 				isRecvCompleted_ = FT_TRUE;
+			}
 		}
 	} else if (isRecvCompleted_ == FT_FALSE) {
-		request_->appendOriginalBody(buf);
+		request_->appendOriginalBody(buf, ret);
+		bodyLength_ += ret;
 		transferEncoding = request_->getHeaderValue("transfer-encoding");
 		originalBody = request_->getOriginalBody();
 		if (transferEncoding == "chunked") {
 			if (request_->getHeaderValue("content-length").length() > 0)
 				throw BadRequestException("recv: Chunked message with content length");
-			index = originalBody.find(EMPTY_LINE);
-			if (index != std::string::npos) {
-				request_->setOriginalBody(originalBody.substr(0, index));
+			it = std::search(originalBody.begin(), originalBody.end(), crlf, crlf + strlen(crlf));
+			if (it != originalBody.end()) {
+				request_->setOriginalBody(std::vector<char>(originalBody.begin(), it));
 				isRecvCompleted_ = FT_TRUE;
 			}
 		} else if (transferEncoding.length() > 0 && transferEncoding != "chunked") {
 			throw NotImplementedException("Not Implemented");
-		} else if (originalBody.length() >= request_->getContentLengthNumber()) {
+		} else if (bodyLength_ >= request_->getContentLengthNumber()) {
 			isRecvCompleted_ = FT_TRUE;
 		}
 	}
@@ -222,7 +226,7 @@ void Worker::validate() {
 	if (request_->getVersion() != "HTTP/1.1")
 		throw InvalidVersionException("HTTP version is not 1.1");
 	if (request_->getHeaderValue("host").length() == 0)
-		throw BadRequestException("Host header does not exist"); 
+		throw BadRequestException("Host header does not exist");
 }
 
 ft_bool Worker::executeGet() {
@@ -238,14 +242,14 @@ ft_bool Worker::executeGet() {
 	if (isCgi(filePath)) {
 		Cgi cgi(request_);
 		std::string result = cgi.execute();
-		Response response(HTTP_OK, result);
-		send(response.createMessage().c_str());
+		Response response(HTTP_OK, stringToCharV(result));
+		send(response.createMessage());
 		return FT_TRUE;
 	}
 	if (isFileExist(filePath) == FT_FALSE)
 		throw FileNotFoundException("File not found");
-	Response response(HTTP_OK, fileToString(filePath));
-	send(response.createMessage().c_str());
+	Response response(HTTP_OK, fileToCharV(filePath));
+	send(response.createMessage());
 	return FT_TRUE;
 }
 
@@ -254,8 +258,8 @@ ft_bool Worker::executePost() {
 	if (isCgi(request_->getFilePath())) {
 		Cgi cgi(request_);
 		std::string result = cgi.execute();
-		Response response(HTTP_CREATED, result);
-		send(response.createMessage().c_str());
+		Response response(HTTP_CREATED, stringToCharV(result));
+		send(response.createMessage());
 	}
 	return FT_TRUE;
 }
@@ -270,23 +274,28 @@ ft_bool Worker::executeDelete() {
 		throw ForbiddenException("Forbidden");
 	if (unlink(filePath.c_str()))
 		throw std::runtime_error("Delete failed");
-	Response response(HTTP_NO_CONTENT, "");
-	send(response.createMessage().c_str());
+	Response response(HTTP_NO_CONTENT);
+	send(response.createMessage());
 	return FT_TRUE;
 }
 
 void	Worker::redirect(const std::string &dest) {
-	Response response(HTTP_MOVED_PERMANENTLY, "");
+	Response response(HTTP_MOVED_PERMANENTLY);
 	response.appendHeader("location", dest);
-	send(response.createMessage().c_str());
+	send(response.createMessage());
 }
 
-void Worker::send(const char *str) {
-	int	ret = FT_TRUE;
+void Worker::send(const std::vector<char> &message) {
+	int							ret;
+	std::vector<char>			m = message;
+	std::vector<char>::iterator	it = m.begin();
 
-	ret = ::send(pollfd_->fd, str, std::strlen(str), 0);
-	if (ret == FT_ERROR)
-		throw std::runtime_error("fail: send()\n");
+	while (it != m.end()) {
+		ret = ::send(pollfd_->fd, &(*it), 1, 0);
+		if (ret == FT_ERROR)
+			throw std::runtime_error("fail: send()\n");
+		it++;
+	}
 }
 
 void Worker::resetPollfd() {

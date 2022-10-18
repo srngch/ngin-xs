@@ -6,7 +6,7 @@ TARGET = webserv
 SRCS_FILES = main.cpp utils.cpp \
 			Master.cpp Worker.cpp Request.cpp Response.cpp Cgi.cpp Uri.cpp \
 			autoindex/AutoindexData.cpp autoindex/Autoindex.cpp \
-			conf/Config.cpp conf/Block.cpp
+			config/Config.cpp config/Block.cpp
 SRCS = $(addprefix ./srcs/, $(SRCS_FILES))
 OBJS = $(SRCS:.cpp=.o)
 
