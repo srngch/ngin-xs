@@ -15,6 +15,7 @@
 #include <fstream>
 #include <cstdio>
 #include <string>
+#include <vector>
 #include "macro.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
@@ -30,9 +31,10 @@ private:
 	Request						*request_;
 	ft_bool						isHeaderSet_;
 	ft_bool						isRecvCompleted_;
+	std::size_t					bodyLength_;
 
 	ft_bool	recv();
-	void	send(const char *str);
+	void	send(const std::vector<char> &message);
 	void	resetPollfd();
 	void	validate();
 	ft_bool	executeGet();
