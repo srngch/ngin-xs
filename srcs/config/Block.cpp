@@ -1,40 +1,43 @@
 #include "Block.hpp"
 #include "Config.hpp"
 
-std::vector<std::string> Block::createArgsVector(std::string arg) {
-	std::vector<std::string>	args;
+Block Block::defaultBlock_;
 
-	args.push_back(arg);
-	return args;
-}
+void Block::setDefaultBlock(const char *file) {
+	std::vector<std::string>	tokens;
+	int							tokenSize;
+	char						buffer[BUFFER_SIZE + 1];
+	int							fd;
+	int							ret;
+	std::string					line = "";
 
-void Block::setDefaultErrorPages() {
-	std::vector<std::string>		args;
+	memset(buffer, 0, sizeof(buffer));
+	fd = open(file, O_RDONLY);
+	if (fd <= 0)
+		throw std::runtime_error("fail: Opening configuration file\n");
+	ret = read(fd, buffer, BUFFER_SIZE);
+	while (ret > 0) {
+		buffer[ret] = '\0';
+		line += buffer;
+		ret = read(fd, buffer, BUFFER_SIZE);
+	}
+	if (ret == FT_ERROR) {
+		close(fd);
+		throw std::runtime_error("fail: Reading configuration file\n");
+	}
+	tokens = parseLine(line, std::string(" \n\t"));
+	close(fd);
+	tokenSize = tokens.size();
+	for (int i = 0; i < tokenSize; i++) {
+		if (tokens[i] == "server") {
+			Block	tmpServerBlock;
 
-	args.push_back("400");
-	args.push_back(DEFAULT_ERROR_PAGE_400);
-	setErrorPages(args);
-	args.clear();
-	args.push_back("403");
-	args.push_back(DEFAULT_ERROR_PAGE_403);
-	setErrorPages(args);
-	args.clear();
-	args.push_back("404");
-	args.push_back(DEFAULT_ERROR_PAGE_404);
-	setErrorPages(args);
-	args.clear();
-	args.push_back("405");
-	args.push_back(DEFAULT_ERROR_PAGE_405);
-	setErrorPages(args);
-	args.clear();
-	args.push_back("500");
-	args.push_back(DEFAULT_ERROR_PAGE_500);
-	setErrorPages(args);
-	args.clear();
-	args.push_back("505");
-	args.push_back(DEFAULT_ERROR_PAGE_505);
-	setErrorPages(args);
-	args.clear();
+			tmpServerBlock.setDefaultServerDirectivesMap();
+			tmpServerBlock.parseServerBlock(tokens, ++i);
+			Block::defaultBlock_ = tmpServerBlock;
+		} else
+			throw std::runtime_error("Wrong default configuration file.\n");
+	}
 }
 
 ft_bool	Block::check_validation(std::vector<std::string> &tokens, int &i, std::string &directive) {
@@ -79,24 +82,15 @@ Block::Block() : parent_(nullptr), host_(""), port_(0), webRoot_(""), clientMaxB
 	setServerDirectivesMap();
 }
 
-Block::Block(Block *parent) : parent_(parent), host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
+Block::Block(Block *parent) : host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
+	setParent(parent);
 	setLocationDirectivesMap();
 }
 
-void Block::setDefaultBlock() {
-	setHost(DEFAULT_HOST);
-	setPort(DEFAULT_PORT);
-	setServerNames(createArgsVector(DEFAULT_SERVER_NAME));
-	setWebRoot(createArgsVector(DEFAULT_WEB_ROOT));
-	setClientMaxBodySize(DEFAULT_CLIENT_MAX_BODY_SIZE);
-	setDefaultErrorPages();
-	setAutoIndex(createArgsVector(DEFAULT_AUTO_INDEX));
-	setAllowedMethods(createArgsVector(DEFAULT_ALLOWED_METHOD));
-	setIndex(createArgsVector(DEFAULT_INDEX));
-}
-
 Block &Block::operator=(const Block &origin) {
-	parent_ = origin.parent_;
+	std::vector<Block>::iterator	it;
+
+	setParent(origin.parent_);
 	locationBlocks_ = origin.locationBlocks_;
 	directivesMap_ = origin.directivesMap_;
 	host_ = origin.host_;
@@ -109,7 +103,19 @@ Block &Block::operator=(const Block &origin) {
 	uri_ = origin.uri_;
 	index_ = origin.index_;
 	autoIndex_ = origin.autoIndex_;
+	cgi_ = origin.cgi_;
 	return (*this);
+}
+
+void Block::setDefaultServerDirectivesMap() {
+	directivesMap_["listen"] = &Block::setHostPort;
+	directivesMap_["server_name"] = &Block::setServerNames;
+	directivesMap_["root"] = &Block::setWebRoot;
+	directivesMap_["allowed_methods"] = &Block::setAllowedMethods;
+	directivesMap_["client_max_body_size"] = &Block::setClientMaxBodySize;
+	directivesMap_["error_page"] = &Block::setErrorPages;
+	directivesMap_["index"] = &Block::setIndex;
+	directivesMap_["autoindex"] = &Block::setAutoIndex;
 }
 
 void Block::setServerDirectivesMap() {
@@ -168,10 +174,10 @@ void Block::parseServerBlock(std::vector<std::string> &tokens, int &i) {
 		if (it == directivesMap_.end()) {
 			// 로케이션 블록 파싱
 			if (tokens[i] == "location") {
-				Block	tmpLocationBlock(this);
+				Block	*tmpLocationBlock = new Block(this);
 
-				std::cout << "parent: " << this << std::endl;
-				tmpLocationBlock.parseLocationBlock(tokens, ++i);
+				tmpLocationBlock->setLocationDirectivesMap();
+				tmpLocationBlock->parseLocationBlock(tokens, ++i);
 				locationBlocks_.push_back(tmpLocationBlock);
 			}
 			else {
@@ -213,9 +219,9 @@ void Block::parseLocationBlock(std::vector<std::string> &tokens, int &i) {
 		if (it == directivesMap_.end()) {
 			// 로케이션 블록 파싱
 			if (tokens[i] == "location") {
-				Block	tmpLocationBlock(this);
+				Block	*tmpLocationBlock = new Block(this);
 	
-				tmpLocationBlock.parseLocationBlock(tokens, ++i);
+				tmpLocationBlock->parseLocationBlock(tokens, ++i);
 				locationBlocks_.push_back(tmpLocationBlock);
 			}
 			else {
@@ -238,7 +244,13 @@ void Block::parseLocationBlock(std::vector<std::string> &tokens, int &i) {
 }
 
 void Block::setParent(Block *parent) {
-	parent_ = parent;
+	if (parent)
+	{
+		parent_ = new Block();
+		*parent_ = *parent;
+	}
+	else
+		parent_ = NULL;
 }
 
 void Block::setUri(std::string uri) {
@@ -285,12 +297,9 @@ void Block::setWebRoot(std::vector<std::string> args) {
 }
 
 void Block::setCgi(std::vector<std::string> args) {
-	std::vector<std::string>::iterator	it;
-
-	if (args.empty())
+	if (args.size() != 1)
 		throw InvalidConfigFileException("cgi\n");
-	for (it = args.begin(); it != args.end(); it++)
-		cgi_.insert(*it);
+	cgi_ = args[0];
 }
 
 void Block::setAllowedMethods(std::vector<std::string> args) {
@@ -324,26 +333,20 @@ void Block::setAutoIndex(std::vector<std::string> args) {
 	autoIndex_ = args[0];
 }
 
-Block *Block::getParent() const {
-	return parent_;
+const Block &Block::getParent() const {
+	return (*parent_);
 }
 
-const std::vector<Block> &Block::getLocationBlocks() const {
+const std::vector<Block *> &Block::getLocationBlocks() const {
 	return locationBlocks_;
 }
 
 const std::string &Block::getHost() const {
-	std::cout << "parent: " << parent_ << std::endl;
-	std::cout << "parent port: " << parent_->getPort() << std::endl;
-	if (host_ != "") {
-		// std::cout << "==" << host_ << std::endl;
+	if (host_ != "")
 		return host_;
-	}
-	else if (host_ == "" && parent_) {
-		// std::cout << "------" << std::endl;
+	else if (host_ == "" && parent_)
 		return (parent_->getHost());
-	}
-	return Config::defaultBlock_.getHost();
+	return Block::defaultBlock_.getHost();
 }
 
 const int &Block::getPort() const {
@@ -351,7 +354,7 @@ const int &Block::getPort() const {
 		return port_;
 	else if (port_ == 0 && parent_)
 		return (parent_->getPort());
-	return Config::defaultBlock_.getPort();
+	return Block::defaultBlock_.getPort();
 }
 
 const std::set<std::string> &Block::getServerNames() const {
@@ -359,7 +362,7 @@ const std::set<std::string> &Block::getServerNames() const {
 		return serverNames_;
 	else if (serverNames_.empty() && parent_)
 		return (parent_->getServerNames());
-	return Config::defaultBlock_.getServerNames();
+	return Block::defaultBlock_.getServerNames();
 }
 
 const std::string &Block::getWebRoot() const {
@@ -367,7 +370,7 @@ const std::string &Block::getWebRoot() const {
 		return webRoot_;
 	else if (webRoot_ == "" && parent_)
 		return (parent_->getWebRoot());
-	return Config::defaultBlock_.getWebRoot();
+	return Block::defaultBlock_.getWebRoot();
 }
 
 const std::set<std::string> &Block::getAllowedMethods() const {
@@ -375,7 +378,7 @@ const std::set<std::string> &Block::getAllowedMethods() const {
 		return allowedMethods_;
 	else if (allowedMethods_.empty() && parent_)
 		return (parent_->getAllowedMethods());
-	return Config::defaultBlock_.getAllowedMethods();
+	return Block::defaultBlock_.getAllowedMethods();
 }
 
 const int &Block::getClientMaxBodySize() const {
@@ -383,7 +386,7 @@ const int &Block::getClientMaxBodySize() const {
 		return clientMaxBodySize_;
 	else if (clientMaxBodySize_  == 0 && parent_)
 		return (parent_->getClientMaxBodySize());
-	return Config::defaultBlock_.getClientMaxBodySize();
+	return Block::defaultBlock_.getClientMaxBodySize();
 }
 
 const std::map<int, std::string> &Block::getErrorPages() const {
@@ -391,7 +394,7 @@ const std::map<int, std::string> &Block::getErrorPages() const {
 		return (errorPages_);
 	else if (errorPages_.empty() && parent_)
 		return (parent_->getErrorPages());
-	return Config::defaultBlock_.getErrorPages();
+	return Block::defaultBlock_.getErrorPages();
 }
 
 const std::string &Block::getErrorPage(int num) const {
@@ -401,7 +404,7 @@ const std::string &Block::getErrorPage(int num) const {
 	pages = getErrorPages();
 	it = pages.find(num);
 	if (it == pages.end())
-		return Config::defaultBlock_.getErrorPage(num);
+		return Block::defaultBlock_.getErrorPage(num);
 	return (it->second);
 }
 
@@ -414,7 +417,7 @@ const std::string &Block::getIndex() const {
 		return (index_);
 	else if (index_ == "" && parent_)
 		return (parent_->getIndex());
-	return Config::defaultBlock_.getIndex();
+	return Block::defaultBlock_.getIndex();
 }
 
 const std::string &Block::getAutoIndex() const {
@@ -422,29 +425,36 @@ const std::string &Block::getAutoIndex() const {
 		return (autoIndex_);
 	else if (autoIndex_ == "" && parent_)
 		return (parent_->getAutoIndex());
-	return Config::defaultBlock_.getAutoIndex();
+	return Block::defaultBlock_.getAutoIndex();
 }
 
-const std::set<std::string> &Block::getCgi() const {
-	if (!cgi_.empty())
+const std::string &Block::getCgi() const {
+	if (cgi_ != "")
 		return (cgi_);
-	else if (cgi_.empty() && parent_)
+	else if (cgi_ == "" && parent_)
 		return (parent_->getCgi());
 	throw InvalidConfigFileException("no cgi set\n");
 }
 
 const Block &Block::getLocationBlock(std::string uri) {
-	std::vector<Block>::iterator	it;
+	std::vector<Block *>::iterator	it;
+	Block							ret;
 
 	if (uri_ == uri)
 		return *this;
-	for (it = locationBlocks_.begin(); it != locationBlocks_.end(); it++)
-		return (it->getLocationBlock(uri));
-	throw InvalidLocationBlockException();
+	if (locationBlocks_.empty())
+		return Block::defaultBlock_;
+	for (it = locationBlocks_.begin(); it != locationBlocks_.end(); it++) {
+		ret = (*it)->getLocationBlock(uri);
+		if (ret.getUri() != "")
+			return ((*it)->getLocationBlock(uri));
+	}
+	return Block::defaultBlock_;
 }
 
 void Block::printBlock() const {
 	std::set<std::string>::iterator			itset;
+	std::map<int, std::string>				pages;
 	std::map<int, std::string>::iterator	itmap;
 
 	std::cout << "Host: " << getHost() << std::endl;
@@ -457,21 +467,22 @@ void Block::printBlock() const {
 	std::cout << getWebRoot() << std::endl;
 	std::cout << "Client max body size: ";
 	std::cout << getClientMaxBodySize() << std::endl;
-	// std::cout << "Error pages: " << std::endl;
-	// for (itmap = getErrorPages().begin(); itmap != getErrorPages().end(); itmap++)
-	// 	std::cout << itmap->first << " " << itmap->second << std::endl;
+	std::cout << "Error pages: " << std::endl;
+	pages = getErrorPages();
+	for (itmap = pages.begin(); itmap != pages.end(); itmap++)
+		std::cout << itmap->first << " " << itmap->second << std::endl;
 	std::cout << "Index: ";
 	std::cout << getIndex() << std::endl;
-	// std::cout << "Cgi: " << std::endl;
-	// for (itset = getCgi().begin(); itset != getCgi().end(); itset++)
-	// 	std::cout << *itset << " ";
-	std::cout << std::endl;
+	std::cout << "Cgi: ";
+	std::cout << getCgi() << std::endl;
 	std::cout << "Auto index: ";
 	std::cout << getAutoIndex() << std::endl;
 	std::cout << "Allowed methods: " << std::endl;
 	for (itset = getAllowedMethods().begin(); itset != getAllowedMethods().end(); itset++)
 		std::cout << *itset << " ";
 	std::cout << std::endl;
+	std::cout << "Uri: ";
+	std::cout << getUri() << std::endl;
 }
 
 Block::InvalidConfigFileException::InvalidConfigFileException(const std::string msg) {

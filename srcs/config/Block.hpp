@@ -14,8 +14,9 @@
 
 class Block {
 private:
+	static Block						defaultBlock_;
 	Block								*parent_;
-	std::vector<Block>					locationBlocks_;
+	std::vector<Block *>				locationBlocks_;
 	directivesMap						directivesMap_;
 
 	std::string							host_;
@@ -28,10 +29,8 @@ private:
 	std::string							uri_;
 	std::string							index_;
 	std::string							autoIndex_;
-	std::set<std::string>				cgi_;
+	std::string							cgi_;
 
-	std::vector<std::string>			createArgsVector(std::string arg);
-	void								setDefaultErrorPages();
 	ft_bool								check_validation(std::vector<std::string> &tokens, int &index, std::string &directive);
 	std::vector<std::string>			parseHostPort(const std::string &arg);
 
@@ -40,7 +39,8 @@ public:
 	Block(Block *parent);
 	Block &operator=(const Block &origin);
 
-	void								setDefaultBlock();
+	static void							setDefaultBlock(const char *file);
+	void								setDefaultServerDirectivesMap();
 	void								setServerDirectivesMap();
 	void								setLocationDirectivesMap();
 	directivesMap						getDirectivesMap();
@@ -67,8 +67,8 @@ public:
 	void								setAutoIndex(std::vector<std::string> args);
 	void								setCgi(std::vector<std::string> args);
 
-	Block								*getParent() const;
-	const std::vector<Block>			&getLocationBlocks() const;
+	const Block							&getParent() const;
+	const std::vector<Block *>			&getLocationBlocks() const;
 	const std::string					&getHost() const;
 	const int							&getPort() const;
 	const std::set<std::string>			&getServerNames() const;
@@ -81,7 +81,7 @@ public:
 	const std::string					&getUri() const;
 	const std::string					&getIndex() const; 
 	const std::string					&getAutoIndex() const;
-	const std::set<std::string>			&getCgi() const;
+	const std::string					&getCgi() const;
 
 	const Block							&getLocationBlock(std::string uri);
 	void								printBlock() const;

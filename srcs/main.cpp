@@ -6,22 +6,13 @@ int	main(int argc, char **argv, char **env) {
 	if (argc != 2)
 		return 1;
 	try {
-		// std::vector<Block>				serverblocks;
 		std::vector<Block>::iterator	it;
 	
 		Config conf = Config(argv[1]);
-		// serverblocks = conf.getServerBlocks();
-		// for (it = serverblocks.begin(); it != serverblocks.end(); it++)
-		// 	it->printBlock();
+
 		Block serverblock = conf.getServerBlock(8000);
-		// serverblock.printBlock();
-		Block	locationblock = serverblock.getLocationBlock("/");
-		std::cout <<  "@@@@ " << serverblock.getLocationBlock("/").getParent()->getParent() << std::endl;
-		std::cout << "---- " << locationblock.getParent()->getParent() << std::endl;
-		std::cout << locationblock.getParent() << std::endl;
-		std::cout << locationblock.getHost() << std::endl;
-		std::cout << locationblock.getPort() << std::endl;
-		// locationblock.printBlock();
+		Block locationblock = serverblock.getLocationBlock("*.py");
+		locationblock.printBlock();
 	} catch (std::exception &e) {
 		std::cout << e.what() << std::endl;
 	}
