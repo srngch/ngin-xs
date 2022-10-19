@@ -102,9 +102,9 @@ ft_bool Worker::work() {
 				return ret;
 		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
 			request_->setBody();
-			validate();
 			isHeaderSet_ = FT_FALSE;
 			isRecvCompleted_ = FT_FALSE;
+			validate();
 			// TODO: Config 체크해서 요청 URI가 허용하는 메소드인지 체크
 			request_->setFilePath(std::string(WEB_ROOT));
 			if (request_->getMethod() == "GET")
