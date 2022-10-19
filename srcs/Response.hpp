@@ -28,7 +28,7 @@ private:
 
 public:
 	Response(std::string status);
-	Response(std::string status, const std::vector<char> &result);
+	Response(std::string status, const std::vector<char> &result, ft_bool isCgi = false);
 	~Response();
 
 	std::vector<char>	createMessage();

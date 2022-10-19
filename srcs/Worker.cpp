@@ -245,7 +245,7 @@ ft_bool Worker::executeGet() {
 		Cgi cgi(request_);
 		std::string result = cgi.execute();
 
-		Response response(HTTP_OK, stringToCharV(result));
+		Response response(HTTP_OK, stringToCharV(result), FT_TRUE);
 		send(response.createMessage());
 		return FT_TRUE;
 	}
@@ -265,7 +265,7 @@ ft_bool Worker::executePost() {
 	if (isCgi(request_->getFilePath())) {
 		Cgi cgi(request_);
 		std::string result = cgi.execute();
-		Response response(HTTP_CREATED, stringToCharV(result));
+		Response response(HTTP_CREATED, stringToCharV(result), FT_TRUE);
 		send(response.createMessage());
 	}
 	return FT_TRUE;

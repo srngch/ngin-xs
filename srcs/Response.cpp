@@ -6,7 +6,7 @@ Response::Response(std::string status) {
 	makeDefaultHeaders();
 }
 
-Response::Response(std::string status, const std::vector<char> &result) {
+Response::Response(std::string status, const std::vector<char> &result, ft_bool isCgi) {
 	statusCode_ = std::atoi(status.substr(0, 3).c_str());
 	statusLine_ = "HTTP/1.1 " + status;
 
@@ -18,20 +18,21 @@ Response::Response(std::string status, const std::vector<char> &result) {
 	std::vector<std::string>			splitedHeaderLine;
 	std::vector<std::string>::iterator	it_s;
 
-	it = std::search(result.begin(), result.end(), crlf, crlf + strlen(crlf));
-	if (it != result.end()) {
-		body_ = std::vector<char>(it + strlen(crlf), result.end());
-		cgiHeaders = std::string(result.begin(), it);
-		std::cout << "cgiHeaders: " << cgiHeaders << std::endl;
-		splitedHeaders = split(std::string(cgiHeaders.begin(), cgiHeaders.end()), "\n");
-		
-		for (it_s = splitedHeaders.begin(); it_s != splitedHeaders.end(); it_s++) {
-			splitedHeaderLine = split(*it_s, ": ");
-			std::transform(splitedHeaderLine[0].begin(), splitedHeaderLine[0].end(), splitedHeaderLine[0].begin(), ::tolower);
-			appendHeader(splitedHeaderLine[0], splitedHeaderLine[1]);
+	body_ = result;
+	if (isCgi) {
+		it = std::search(result.begin(), result.end(), crlf, crlf + strlen(crlf));
+		if (it != result.end()) {
+			body_ = std::vector<char>(it + strlen(crlf), result.end());
+			cgiHeaders = std::string(result.begin(), it);
+			std::cout << "cgiHeaders: " << cgiHeaders << std::endl;
+			splitedHeaders = split(std::string(cgiHeaders.begin(), cgiHeaders.end()), "\n");
+
+			for (it_s = splitedHeaders.begin(); it_s != splitedHeaders.end(); it_s++) {
+				splitedHeaderLine = split(*it_s, ": ");
+				std::transform(splitedHeaderLine[0].begin(), splitedHeaderLine[0].end(), splitedHeaderLine[0].begin(), ::tolower);
+				appendHeader(splitedHeaderLine[0], splitedHeaderLine[1]);
+			}
 		}
-	} else {
-		body_ = result;
 	}
 	makeDefaultHeaders();
 }
@@ -86,13 +87,13 @@ std::vector<char>	Response::createMessage() {
 
 void	Response::setContentType(std::string fileExtension) {
 	headers_.erase("content-type");
-	if (fileExtension == "html") 
+	if (fileExtension == "html")
 		appendHeader("content-type", MIME_HTML);
 	else if (fileExtension == "css")
 		appendHeader("content-type", MIME_CSS);
 	else if (fileExtension == "gif")
 		appendHeader("content-type", MIME_IMAGE_GIF);
-	else if (fileExtension == "jpeg" || fileExtension == "jpg") 
+	else if (fileExtension == "jpeg" || fileExtension == "jpg")
 		appendHeader("content-type", MIME_IMAGE_JPG);
 	else if (fileExtension == "js")
 		appendHeader("content-type", MIME_APP_JS);
