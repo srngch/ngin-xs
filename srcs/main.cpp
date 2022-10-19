@@ -1,6 +1,6 @@
 #include "Master.hpp"
 #include "Request.hpp"
-#include "conf/Config.hpp"
+#include "config/Config.hpp"
 
 int	main(int argc, char **argv, char **env) {
 	if (argc != 2)

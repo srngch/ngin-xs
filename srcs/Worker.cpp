@@ -231,6 +231,8 @@ void Worker::validate() {
 
 ft_bool Worker::executeGet() {
 	std::string	filePath;
+	std::size_t	index;
+	std::string	extension;
 
 	filePath = request_->getFilePath();
 	if (isDirectory(filePath) && request_->getUri()->getBaseName().length() > 0) {
@@ -242,13 +244,18 @@ ft_bool Worker::executeGet() {
 	if (isCgi(filePath)) {
 		Cgi cgi(request_);
 		std::string result = cgi.execute();
+
 		Response response(HTTP_OK, stringToCharV(result));
 		send(response.createMessage());
 		return FT_TRUE;
 	}
 	if (isFileExist(filePath) == FT_FALSE)
 		throw FileNotFoundException("File not found");
+
 	Response response(HTTP_OK, fileToCharV(filePath));
+	index = filePath.find_last_of(".");
+	extension = filePath.substr(index + 1, std::string::npos);
+	response.setContentType(extension);
 	send(response.createMessage());
 	return FT_TRUE;
 }
