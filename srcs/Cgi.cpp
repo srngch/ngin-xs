@@ -118,11 +118,7 @@ std::string	Cgi::execute() {
 	/* if POST method, write request body to child process */
 	if (request_->getMethod() == "POST") {
 		std::vector<char> body = request_->getBody();
-		std::vector<char>::iterator it = body.begin();
-		while (it != body.end()) {
-			write(writePipe[FT_PIPEIN], &(*it), 1);
-			it++;
-		}
+		write(writePipe[FT_PIPEIN], reinterpret_cast<char*> (&body[0]), body.size());
 	}
 	close(writePipe[FT_PIPEIN]);
 
