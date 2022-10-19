@@ -7,17 +7,21 @@ int	main(int argc, char **argv, char **env) {
 		return 1;
 	try {
 		// std::vector<Block>				serverblocks;
-		Block							serverblock;
-		Block							locationblock;	
 		std::vector<Block>::iterator	it;
 	
 		Config conf = Config(argv[1]);
 		// serverblocks = conf.getServerBlocks();
 		// for (it = serverblocks.begin(); it != serverblocks.end(); it++)
 		// 	it->printBlock();
-		serverblock = conf.getServerBlock(4242);
-		locationblock = serverblock.getLocationBlock("/");
-		locationblock.printBlock();
+		Block serverblock = conf.getServerBlock(8000);
+		// serverblock.printBlock();
+		Block	locationblock = serverblock.getLocationBlock("/");
+		std::cout <<  "@@@@ " << serverblock.getLocationBlock("/").getParent()->getParent() << std::endl;
+		std::cout << "---- " << locationblock.getParent()->getParent() << std::endl;
+		std::cout << locationblock.getParent() << std::endl;
+		std::cout << locationblock.getHost() << std::endl;
+		std::cout << locationblock.getPort() << std::endl;
+		// locationblock.printBlock();
 	} catch (std::exception &e) {
 		std::cout << e.what() << std::endl;
 	}

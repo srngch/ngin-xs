@@ -30,6 +30,8 @@ private:
 	std::string							autoIndex_;
 	std::set<std::string>				cgi_;
 
+	std::vector<std::string>			createArgsVector(std::string arg);
+	void								setDefaultErrorPages();
 	ft_bool								check_validation(std::vector<std::string> &tokens, int &index, std::string &directive);
 	std::vector<std::string>			parseHostPort(const std::string &arg);
 
@@ -37,7 +39,8 @@ public:
 	Block();
 	Block(Block *parent);
 	Block &operator=(const Block &origin);
-	
+
+	void								setDefaultBlock();
 	void								setServerDirectivesMap();
 	void								setLocationDirectivesMap();
 	directivesMap						getDirectivesMap();
@@ -48,13 +51,17 @@ public:
 	
 	// ServerBlock 만 해당
 	void								setHostPort(std::vector<std::string> args);
+	void								setHost(std::string host);
+	void								setPort(int port);
 	void								setServerNames(std::vector<std::string> args);
 	// ServerBlock, LocationBlock 공통
 	void								setWebRoot(std::vector<std::string> args);
 	void								setAllowedMethods(std::vector<std::string> args);
+	void								setClientMaxBodySize(int size);
 	void								setClientMaxBodySize(std::vector<std::string> args);
 	void								setErrorPages(std::vector<std::string> args);
 	// LocationBlock 만 해당
+	void								setParent(Block *parent);
 	void								setUri(std::string uri);
 	void								setIndex(std::vector<std::string> args);
 	void								setAutoIndex(std::vector<std::string> args);
@@ -77,7 +84,7 @@ public:
 	const std::set<std::string>			&getCgi() const;
 
 	const Block							&getLocationBlock(std::string uri);
-	void								printBlock();
+	void								printBlock() const;
 
 	class InvalidConfigFileException : public std::exception {
 	private:

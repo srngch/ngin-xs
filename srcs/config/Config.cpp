@@ -1,5 +1,7 @@
 #include "Config.hpp"
 
+Block Config::defaultBlock_;
+
 std::vector<std::string> Config::readAndSplit(const char *filePath) {
 	char						buffer[BUFFER_SIZE + 1];
 	int							fd;
@@ -60,6 +62,7 @@ const Block &Config::getServerBlock(int port) {
 Config::Config() {}
 
 Config::Config(char *filePath) {
+	defaultBlock_.setDefaultBlock();
 	parseConfigFile(filePath);
 }
 

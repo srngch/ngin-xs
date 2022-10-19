@@ -8,12 +8,28 @@
 #define ft_bool		int
 
 // pipe
-#define FT_PIPEIN		1
+#define FT_PIPEIN	1
 #define FT_PIPEOUT	0
 
 // Ngin-xs
 #define CRLF			"\r\n"
 #define EMPTY_LINE		"\r\n\r\n"
+
+// Default Configuration File Setting
+#define DEFAULT_HOST					"*"
+#define DEFAULT_PORT					8000
+#define DEFAULT_SERVER_NAME				"localhost"
+#define DEFAULT_WEB_ROOT				"html"
+#define DEFAULT_CLIENT_MAX_BODY_SIZE	1048576
+#define DEFAULT_ERROR_PAGE_400			"error_pages/400.html"
+#define DEFAULT_ERROR_PAGE_403			"error_pages/403.html"
+#define DEFAULT_ERROR_PAGE_404			"error_pages/404.html"
+#define DEFAULT_ERROR_PAGE_405			"error_pages/405.html"
+#define DEFAULT_ERROR_PAGE_500			"error_pages/500.html"
+#define DEFAULT_ERROR_PAGE_505			"error_pages/505.html"
+#define DEFAULT_AUTO_INDEX				"off"
+#define DEFAULT_ALLOWED_METHOD			"GET"
+#define DEFAULT_INDEX					"index.html"
 
 // Response Status
 #define	HTTP_OK						"200 OK"
