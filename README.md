@@ -104,3 +104,11 @@ NGIN-XS is a simple, lightweight, and fast web server written in C++.
 - Implemented python-cgi: [Issue](https://github.com/srngch/ngin-xs/issues/32), [PR](https://github.com/srngch/ngin-xs/pull/37)
 - Updated function to set response header: [Issue](https://github.com/srngch/ngin-xs/issues/25), [PR](https://github.com/srngch/ngin-xs/pull/38)
 - [WIP] Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34)
+
+### 2022-10-19
+
+- Implemented CUI client: [Issue](https://github.com/srngch/ngin-xs/issues/41), [PR](https://github.com/srngch/ngin-xs/pull/43)
+- Added multipart/form-data file upload to python-cgi: [Issue](https://github.com/srngch/ngin-xs/issues/31), [PR](https://github.com/srngch/ngin-xs/pull/46)
+- Fixed infinite validation when request header is invalid: [Issue](https://github.com/srngch/ngin-xs/issues/45), [PR](https://github.com/srngch/ngin-xs/pull/48)
+- Fixed CRLF issue when response binary file: [Issue](https://github.com/srngch/ngin-xs/issues/49), [PR](https://github.com/srngch/ngin-xs/pull/51)
+- [WIP] Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34)
