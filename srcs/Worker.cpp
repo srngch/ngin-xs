@@ -102,8 +102,7 @@ ft_bool Worker::work() {
 				return ret;
 		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
 			request_->setBody();
-			isHeaderSet_ = FT_FALSE;
-			isRecvCompleted_ = FT_FALSE;
+			initRequestState();
 			validate();
 			// TODO: Config 체크해서 요청 URI가 허용하는 메소드인지 체크
 			request_->setFilePath(std::string(WEB_ROOT));
@@ -117,30 +116,37 @@ ft_bool Worker::work() {
 		return ret;
 	} catch(BadRequestException &e) {
 		std::cerr << e.what() << std::endl;
+		initRequestState();
 		Response response(HTTP_BAD_REQUEST, fileToCharV(std::string(ERROR_PAGES_PATH) + "400.html"));
 		return send(response.createMessage());
 	} catch(ForbiddenException &e) {
 		std::cerr << e.what() << std::endl;
+		initRequestState();
 		Response response(HTTP_FORBIDDEN, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "403.html")));
 		return send(response.createMessage());
 	} catch(FileNotFoundException &e) {
 		std::cerr << e.what() << std::endl;
+		initRequestState();
 		Response response(HTTP_NOT_FOUND, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "404.html")));
 		return send(response.createMessage());
 	} catch(InvalidMethodException &e) {
 		std::cerr << e.what() << std::endl;
+		initRequestState();
 		Response response(HTTP_METHOD_NOT_ALLOWED, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "405.html")));
 		return send(response.createMessage());
 	} catch(NotImplementedException &e) {
 		std::cerr << e.what() << std::endl;
+		initRequestState();
 		Response response(HTTP_NOT_IMPLEMENTED, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "501.html")));
 		return send(response.createMessage());
 	} catch(InvalidVersionException &e) {
 		std::cerr << e.what() << std::endl;
+		initRequestState();
 		Response response(HTTP_VERSION_NOT_SUPPORTED, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "505.html")));
 		return send(response.createMessage());
 	} catch (std::exception &e) {
 		std::cerr << "std::exception: " << e.what() << std::endl;
+		initRequestState();
 		Response response(HTTP_INTERNAL_SERVER_ERROR, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "500.html")));
 		return send(response.createMessage());
 	}
@@ -170,23 +176,21 @@ ft_bool Worker::recv() {
 			request_->setOriginalHeader(std::vector<char>(originalHeader.begin(), it));
 			bodyLength_ = ret - request_->getOriginalHeader().size() - strlen(EMPTY_LINE);
 			request_->setHeaders();
+			transferEncoding = request_->getHeaderValue("transfer-encoding");
+			if (transferEncoding == "chunked" && request_->getHeaderValue("content-length").length() > 0)
+				throw BadRequestException("recv: Chunked message with content length");
 			originalBody = request_->getOriginalBody();
 			if (ret < BUFFER_LENGTH && bodyLength_ >= request_->getContentLengthNumber())
 				isRecvCompleted_ = FT_TRUE;
 			it = std::search(originalBody.begin(), originalBody.end(), crlf, crlf + strlen(crlf));
-			if (request_->getHeaderValue("transfer-encoding") == "chunked"
-				&& it == originalBody.end()) {
+			if (transferEncoding == "chunked" && it == originalBody.end())
 				isRecvCompleted_ = FT_TRUE;
-			}
 		}
 	} else if (isRecvCompleted_ == FT_FALSE) {
 		request_->appendOriginalBody(buf, ret);
 		bodyLength_ += ret;
-		transferEncoding = request_->getHeaderValue("transfer-encoding");
 		originalBody = request_->getOriginalBody();
 		if (transferEncoding == "chunked") {
-			if (request_->getHeaderValue("content-length").length() > 0)
-				throw BadRequestException("recv: Chunked message with content length");
 			it = std::search(originalBody.begin(), originalBody.end(), crlf, crlf + strlen(crlf));
 			if (it != originalBody.end()) {
 				request_->setOriginalBody(std::vector<char>(originalBody.begin(), it));
@@ -280,6 +284,11 @@ ft_bool	Worker::redirect(const std::string &dest) {
 	Response response(HTTP_MOVED_PERMANENTLY);
 	response.appendHeader("location", dest);
 	return send(response.createMessage());
+}
+
+void	Worker::initRequestState() {
+	isHeaderSet_ = FT_FALSE;
+	isRecvCompleted_ = FT_FALSE;
 }
 
 ft_bool Worker::send(const std::vector<char> &message) {

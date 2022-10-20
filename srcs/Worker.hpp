@@ -41,6 +41,7 @@ private:
 	ft_bool	executePost();
 	ft_bool	executeDelete();
 	ft_bool	redirect(const std::string &des);
+	void	initRequestState();
 
 	Worker();
 
