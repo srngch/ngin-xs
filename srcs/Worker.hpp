@@ -41,6 +41,7 @@ private:
 	ft_bool	executePost();
 	ft_bool	executeDelete();
 	ft_bool	redirect(const std::string &des);
+	void	initRequestState();
 
 	Worker();
 
@@ -84,6 +85,15 @@ public:
 	public:
 		InvalidMethodException(const std::string str);
 		~InvalidMethodException() throw();
+		virtual const char *what() const throw();
+	};
+
+	class PayloadTooLargeException : public std::exception {
+	private:
+		std::string message_;
+	public:
+		PayloadTooLargeException(const std::string str);
+		~PayloadTooLargeException() throw();
 		virtual const char *what() const throw();
 	};
 
