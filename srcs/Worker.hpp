@@ -34,13 +34,13 @@ private:
 	std::size_t					bodyLength_;
 
 	ft_bool	recv();
-	void	send(const std::vector<char> &message);
+	ft_bool	send(const std::vector<char> &message);
 	void	resetPollfd();
 	void	validate();
 	ft_bool	executeGet();
 	ft_bool	executePost();
 	ft_bool	executeDelete();
-	void	redirect(const std::string &des);
+	ft_bool	redirect(const std::string &des);
 
 	Worker();
 
