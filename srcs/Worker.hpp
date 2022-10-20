@@ -88,6 +88,15 @@ public:
 		virtual const char *what() const throw();
 	};
 
+	class PayloadTooLargeException : public std::exception {
+	private:
+		std::string message_;
+	public:
+		PayloadTooLargeException(const std::string str);
+		~PayloadTooLargeException() throw();
+		virtual const char *what() const throw();
+	};
+
 	class NotImplementedException : public std::exception {
 	private:
 		std::string message_;
