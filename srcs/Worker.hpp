@@ -52,67 +52,18 @@ public:
 	void	setPollfd(struct pollfd *pollfd);
 	ft_bool	work();
 
-	class BadRequestException : public std::exception {
+	class HttpException : public std::exception {
 	private:
 		std::string message_;
-	public:
-		BadRequestException(const std::string str);
-		~BadRequestException() throw();
-		virtual const char *what() const throw();
-	};
+		std::string httpCode_;
 
-	class ForbiddenException : public std::exception {
-	private:
-		std::string message_;
 	public:
-		ForbiddenException(const std::string str);
-		~ForbiddenException() throw();
+		HttpException(const std::string message, const std::string httpCode);
+		~HttpException() throw();
 		virtual const char *what() const throw();
-	};
 
-	class FileNotFoundException : public std::exception {
-	private:
-		std::string message_;
-	public:
-		FileNotFoundException(const std::string str);
-		~FileNotFoundException() throw();
-		virtual const char *what() const throw();
-	};
-
-	class InvalidMethodException : public std::exception {
-	private:
-		std::string message_;
-	public:
-		InvalidMethodException(const std::string str);
-		~InvalidMethodException() throw();
-		virtual const char *what() const throw();
-	};
-
-	class PayloadTooLargeException : public std::exception {
-	private:
-		std::string message_;
-	public:
-		PayloadTooLargeException(const std::string str);
-		~PayloadTooLargeException() throw();
-		virtual const char *what() const throw();
-	};
-
-	class NotImplementedException : public std::exception {
-	private:
-		std::string message_;
-	public:
-		NotImplementedException(const std::string str);
-		~NotImplementedException() throw();
-		virtual const char *what() const throw();
-	};
-
-	class InvalidVersionException : public std::exception {
-	private:
-		std::string message_;
-	public:
-		InvalidVersionException(const std::string str);
-		~InvalidVersionException() throw();
-		virtual const char *what() const throw();
+		std::string getHttpCode();
+		std::string makeErrorHtml();
 	};
 };
 
