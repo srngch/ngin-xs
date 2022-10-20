@@ -1,3 +1,5 @@
+Co-authored-by: srngch <srngch.dev@gmail.com>
+
 # NGIN-XS
 
 NGIN-XS is a simple, lightweight, and fast web server written in C++.
@@ -111,4 +113,11 @@ NGIN-XS is a simple, lightweight, and fast web server written in C++.
 - Added multipart/form-data file upload to python-cgi: [Issue](https://github.com/srngch/ngin-xs/issues/31), [PR](https://github.com/srngch/ngin-xs/pull/46)
 - Fixed infinite validation when request header is invalid: [Issue](https://github.com/srngch/ngin-xs/issues/45), [PR](https://github.com/srngch/ngin-xs/pull/48)
 - Fixed CRLF issue when response binary file: [Issue](https://github.com/srngch/ngin-xs/issues/49), [PR](https://github.com/srngch/ngin-xs/pull/51)
+- [WIP] Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34)
+
+### 2022-10-20
+
+- Implemented handling Connection header: [Issue](https://github.com/srngch/ngin-xs/issues/47), [PR](https://github.com/srngch/ngin-xs/pull/52)
+- Implemented Limiting client max body size: [Issue](https://github.com/srngch/ngin-xs/issues/50), [PR](https://github.com/srngch/ngin-xs/pull/53)
+- Refactored exception: [Issue](https://github.com/srngch/ngin-xs/issues/54), [PR](https://github.com/srngch/ngin-xs/pull/55)
 - [WIP] Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34)
