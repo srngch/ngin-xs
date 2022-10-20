@@ -118,38 +118,31 @@ ft_bool Worker::work() {
 	} catch(BadRequestException &e) {
 		std::cerr << e.what() << std::endl;
 		Response response(HTTP_BAD_REQUEST, fileToCharV(std::string(ERROR_PAGES_PATH) + "400.html"));
-		send(response.createMessage());
-		return FT_TRUE;
+		return send(response.createMessage());
 	} catch(ForbiddenException &e) {
 		std::cerr << e.what() << std::endl;
 		Response response(HTTP_FORBIDDEN, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "403.html")));
-		send(response.createMessage());
-		return FT_TRUE;
+		return send(response.createMessage());
 	} catch(FileNotFoundException &e) {
 		std::cerr << e.what() << std::endl;
 		Response response(HTTP_NOT_FOUND, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "404.html")));
-		send(response.createMessage());
-		return FT_TRUE;
+		return send(response.createMessage());
 	} catch(InvalidMethodException &e) {
 		std::cerr << e.what() << std::endl;
 		Response response(HTTP_METHOD_NOT_ALLOWED, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "405.html")));
-		send(response.createMessage());
-		return FT_TRUE;
+		return send(response.createMessage());
 	} catch(NotImplementedException &e) {
 		std::cerr << e.what() << std::endl;
 		Response response(HTTP_NOT_IMPLEMENTED, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "501.html")));
-		send(response.createMessage());
-		return FT_TRUE;
+		return send(response.createMessage());
 	} catch(InvalidVersionException &e) {
 		std::cerr << e.what() << std::endl;
 		Response response(HTTP_VERSION_NOT_SUPPORTED, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "505.html")));
-		send(response.createMessage());
-		return FT_TRUE;
+		return send(response.createMessage());
 	} catch (std::exception &e) {
 		std::cerr << "std::exception: " << e.what() << std::endl;
 		Response response(HTTP_INTERNAL_SERVER_ERROR, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "500.html")));
-		send(response.createMessage());
-		return FT_TRUE;
+		return send(response.createMessage());
 	}
 }
 
@@ -246,8 +239,7 @@ ft_bool Worker::executeGet() {
 		std::string result = cgi.execute();
 
 		Response response(HTTP_OK, stringToCharV(result), FT_TRUE);
-		send(response.createMessage());
-		return FT_TRUE;
+		return send(response.createMessage());
 	}
 	if (isFileExist(filePath) == FT_FALSE)
 		throw FileNotFoundException("File not found");
@@ -256,8 +248,7 @@ ft_bool Worker::executeGet() {
 	index = filePath.find_last_of(".");
 	extension = filePath.substr(index + 1, std::string::npos);
 	response.setContentType(extension);
-	send(response.createMessage());
-	return FT_TRUE;
+	return send(response.createMessage());
 }
 
 ft_bool Worker::executePost() {
@@ -266,7 +257,7 @@ ft_bool Worker::executePost() {
 		Cgi cgi(request_);
 		std::string result = cgi.execute();
 		Response response(HTTP_CREATED, stringToCharV(result), FT_TRUE);
-		send(response.createMessage());
+		return send(response.createMessage());
 	}
 	return FT_TRUE;
 }
@@ -282,17 +273,16 @@ ft_bool Worker::executeDelete() {
 	if (unlink(filePath.c_str()))
 		throw std::runtime_error("Delete failed");
 	Response response(HTTP_NO_CONTENT);
-	send(response.createMessage());
-	return FT_TRUE;
+	return send(response.createMessage());
 }
 
-void	Worker::redirect(const std::string &dest) {
+ft_bool	Worker::redirect(const std::string &dest) {
 	Response response(HTTP_MOVED_PERMANENTLY);
 	response.appendHeader("location", dest);
-	send(response.createMessage());
+	return send(response.createMessage());
 }
 
-void Worker::send(const std::vector<char> &message) {
+ft_bool Worker::send(const std::vector<char> &message) {
 	int							ret;
 	std::vector<char>			m = message;
 	std::vector<char>::iterator	it = m.begin();
@@ -303,6 +293,11 @@ void Worker::send(const std::vector<char> &message) {
 			throw std::runtime_error("fail: send()\n");
 		it++;
 	}
+	if (request_->getHeaderValue("connection") == "close") {
+		std::cout << "connention: close" << std::endl;
+		return FT_FALSE;
+	}
+	return FT_TRUE;
 }
 
 void Worker::resetPollfd() {
