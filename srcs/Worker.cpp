@@ -36,6 +36,7 @@ Worker::Worker(int listenSocket)
 	socklen_t			addressLen = sizeof(clientAddress);
 
 	connectSocket_ = accept(listenSocket, (struct sockaddr *)&clientAddress, &addressLen);
+	std::cout << "connectSocket_: " << connectSocket_ << std::endl;
 	if (connectSocket_ == -1) {
 		close(listenSocket);
 		throw std::runtime_error("fail: accept()\n");
@@ -66,10 +67,12 @@ ft_bool Worker::work() {
 			std::cout << "socket closed." << std::endl;
 			return FT_FALSE;
 		} else if (pollfd_->revents == pollfd_->events) {
+			std::cout << "work: 11111" << std::endl;
 			ret = recv();
 			if (ret == FT_FALSE)
 				return ret;
 		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
+			std::cout << "revents == POLLOUT" << std::endl;
 			request_->setBody();
 			initRequestState();
 			validate();
@@ -255,7 +258,7 @@ ft_bool Worker::send(const std::vector<char> &message) {
 	while (it != m.end()) {
 		ret = ::send(pollfd_->fd, &(*it), 1, 0);
 		if (ret == FT_ERROR)
-			throw HttpException("send: send fail", HTTP_INTERNAL_SERVER_ERROR);
+			throw HttpException("send: send() failed", HTTP_INTERNAL_SERVER_ERROR);
 		it++;
 	}
 	if (request_->getHeaderValue("connection") == "close") {

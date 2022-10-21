@@ -396,7 +396,9 @@ const std::vector<Block> &Block::getLocationBlocks() const {
 	return locationBlocks_;
 }
 
-const std::string &Block::getHost() const {
+std::string Block::getHost() const {
+	if (host_ == "localhost")
+		return "0.0.0.0";
 	if (host_ != "")
 		return host_;
 	return Block::defaultBlock_.getHost();

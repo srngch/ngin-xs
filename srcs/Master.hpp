@@ -13,33 +13,38 @@
 #include <vector>
 #include <iostream>
 #include <exception>
+#include "config/Block.hpp"
 #include "Worker.hpp"
 #include "macro.hpp"
-
-#define POLLFDSLEN 100
 
 class Master {
 private:
 	std::vector<std::string>	env_;
+	struct sockaddr_in 			serverAddress_;
 	int							listenSocket_;
-	std::vector<Worker *>		workers_;
-	struct pollfd				pollfds_[POLLFDSLEN];
-	// Config					config_;
+	std::vector<Worker>			workers_;
+	Block						serverBlock_;
+	std::size_t					pollIndex_;
 
-	void	init(struct sockaddr_in &serverAddress);
-	void	bind(struct sockaddr_in &serverAddress);
+	void	init();
+	void	bind();
 	void	listen();
-	struct pollfd *findEmptyPollfd();
+
+	Master();
 
 public:
-	Master(char **env);
+	Master(const Block &serverBlock);
 	~Master();
 	
 	void	run();
+	void	appendWorker(struct pollfd *pollFd);
 
-	void	setEnv(char **originalEnv);
-	void	addEnv(std::string new_env);
+	const struct sockaddr_in	getServerAddress() const;
+	int							getListenSocket() const;
+	std::size_t					getPollIndex() const;
 	
+	void						setPollIndex(std::size_t pollIndex);
+
 	class MasterException : public std::exception {
 	private:
 		std::string message_;
