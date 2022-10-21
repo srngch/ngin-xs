@@ -8,7 +8,7 @@
 #define ft_bool		int
 
 // pipe
-#define FT_PIPEIN		1
+#define FT_PIPEIN	1
 #define FT_PIPEOUT	0
 
 // Ngin-xs
@@ -29,13 +29,12 @@
 #define HTTP_NOT_IMPLEMENTED		"501 Not Implemented"
 #define HTTP_VERSION_NOT_SUPPORTED	"505 HTTP Version Not Supported"
 
-#define ERROR_PAGES_PATH	"./error_pages/"
-#define WEB_ROOT			"./html"  // TODO: remove this after implement Config class
+#define WEB_ROOT	"./html"  // TODO: remove this after implement Config class
 
-#define PYTHON_PATH "/opt/homebrew/bin/python3"
-#define	CGI_INFILE "./infile.tmp"
-#define	CGI_OUTFILE "./outfile.tmp"
-#define CGI_FILE_MODE 0644
-#define CGI_READ_BUF_SIZE 1024
+#define PYTHON_PATH			"/opt/homebrew/bin/python3"
+#define	CGI_INFILE			"./infile.tmp"
+#define	CGI_OUTFILE			"./outfile.tmp"
+#define CGI_FILE_MODE		0644
+#define CGI_READ_BUF_SIZE	1024
 
 #endif

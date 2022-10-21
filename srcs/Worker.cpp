@@ -1,73 +1,31 @@
 #include "Worker.hpp"
 
-Worker::BadRequestException::BadRequestException(const std::string str) {
-	message_ = str;
-}
+Worker::HttpException::HttpException(const std::string message, const std::string httpCode)
+	: message_(message), httpCode_(httpCode) {}
 
-Worker::BadRequestException::~BadRequestException() throw() {}
+Worker::HttpException::~HttpException() throw() {}
 
-const char *Worker::BadRequestException::what() const throw() {
+const char *Worker::HttpException::what() const throw() {
 	return message_.c_str();
 }
 
-Worker::ForbiddenException::ForbiddenException(const std::string str) {
-	message_ = str;
+std::string Worker::HttpException::getHttpCode() {
+	return httpCode_;
 }
 
-Worker::ForbiddenException::~ForbiddenException() throw() {}
-
-const char *Worker::ForbiddenException::what() const throw() {
-	return message_.c_str();
-}
-
-Worker::FileNotFoundException::FileNotFoundException(const std::string str) {
-	message_ = str;
-}
-
-Worker::FileNotFoundException::~FileNotFoundException() throw() {}
-
-const char *Worker::FileNotFoundException::what() const throw() {
-	return message_.c_str();
-}
-
-Worker::InvalidMethodException::InvalidMethodException(const std::string str) {
-	message_ = str;
-}
-
-Worker::InvalidMethodException::~InvalidMethodException() throw() {}
-
-const char *Worker::InvalidMethodException::what() const throw() {
-	return message_.c_str();
-}
-
-Worker::PayloadTooLargeException::PayloadTooLargeException(const std::string str) {
-	message_ = str;
-}
-
-Worker::PayloadTooLargeException::~PayloadTooLargeException() throw() {}
-
-const char *Worker::PayloadTooLargeException::what() const throw() {
-	return message_.c_str();
-}
-
-Worker::NotImplementedException::NotImplementedException(const std::string str) {
-	message_ = str;
-}
-
-Worker::NotImplementedException::~NotImplementedException() throw() {}
-
-const char *Worker::NotImplementedException::what() const throw() {
-	return message_.c_str();
-}
-
-Worker::InvalidVersionException::InvalidVersionException(const std::string str) {
-	message_ = str;
-}
-
-Worker::InvalidVersionException::~InvalidVersionException() throw() {}
-
-const char *Worker::InvalidVersionException::what() const throw() {
-	return message_.c_str();
+std::string Worker::HttpException::makeErrorHtml() {
+	return "<!DOCTYPE html>\n\
+<html>\n\
+<head>\n\
+	<meta charset=\"UTF-8\">\n\
+	<title>" + httpCode_ + "</title>\n\
+</head>\n\
+<body>\n\
+	<h1>" + httpCode_ + "</h1>\n\
+	<hr />\n\
+	ngin-xs\n\
+</body>\n\
+</html>";
 }
 
 Worker::Worker() {}
@@ -125,53 +83,19 @@ ft_bool Worker::work() {
 				return executeDelete();
 		}
 		return ret;
-	} catch(BadRequestException &e) {
+	} catch (HttpException &e) {
 		std::cerr << e.what() << std::endl;
 		tmp_isRecvCompleted = isRecvCompleted_;
 		initRequestState();
-		Response response(HTTP_BAD_REQUEST, fileToCharV(std::string(ERROR_PAGES_PATH) + "400.html"));
-		return send(response.createMessage()) && tmp_isRecvCompleted;
-	} catch(ForbiddenException &e) {
-		std::cerr << e.what() << std::endl;
-		tmp_isRecvCompleted = isRecvCompleted_;
-		initRequestState();
-		Response response(HTTP_FORBIDDEN, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "403.html")));
-		return send(response.createMessage()) && tmp_isRecvCompleted;
-	} catch(FileNotFoundException &e) {
-		std::cerr << e.what() << std::endl;
-		tmp_isRecvCompleted = isRecvCompleted_;
-		initRequestState();
-		Response response(HTTP_NOT_FOUND, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "404.html")));
-		return send(response.createMessage()) && tmp_isRecvCompleted;
-	} catch(InvalidMethodException &e) {
-		std::cerr << e.what() << std::endl;
-		tmp_isRecvCompleted = isRecvCompleted_;
-		initRequestState();
-		Response response(HTTP_METHOD_NOT_ALLOWED, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "405.html")));
-		return send(response.createMessage()) && tmp_isRecvCompleted;
-	} catch(PayloadTooLargeException &e) {
-		std::cerr << e.what() << std::endl;
-		initRequestState();
-		Response response(HTTP_PAYLOAD_TOO_LARGE, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "413.html")));
-		send(response.createMessage());
-		return FT_FALSE; // NOTE: Need to close connection because data may remain in recv buffer.
-	} catch(NotImplementedException &e) {
-		std::cerr << e.what() << std::endl;
-		tmp_isRecvCompleted = isRecvCompleted_;
-		initRequestState();
-		Response response(HTTP_NOT_IMPLEMENTED, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "501.html")));
-		return send(response.createMessage()) && tmp_isRecvCompleted;
-	} catch(InvalidVersionException &e) {
-		std::cerr << e.what() << std::endl;
-		tmp_isRecvCompleted = isRecvCompleted_;
-		initRequestState();
-		Response response(HTTP_VERSION_NOT_SUPPORTED, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "505.html")));
+		Response response(e.getHttpCode(), stringToCharV(e.makeErrorHtml()));
 		return send(response.createMessage()) && tmp_isRecvCompleted;
 	} catch (std::exception &e) {
+		HttpException ex = HttpException(e.what(), HTTP_INTERNAL_SERVER_ERROR);
+
 		std::cerr << "std::exception: " << e.what() << std::endl;
 		tmp_isRecvCompleted = isRecvCompleted_;
 		initRequestState();
-		Response response(HTTP_INTERNAL_SERVER_ERROR, stringToCharV(fileToString(std::string(ERROR_PAGES_PATH) + "500.html")));
+		Response response(ex.getHttpCode(), stringToCharV(ex.makeErrorHtml()));
 		return send(response.createMessage()) && tmp_isRecvCompleted;
 	}
 }
@@ -202,12 +126,14 @@ ft_bool Worker::recv() {
 			bodyLength_ = ret - request_->getOriginalHeader().size() - strlen(EMPTY_LINE);
 			request_->setHeaders();
 			transferEncoding = request_->getHeaderValue("transfer-encoding");
+			if (transferEncoding.length() > 0 && transferEncoding != "chunked")
+				throw HttpException("Not Implemented", HTTP_NOT_IMPLEMENTED);
 			if (transferEncoding == "chunked" && request_->getHeaderValue("content-length").length() > 0)
-				throw BadRequestException("recv: Chunked message with content length");
+				throw HttpException("recv: Chunked message with content length", HTTP_BAD_REQUEST);
 			originalBody = request_->getOriginalBody();
 			if (request_->getContentLengthNumber() > std::size_t(atol(client_max_body_size.c_str()))
 				|| originalBody.size() > std::size_t(atol(client_max_body_size.c_str())))
-				throw PayloadTooLargeException("recv: Content-length is larger than client max body size");
+				throw HttpException("recv: Content-length is larger than client max body size", HTTP_PAYLOAD_TOO_LARGE);
 			if (ret < BUFFER_LENGTH && bodyLength_ >= request_->getContentLengthNumber())
 				isRecvCompleted_ = FT_TRUE;
 			it = std::search(originalBody.begin(), originalBody.end(), crlf, crlf + strlen(crlf));
@@ -220,17 +146,14 @@ ft_bool Worker::recv() {
 		originalBody = request_->getOriginalBody();
 		transferEncoding = request_->getHeaderValue("transfer-encoding");
 		if (transferEncoding == "chunked") {
-			// std::cout << "b: " << bodyLength_ << ", " << std::size_t(atol(client_max_body_size.c_str())) << std::endl;
 			if (bodyLength_ > std::size_t(atol(client_max_body_size.c_str())))
-				throw PayloadTooLargeException("recv: Body length is larger than client max body size");
+				throw HttpException("recv: Body length is larger than client max body size", HTTP_PAYLOAD_TOO_LARGE);
 			originalBody = request_->getOriginalBody();
 			it = std::search(originalBody.begin(), originalBody.end(), crlf, crlf + strlen(crlf));
 			if (it != originalBody.end()) {
 				request_->setOriginalBody(std::vector<char>(originalBody.begin(), it));
 				isRecvCompleted_ = FT_TRUE;
 			}
-		} else if (transferEncoding.length() > 0 && transferEncoding != "chunked") {
-			throw NotImplementedException("Not Implemented");
 		} else if (bodyLength_ >= request_->getContentLengthNumber()) {
 			isRecvCompleted_ = FT_TRUE;
 		}
@@ -241,7 +164,7 @@ ft_bool Worker::recv() {
 		return FT_FALSE;
 	}
 	if (ret == FT_ERROR)
-		throw std::runtime_error("fail: recv()\n");
+		throw HttpException("recv: fail", HTTP_INTERNAL_SERVER_ERROR);
 	return FT_TRUE;
 }
 
@@ -252,11 +175,11 @@ void Worker::validate() {
 	allowedMethods.push_back("POST");
 	allowedMethods.push_back("DELETE");
 	if (!isIncluded(request_->getMethod(), allowedMethods))
-		throw InvalidMethodException("Invalid method");
+		throw HttpException("validate: Invalid method", HTTP_BAD_REQUEST);
 	if (request_->getVersion() != "HTTP/1.1")
-		throw InvalidVersionException("HTTP version is not 1.1");
+		throw HttpException("validate: HTTP version is not 1.1", HTTP_VERSION_NOT_SUPPORTED);
 	if (request_->getHeaderValue("host").length() == 0)
-		throw BadRequestException("Host header does not exist");
+		throw HttpException("validate: Host header does not exist", HTTP_BAD_REQUEST);
 }
 
 ft_bool Worker::executeGet() {
@@ -279,7 +202,7 @@ ft_bool Worker::executeGet() {
 		return send(response.createMessage());
 	}
 	if (isFileExist(filePath) == FT_FALSE)
-		throw FileNotFoundException("File not found");
+		throw HttpException("executeGet: File not found", HTTP_NOT_FOUND);
 
 	Response response(HTTP_OK, fileToCharV(filePath));
 	index = filePath.find_last_of(".");
@@ -304,11 +227,11 @@ ft_bool Worker::executeDelete() {
 
 	filePath = request_->getFilePath();
 	if (isFileExist(filePath) == FT_FALSE)
-		throw FileNotFoundException("File not found");
+		throw HttpException("executeDelete: File not found", HTTP_NOT_FOUND);
 	if (isDirectory(filePath) == FT_TRUE)
-		throw ForbiddenException("Forbidden");
+		throw HttpException("executeDelete: Forbidden", HTTP_FORBIDDEN);
 	if (unlink(filePath.c_str()))
-		throw std::runtime_error("Delete failed");
+		throw HttpException("executeDelete: Delete failed", HTTP_INTERNAL_SERVER_ERROR);
 	Response response(HTTP_NO_CONTENT);
 	return send(response.createMessage());
 }
@@ -332,7 +255,7 @@ ft_bool Worker::send(const std::vector<char> &message) {
 	while (it != m.end()) {
 		ret = ::send(pollfd_->fd, &(*it), 1, 0);
 		if (ret == FT_ERROR)
-			throw std::runtime_error("fail: send()\n");
+			throw HttpException("send: send fail", HTTP_INTERNAL_SERVER_ERROR);
 		it++;
 	}
 	if (request_->getHeaderValue("connection") == "close") {
