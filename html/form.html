@@ -1,24 +1,91 @@
 <html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Method test : Ngin-xs</title>
+    <style>
+      body {
+        font-size: 20px;
+      }
+      h1,
+      h3 {
+        margin: 0;
+        margin-bottom: 0.75rem;
+        padding: 0;
+        line-height: 1.25em;
+      }
+      label {
+        min-width: 5em;
+        display: inline-block;
+      }
+      .field {
+        margin: 0;
+        margin-bottom: 0.5em;
+      }
+    </style>
+  </head>
   <body>
-    <h2>form</h2>
-    <h3>POST</h3>
-    <pre>/upload.py</pre></h4>
-    <form action="/upload.py" method="post">
-      <label for="content">content</label>
-      <input type="text" name="content" />
-      <input type="submit" value="submit" />
+    <h1>Method test</h1>
+    <h3><code>GET /test.html</code></h3>
+    <div><a href="/test.html">/test.html</a></div>
+
+    <hr />
+
+    <h3><code>POST /multipart.py</code></h3>
+    <form action="/multipart.py" method="post" enctype="multipart/form-data">
+      <div class="field">
+        <label for="username" class="label">Username</label>
+        <input type="text" name="username" id="username" />
+      </div>
+      <div class="field">
+        <label for="file">File</label>
+        <input type="file" name="file" id="file" />
+      </div>
+      <div class="field">
+        <input type="submit" value="Submit" />
+      </div>
     </form>
-    <h4><pre>/readstdin.py</pre></h4>
-    <form action="/readstdin.py" method="post">
-      <label for="content">content</label>
-      <input type="text" name="content" />
-      <input type="submit" value="submit" />
+
+    <hr />
+
+    <h3><code>DELETE /upload/{File_Name}</code></h3>
+    <form id="deleteTest">
+      <div class="field">
+        <label for="filename" class="label">File Name</label>
+        <input type="text" name="filename" id="filename" required />
+      </div>
+      <div class="field">
+        <input type="submit" value="Delete" />
+      </div>
     </form>
-    <h4><pre>/form.py</pre></h4>
-    <form action="/form.py" method="post" enctype="multipart/form-data">
-      <label for="content">file</label>
-      <input type="file" name="file" />
-      <input type="submit" value="submit" />
-    </form>
+
+    <hr />
+
+    <h3>
+      <a href="/upload/">Go to <code>/Upload</code></a>
+    </h3>
+
+    <script>
+      const $deleteTestForm = document.querySelector("#deleteTest");
+      const $filenameInput = document.querySelector("#filename");
+
+      const requestDelete = (e) => {
+        e.preventDefault();
+
+        const fileName = $filenameInput.value;
+
+        fetch(`/upload/${fileName}`, {
+          method: "DELETE",
+        })
+          .then((res) => {
+            if (res.ok) console.log(`Ngin-xs: File ${fileName} Deleted!`);
+            else throw res;
+          })
+          .catch((e) => {
+            console.error("Ngin-xs: ", e);
+          });
+      };
+
+      $deleteTestForm.addEventListener("submit", requestDelete);
+    </script>
   </body>
 </html>

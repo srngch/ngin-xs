@@ -13,6 +13,8 @@ if not os.path.exists(WEB_UPLOAD):
 
 
 def save_file(data, basename):
+    if not data or not basename:
+        return
     with open(os.getcwd() + "/html/upload/" + basename, "wb") as f:
         f.write(data)
 
@@ -34,7 +36,7 @@ try:
     """
     message = ""
     img_tag = ""
-    if request_method == "POST" and request_uri == "/upload.py":
+    if request_method == "POST" and request_uri == "/binary.py":
         if buf:
             fn = os.path.basename(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
             extension = guess_extension(content_type.partition(";")[0].strip())
@@ -49,7 +51,7 @@ try:
     multipart/form-data: POST form.py
     """
     formData = ""
-    if request_method == "POST" and request_uri == "/form.py":
+    if request_method == "POST" and request_uri == "/multipart.py":
         formData += "<h3>Form</h3><ul>"
         ctype, pdict = cgi.parse_header(content_type)
 
@@ -61,12 +63,16 @@ try:
                 if type(form[key].value) == bytes:
                     filename = form[key].filename
                     data = form[key].file.read()
-                    save_file(data, filename)
-                    d = f'File(<a href="/upload/{filename}">upload/{filename}</a>)'
+                    if not filename:
+                        d = f'File(empty)'
+                    else:
+                        save_file(data, filename)
+                        d = f'File(<a href="/upload/{filename}">upload/{filename}</a>)'
                 else:
                     d = form[key].value
                 formData += f"<li>{key}: {d}</li>"
         formData += "</ul>"
+        message = "The form data was sent successfully"
 
     body = f"""<html>
     <head>
@@ -75,12 +81,12 @@ try:
     </head>
     <body>
         <h1>python-cgi: {request_uri}</h1>
+        <p>{message}</p>
         <ul>
             <li>path_info: {path_info}</li>
             <li>request_method: {request_method}</li>
             <li>content_type: {content_type}</li>
             <li>content_length: {content_length}</li>
-            <li>message: {message}</li>
         </ul>
         {img_tag}
         {formData}
