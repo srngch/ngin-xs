@@ -7,6 +7,7 @@
 # include <string>
 # include <vector>
 # include <map>
+# include <cstring>
 # include "../macro.hpp"
 # include "../utils.hpp"
 
@@ -15,9 +16,9 @@
 class Block {
 private:
 	static Block						defaultBlock_;
-	Block								*parent_;
-	std::vector<Block *>				locationBlocks_;
+	std::vector<Block>					locationBlocks_;
 	directivesMap						directivesMap_;
+	std::set<std::string>				supportedExtensions_;
 
 	std::string							host_;
 	int									port_;
@@ -31,12 +32,17 @@ private:
 	std::string							autoIndex_;
 	std::string							cgi_;
 
-	ft_bool								check_validation(std::vector<std::string> &tokens, int &index, std::string &directive);
+	ft_bool								checkParentUri(std::string uri);
+	ft_bool								checkValidation(std::vector<std::string> &tokens, int &index, std::string &directive);
 	std::vector<std::string>			parseHostPort(const std::string &arg);
+	ft_bool								isExtension(const std::string &uri, int &i) const;
+	void								addSupportedExtension(const std::string &token);
+	void								deleteBlocks();
 
 public:
 	Block();
-	Block(Block *parent);
+	Block(const Block &origin);
+	~Block();
 	Block &operator=(const Block &origin);
 
 	static void							setDefaultBlock(const char *file);
@@ -61,14 +67,13 @@ public:
 	void								setClientMaxBodySize(std::vector<std::string> args);
 	void								setErrorPages(std::vector<std::string> args);
 	// LocationBlock 만 해당
-	void								setParent(Block *parent);
 	void								setUri(std::string uri);
 	void								setIndex(std::vector<std::string> args);
 	void								setAutoIndex(std::vector<std::string> args);
 	void								setCgi(std::vector<std::string> args);
 
-	const Block							&getParent() const;
-	const std::vector<Block *>			&getLocationBlocks() const;
+	const std::set<std::string>			&getSupportedExtensions() const;
+	const std::vector<Block>			&getLocationBlocks() const;
 	const std::string					&getHost() const;
 	const int							&getPort() const;
 	const std::set<std::string>			&getServerNames() const;
@@ -83,7 +88,8 @@ public:
 	const std::string					&getAutoIndex() const;
 	const std::string					&getCgi() const;
 
-	const Block							&getLocationBlock(std::string uri);
+	void								applyWildCard(std::string &uri, int &dot) const;
+	const Block							&getLocationBlock(std::string uri) const;
 	void								printBlock() const;
 
 	class InvalidConfigFileException : public std::exception {

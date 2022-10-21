@@ -3,44 +3,20 @@
 
 Block Block::defaultBlock_;
 
-void Block::setDefaultBlock(const char *file) {
-	std::vector<std::string>	tokens;
-	int							tokenSize;
-	char						buffer[BUFFER_SIZE + 1];
-	int							fd;
-	int							ret;
-	std::string					line = "";
+ft_bool Block::checkParentUri(std::string uri) {
+	// std::string	parentUri;
+	int			len;
 
-	memset(buffer, 0, sizeof(buffer));
-	fd = open(file, O_RDONLY);
-	if (fd <= 0)
-		throw std::runtime_error("fail: Opening configuration file\n");
-	ret = read(fd, buffer, BUFFER_SIZE);
-	while (ret > 0) {
-		buffer[ret] = '\0';
-		line += buffer;
-		ret = read(fd, buffer, BUFFER_SIZE);
-	}
-	if (ret == FT_ERROR) {
-		close(fd);
-		throw std::runtime_error("fail: Reading configuration file\n");
-	}
-	tokens = parseLine(line, std::string(" \n\t"));
-	close(fd);
-	tokenSize = tokens.size();
-	for (int i = 0; i < tokenSize; i++) {
-		if (tokens[i] == "server") {
-			Block	tmpServerBlock;
-
-			tmpServerBlock.setDefaultServerDirectivesMap();
-			tmpServerBlock.parseServerBlock(tokens, ++i);
-			Block::defaultBlock_ = tmpServerBlock;
-		} else
-			throw std::runtime_error("Wrong default configuration file.\n");
-	}
+	// parent의 uri
+	if (uri_ == "")
+		return FT_TRUE;
+	len = uri_.length();
+	if (!strncmp(uri.c_str(), uri_.c_str(), len))
+		return FT_TRUE;
+	return FT_FALSE;
 }
 
-ft_bool	Block::check_validation(std::vector<std::string> &tokens, int &i, std::string &directive) {
+ft_bool	Block::checkValidation(std::vector<std::string> &tokens, int &i, std::string &directive) {
 	directivesMap::iterator	it;
 
 	// ";" 뒤에 오는 토큰이 없이 파일의 끝이면 에러
@@ -78,33 +54,119 @@ std::vector<std::string> Block::parseHostPort(const std::string &arg) {
 	return args;
 }
 
-Block::Block() : parent_(nullptr), host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
+ft_bool Block::isExtension(const std::string &uri, int &i) const {
+	int										len;
+	std::string								extension;
+	std::set<std::string>::const_iterator	it;
+
+	len = uri.length();
+	for (i = len - 1; i >= 0; i--) {
+		if (uri[i] == '.') {
+			if (i == len - 1)
+				return FT_FALSE;
+			else
+				break ;
+		}
+	}
+	if (i <= 0)
+		return FT_FALSE;
+	extension = uri.substr(i + 1);
+	for (it = supportedExtensions_.begin(); it != supportedExtensions_.end(); it++) {
+		if (extension == *it)
+			return FT_TRUE;
+	}
+	return FT_FALSE;
+}
+
+void Block::addSupportedExtension(const std::string &token) {
+	int			len;
+	int			i;
+	std::string	extension;
+
+	len = token.length();
+	for (i = len; i >= 0; i--) {
+		if (token[i] == '.') {
+			if (i == len)
+				return ;
+			else
+				break ;
+		}
+	}
+	if (i <= 0)
+		return ;
+	if (token[i - 1] != '*')
+		return ;
+	extension = token.substr(i + 1);
+	supportedExtensions_.insert(extension);
+}
+
+Block::Block() : host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
 	setServerDirectivesMap();
 }
 
-Block::Block(Block *parent) : host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
-	setParent(parent);
-	setLocationDirectivesMap();
+Block::Block(const Block &origin) {
+	*this = origin;
+	if (origin.uri_ != "")
+		setLocationDirectivesMap();
 }
 
-Block &Block::operator=(const Block &origin) {
-	std::vector<Block>::iterator	it;
+Block::~Block() {}
 
-	setParent(origin.parent_);
-	locationBlocks_ = origin.locationBlocks_;
-	directivesMap_ = origin.directivesMap_;
-	host_ = origin.host_;
-	port_ = origin.port_;
-	serverNames_ = origin.serverNames_;
-	webRoot_ = origin.webRoot_;
-	allowedMethods_ = origin.allowedMethods_;
-	clientMaxBodySize_ = origin.clientMaxBodySize_;
-	errorPages_ = origin.errorPages_;
-	uri_ = origin.uri_;
-	index_ = origin.index_;
-	autoIndex_ = origin.autoIndex_;
-	cgi_ = origin.cgi_;
+Block &Block::operator=(const Block &origin) {
+	if (this != &origin) {
+		locationBlocks_ = origin.locationBlocks_;
+		directivesMap_ = origin.directivesMap_;
+		supportedExtensions_ = origin.supportedExtensions_;
+		host_ = origin.host_;
+		port_ = origin.port_;
+		serverNames_ = origin.serverNames_;
+		webRoot_ = origin.webRoot_;
+		allowedMethods_ = origin.allowedMethods_;
+		clientMaxBodySize_ = origin.clientMaxBodySize_;
+		errorPages_ = origin.errorPages_;
+		uri_ = origin.uri_;
+		index_ = origin.index_;
+		autoIndex_ = origin.autoIndex_;
+		cgi_ = origin.cgi_;
+	}
 	return (*this);
+}
+
+void Block::setDefaultBlock(const char *file) {
+	std::vector<std::string>	tokens;
+	int							tokenSize;
+	char						buffer[BUFFER_SIZE + 1];
+	int							fd;
+	int							ret;
+	std::string					line = "";
+
+	memset(buffer, 0, sizeof(buffer));
+	fd = open(file, O_RDONLY);
+	if (fd <= 0)
+		throw std::runtime_error("fail: Opening configuration file\n");
+	ret = read(fd, buffer, BUFFER_SIZE);
+	while (ret > 0) {
+		buffer[ret] = '\0';
+		line += buffer;
+		ret = read(fd, buffer, BUFFER_SIZE);
+	}
+	if (ret == FT_ERROR) {
+		close(fd);
+		throw std::runtime_error("fail: Reading configuration file\n");
+	}
+	tokens = parseLine(line, std::string(" \n\t"));
+	close(fd);
+	tokenSize = tokens.size();
+	for (int i = 0; i < tokenSize; i++) {
+		if (tokens[i] == "server") {
+			Block	tmpServerBlock;
+
+			tmpServerBlock.setDefaultServerDirectivesMap();
+			tmpServerBlock.parseServerBlock(tokens, ++i);
+			Block::defaultBlock_ = tmpServerBlock;
+		} else
+			throw std::runtime_error("Wrong default configuration file.\n");
+	}
 }
 
 void Block::setDefaultServerDirectivesMap() {
@@ -145,12 +207,12 @@ ft_bool Block::has_semi_colon(std::vector<std::string> &tokens, int &i, std::vec
 	last = tokens[i].length() - 1;
 	// 토큰이 ";" 자체인 경우
 	if (tokens[i] == ";")
-		return (check_validation(tokens, i, directive));
+		return (checkValidation(tokens, i, directive));
 	// 토큰의 오른쪽 끝이 ";"인 경우
 	else if (tokens[i][last] == ';') {
 		tokens[i].erase(last, last);
 		args->push_back(tokens[i]);
-		return (check_validation(tokens, i, directive));
+		return (checkValidation(tokens, i, directive));
 	}
 	// 토큰이 ";"를 포함하지 않음
 	else
@@ -174,10 +236,10 @@ void Block::parseServerBlock(std::vector<std::string> &tokens, int &i) {
 		if (it == directivesMap_.end()) {
 			// 로케이션 블록 파싱
 			if (tokens[i] == "location") {
-				Block	*tmpLocationBlock = new Block(this);
+				Block	tmpLocationBlock(*this);
 
-				tmpLocationBlock->setLocationDirectivesMap();
-				tmpLocationBlock->parseLocationBlock(tokens, ++i);
+				tmpLocationBlock.setLocationDirectivesMap();
+				tmpLocationBlock.parseLocationBlock(tokens, ++i);
 				locationBlocks_.push_back(tmpLocationBlock);
 			}
 			else {
@@ -208,6 +270,7 @@ void Block::parseLocationBlock(std::vector<std::string> &tokens, int &i) {
 	if (tokens[i] == "{")
 		throw std::runtime_error("Wrong formatted configuration file.\n");
 	setUri(tokens[i]);
+	addSupportedExtension(tokens[i]);
 	if (tokens[++i] != "{")
 		throw std::runtime_error("Wrong formatted configuration file.\n");
 	i++;
@@ -219,9 +282,9 @@ void Block::parseLocationBlock(std::vector<std::string> &tokens, int &i) {
 		if (it == directivesMap_.end()) {
 			// 로케이션 블록 파싱
 			if (tokens[i] == "location") {
-				Block	*tmpLocationBlock = new Block(this);
+				Block	tmpLocationBlock(*this);
 	
-				tmpLocationBlock->parseLocationBlock(tokens, ++i);
+				tmpLocationBlock.parseLocationBlock(tokens, ++i);
 				locationBlocks_.push_back(tmpLocationBlock);
 			}
 			else {
@@ -243,17 +306,9 @@ void Block::parseLocationBlock(std::vector<std::string> &tokens, int &i) {
 	}
 }
 
-void Block::setParent(Block *parent) {
-	if (parent)
-	{
-		parent_ = new Block();
-		*parent_ = *parent;
-	}
-	else
-		parent_ = NULL;
-}
-
 void Block::setUri(std::string uri) {
+	if (!checkParentUri(uri))
+		throw InvalidConfigFileException("error: location block's uri doesn't contain parent's location uri.\n");
 	uri_ = uri;
 }
 
@@ -277,8 +332,8 @@ void Block::setHostPort(std::vector<std::string> args) {
 	if (args.size() != 1)
 		throw InvalidConfigFileException("host and port\n");
 	hostport = parseHostPort(args[0]);
-	setHost(hostport[0]);
-	setPort(atoi(hostport[1].c_str()));
+	host_ = hostport[0];
+	port_ = atoi(hostport[1].c_str());
 }
 
 void Block::setServerNames(std::vector<std::string> args) {
@@ -333,67 +388,53 @@ void Block::setAutoIndex(std::vector<std::string> args) {
 	autoIndex_ = args[0];
 }
 
-const Block &Block::getParent() const {
-	return (*parent_);
+const std::set<std::string> &Block::getSupportedExtensions() const {
+	return supportedExtensions_;
 }
 
-const std::vector<Block *> &Block::getLocationBlocks() const {
+const std::vector<Block> &Block::getLocationBlocks() const {
 	return locationBlocks_;
 }
 
 const std::string &Block::getHost() const {
 	if (host_ != "")
 		return host_;
-	else if (host_ == "" && parent_)
-		return (parent_->getHost());
 	return Block::defaultBlock_.getHost();
 }
 
 const int &Block::getPort() const {
 	if (port_)
 		return port_;
-	else if (port_ == 0 && parent_)
-		return (parent_->getPort());
 	return Block::defaultBlock_.getPort();
 }
 
 const std::set<std::string> &Block::getServerNames() const {
 	if (!serverNames_.empty())
 		return serverNames_;
-	else if (serverNames_.empty() && parent_)
-		return (parent_->getServerNames());
 	return Block::defaultBlock_.getServerNames();
 }
 
 const std::string &Block::getWebRoot() const {
 	if (webRoot_ != "")
 		return webRoot_;
-	else if (webRoot_ == "" && parent_)
-		return (parent_->getWebRoot());
 	return Block::defaultBlock_.getWebRoot();
 }
 
 const std::set<std::string> &Block::getAllowedMethods() const {
 	if (!allowedMethods_.empty())
 		return allowedMethods_;
-	else if (allowedMethods_.empty() && parent_)
-		return (parent_->getAllowedMethods());
 	return Block::defaultBlock_.getAllowedMethods();
 }
 
 const int &Block::getClientMaxBodySize() const {
 	if (clientMaxBodySize_)
 		return clientMaxBodySize_;
-	else if (clientMaxBodySize_  == 0 && parent_)
-		return (parent_->getClientMaxBodySize());
 	return Block::defaultBlock_.getClientMaxBodySize();
 }
 
 const std::map<int, std::string> &Block::getErrorPages() const {
 	if (!errorPages_.empty())
 		return (errorPages_);
-	else if (errorPages_.empty() && parent_)
-		return (parent_->getErrorPages());
 	return Block::defaultBlock_.getErrorPages();
 }
 
@@ -404,7 +445,7 @@ const std::string &Block::getErrorPage(int num) const {
 	pages = getErrorPages();
 	it = pages.find(num);
 	if (it == pages.end())
-		return Block::defaultBlock_.getErrorPage(num);
+		throw InvalidConfigFileException("There is no error page set in the configuration file.\n");
 	return (it->second);
 }
 
@@ -415,39 +456,48 @@ const std::string &Block::getUri() const {
 const std::string &Block::getIndex() const {
 	if (index_ != "")
 		return (index_);
-	else if (index_ == "" && parent_)
-		return (parent_->getIndex());
 	return Block::defaultBlock_.getIndex();
 }
 
 const std::string &Block::getAutoIndex() const {
 	if (autoIndex_ != "")
 		return (autoIndex_);
-	else if (autoIndex_ == "" && parent_)
-		return (parent_->getAutoIndex());
 	return Block::defaultBlock_.getAutoIndex();
 }
 
 const std::string &Block::getCgi() const {
 	if (cgi_ != "")
 		return (cgi_);
-	else if (cgi_ == "" && parent_)
-		return (parent_->getCgi());
 	throw InvalidConfigFileException("no cgi set\n");
 }
 
-const Block &Block::getLocationBlock(std::string uri) {
-	std::vector<Block *>::iterator	it;
-	Block							ret;
+void Block::applyWildCard(std::string &uri, int &dot) const {
+	int			slash = 0;
 
+	for (int i = dot; i >= 0; i--) {
+		if (uri[i] == '/') {
+			slash = i;
+			break ;
+		}
+	}
+	if (slash == dot - 1)
+		return ;
+	uri.replace(slash + 1, dot - slash - 1, "*");
+}
+
+const Block &Block::getLocationBlock(std::string uri) const {
+	int										dot;
+	std::vector<Block>::const_iterator		it;
+	Block									ret;
+
+	if (isExtension(uri, dot))
+		applyWildCard(uri, dot);
 	if (uri_ == uri)
 		return *this;
 	if (locationBlocks_.empty())
 		return Block::defaultBlock_;
 	for (it = locationBlocks_.begin(); it != locationBlocks_.end(); it++) {
-		ret = (*it)->getLocationBlock(uri);
-		if (ret.getUri() != "")
-			return ((*it)->getLocationBlock(uri));
+		return (it->getLocationBlock(uri));
 	}
 	return Block::defaultBlock_;
 }
@@ -473,8 +523,13 @@ void Block::printBlock() const {
 		std::cout << itmap->first << " " << itmap->second << std::endl;
 	std::cout << "Index: ";
 	std::cout << getIndex() << std::endl;
-	std::cout << "Cgi: ";
-	std::cout << getCgi() << std::endl;
+	try {
+		std::cout << "Cgi: ";
+		std::cout << getCgi() << std::endl;
+	}
+	catch (std::exception &e) {
+		std::cout << e.what() << std::endl;
+	}
 	std::cout << "Auto index: ";
 	std::cout << getAutoIndex() << std::endl;
 	std::cout << "Allowed methods: " << std::endl;

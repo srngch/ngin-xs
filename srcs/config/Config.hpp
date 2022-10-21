@@ -4,25 +4,26 @@
 # define BUFFER_SIZE 1600
 
 # include "Block.hpp"
-# include <stdlib.h>
 # include <unistd.h>
 # include <fcntl.h>
 # include <vector>
 
 class Config {
 private:
-	std::vector<Block *>		serverBlocks_;
+	std::vector<Block>			serverBlocks_;
 
-	Config();
 	std::vector<std::string>	readAndSplit(const char *filePath);
-	void						parseConfigFile(const char *filePath);
 
 public:
-	Config(char *filePath);
+	Config();
+	Config(const Config &origin);
 	~Config();
+	Config &operator=(const Config &origin);
 
-	const std::vector<Block *>	&getServerBlocks();
-	const Block					&getServerBlock(int port);
+	void						parseConfigFile(const char *filePath);
+
+	const std::vector<Block>	&getServerBlocks() const;
+	const Block					&getServerBlock(int port) const;
 
 	class InvalidLocationBlockException : public std::exception {
 		virtual const char *what() const throw();
