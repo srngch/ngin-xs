@@ -4,14 +4,14 @@
 Block Block::defaultBlock_;
 
 ft_bool Block::checkParentUri(std::string uri) {
-	// std::string	parentUri;
 	int			len;
 
 	// parent의 uri
 	if (uri_ == "")
 		return FT_TRUE;
 	len = uri_.length();
-	if (!strncmp(uri.c_str(), uri_.c_str(), len))
+	if (!uri.compare(0, len, uri_))
+	// if (!strncmp(uri.c_str(), uri_.c_str(), len))
 		return FT_TRUE;
 	return FT_FALSE;
 }
@@ -438,14 +438,14 @@ const std::map<int, std::string> &Block::getErrorPages() const {
 	return Block::defaultBlock_.getErrorPages();
 }
 
-const std::string &Block::getErrorPage(int num) const {
+std::string Block::getErrorPage(int num) const {
 	std::map<int, std::string>				pages;
 	std::map<int, std::string>::iterator	it;
 
 	pages = getErrorPages();
 	it = pages.find(num);
 	if (it == pages.end())
-		throw InvalidConfigFileException("There is no error page set in the configuration file.\n");
+		return "";
 	return (it->second);
 }
 
@@ -474,12 +474,7 @@ const std::string &Block::getCgi() const {
 void Block::applyWildCard(std::string &uri, int &dot) const {
 	int			slash = 0;
 
-	for (int i = dot; i >= 0; i--) {
-		if (uri[i] == '/') {
-			slash = i;
-			break ;
-		}
-	}
+	slash = uri.find_last_of('/');
 	if (slash == dot - 1)
 		return ;
 	uri.replace(slash + 1, dot - slash - 1, "*");

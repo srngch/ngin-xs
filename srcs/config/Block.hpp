@@ -81,7 +81,7 @@ public:
 	const std::set<std::string>			&getAllowedMethods() const;
 	const int							&getClientMaxBodySize() const;
 	const std::map<int, std::string>	&getErrorPages() const;
-	const std::string					&getErrorPage(int num) const;
+	std::string							getErrorPage(int num) const;
 
 	const std::string					&getUri() const;
 	const std::string					&getIndex() const; 
