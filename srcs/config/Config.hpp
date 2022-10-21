@@ -12,18 +12,22 @@ class Config {
 private:
 	std::vector<Block>			serverBlocks_;
 
-	Config();
-	std::vector<std::string>	splitLines(const std::string &str, std::string delim);
 	std::vector<std::string>	readAndSplit(const char *filePath);
-	void						parseConfigFile(const char *filePath);
 
 public:
-	Config(char *filePath);
+	Config();
+	Config(const Config &origin);
 	~Config();
+	Config &operator=(const Config &origin);
+
+	void						parseConfigFile(const char *filePath);
 
 	const std::vector<Block>	&getServerBlocks() const;
-	// Block						&getServerBlock(int port);
-	// Block						&getLocationBlock(std::string uri);
+	const Block					&getServerBlock(int port) const;
+
+	class InvalidLocationBlockException : public std::exception {
+		virtual const char *what() const throw();
+	};
 };
 
 #endif

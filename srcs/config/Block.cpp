@@ -1,6 +1,22 @@
 #include "Block.hpp"
+#include "Config.hpp"
 
-ft_bool	Block::check_validation(std::vector<std::string> &tokens, int &i, std::string &directive) {
+Block Block::defaultBlock_;
+
+ft_bool Block::checkParentUri(std::string uri) {
+	int			len;
+
+	// parent의 uri
+	if (uri_ == "")
+		return FT_TRUE;
+	len = uri_.length();
+	if (!uri.compare(0, len, uri_))
+	// if (!strncmp(uri.c_str(), uri_.c_str(), len))
+		return FT_TRUE;
+	return FT_FALSE;
+}
+
+ft_bool	Block::checkValidation(std::vector<std::string> &tokens, int &i, std::string &directive) {
 	directivesMap::iterator	it;
 
 	// ";" 뒤에 오는 토큰이 없이 파일의 끝이면 에러
@@ -38,13 +54,130 @@ std::vector<std::string> Block::parseHostPort(const std::string &arg) {
 	return args;
 }
 
-Block::Block() : parent_(nullptr), host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
+ft_bool Block::isExtension(const std::string &uri, int &i) const {
+	int										len;
+	std::string								extension;
+	std::set<std::string>::const_iterator	it;
+
+	len = uri.length();
+	for (i = len - 1; i >= 0; i--) {
+		if (uri[i] == '.') {
+			if (i == len - 1)
+				return FT_FALSE;
+			else
+				break ;
+		}
+	}
+	if (i <= 0)
+		return FT_FALSE;
+	extension = uri.substr(i + 1);
+	for (it = supportedExtensions_.begin(); it != supportedExtensions_.end(); it++) {
+		if (extension == *it)
+			return FT_TRUE;
+	}
+	return FT_FALSE;
+}
+
+void Block::addSupportedExtension(const std::string &token) {
+	int			len;
+	int			i;
+	std::string	extension;
+
+	len = token.length();
+	for (i = len; i >= 0; i--) {
+		if (token[i] == '.') {
+			if (i == len)
+				return ;
+			else
+				break ;
+		}
+	}
+	if (i <= 0)
+		return ;
+	if (token[i - 1] != '*')
+		return ;
+	extension = token.substr(i + 1);
+	supportedExtensions_.insert(extension);
+}
+
+Block::Block() : host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
 	setServerDirectivesMap();
 }
 
-Block::Block(Block *parent) : host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("") {
-	parent_ = parent;
-	setLocationDirectivesMap();
+Block::Block(const Block &origin) {
+	*this = origin;
+	if (origin.uri_ != "")
+		setLocationDirectivesMap();
+}
+
+Block::~Block() {}
+
+Block &Block::operator=(const Block &origin) {
+	if (this != &origin) {
+		locationBlocks_ = origin.locationBlocks_;
+		directivesMap_ = origin.directivesMap_;
+		supportedExtensions_ = origin.supportedExtensions_;
+		host_ = origin.host_;
+		port_ = origin.port_;
+		serverNames_ = origin.serverNames_;
+		webRoot_ = origin.webRoot_;
+		allowedMethods_ = origin.allowedMethods_;
+		clientMaxBodySize_ = origin.clientMaxBodySize_;
+		errorPages_ = origin.errorPages_;
+		uri_ = origin.uri_;
+		index_ = origin.index_;
+		autoIndex_ = origin.autoIndex_;
+		cgi_ = origin.cgi_;
+	}
+	return (*this);
+}
+
+void Block::setDefaultBlock(const char *file) {
+	std::vector<std::string>	tokens;
+	int							tokenSize;
+	char						buffer[BUFFER_SIZE + 1];
+	int							fd;
+	int							ret;
+	std::string					line = "";
+
+	memset(buffer, 0, sizeof(buffer));
+	fd = open(file, O_RDONLY);
+	if (fd <= 0)
+		throw std::runtime_error("fail: Opening configuration file\n");
+	ret = read(fd, buffer, BUFFER_SIZE);
+	while (ret > 0) {
+		buffer[ret] = '\0';
+		line += buffer;
+		ret = read(fd, buffer, BUFFER_SIZE);
+	}
+	if (ret == FT_ERROR) {
+		close(fd);
+		throw std::runtime_error("fail: Reading configuration file\n");
+	}
+	tokens = parseLine(line, std::string(" \n\t"));
+	close(fd);
+	tokenSize = tokens.size();
+	for (int i = 0; i < tokenSize; i++) {
+		if (tokens[i] == "server") {
+			Block	tmpServerBlock;
+
+			tmpServerBlock.setDefaultServerDirectivesMap();
+			tmpServerBlock.parseServerBlock(tokens, ++i);
+			Block::defaultBlock_ = tmpServerBlock;
+		} else
+			throw std::runtime_error("Wrong default configuration file.\n");
+	}
+}
+
+void Block::setDefaultServerDirectivesMap() {
+	directivesMap_["listen"] = &Block::setHostPort;
+	directivesMap_["server_name"] = &Block::setServerNames;
+	directivesMap_["root"] = &Block::setWebRoot;
+	directivesMap_["allowed_methods"] = &Block::setAllowedMethods;
+	directivesMap_["client_max_body_size"] = &Block::setClientMaxBodySize;
+	directivesMap_["error_page"] = &Block::setErrorPages;
+	directivesMap_["index"] = &Block::setIndex;
+	directivesMap_["autoindex"] = &Block::setAutoIndex;
 }
 
 void Block::setServerDirectivesMap() {
@@ -60,7 +193,7 @@ void Block::setLocationDirectivesMap() {
 	directivesMap_["autoindex"] = &Block::setAutoIndex;
 	directivesMap_["cgi"] = &Block::setCgi;
 	directivesMap_["root"] = &Block::setWebRoot;
-	directivesMap_["limit_except"] = &Block::setAllowedMethods;
+	directivesMap_["allowed_methods"] = &Block::setAllowedMethods;
 	directivesMap_["error_page"] = &Block::setErrorPages;
 }
 
@@ -74,12 +207,12 @@ ft_bool Block::has_semi_colon(std::vector<std::string> &tokens, int &i, std::vec
 	last = tokens[i].length() - 1;
 	// 토큰이 ";" 자체인 경우
 	if (tokens[i] == ";")
-		return (check_validation(tokens, i, directive));
+		return (checkValidation(tokens, i, directive));
 	// 토큰의 오른쪽 끝이 ";"인 경우
 	else if (tokens[i][last] == ';') {
 		tokens[i].erase(last, last);
 		args->push_back(tokens[i]);
-		return (check_validation(tokens, i, directive));
+		return (checkValidation(tokens, i, directive));
 	}
 	// 토큰이 ";"를 포함하지 않음
 	else
@@ -103,8 +236,9 @@ void Block::parseServerBlock(std::vector<std::string> &tokens, int &i) {
 		if (it == directivesMap_.end()) {
 			// 로케이션 블록 파싱
 			if (tokens[i] == "location") {
-				Block	tmpLocationBlock(this);
-	
+				Block	tmpLocationBlock(*this);
+
+				tmpLocationBlock.setLocationDirectivesMap();
 				tmpLocationBlock.parseLocationBlock(tokens, ++i);
 				locationBlocks_.push_back(tmpLocationBlock);
 			}
@@ -136,6 +270,7 @@ void Block::parseLocationBlock(std::vector<std::string> &tokens, int &i) {
 	if (tokens[i] == "{")
 		throw std::runtime_error("Wrong formatted configuration file.\n");
 	setUri(tokens[i]);
+	addSupportedExtension(tokens[i]);
 	if (tokens[++i] != "{")
 		throw std::runtime_error("Wrong formatted configuration file.\n");
 	i++;
@@ -147,7 +282,7 @@ void Block::parseLocationBlock(std::vector<std::string> &tokens, int &i) {
 		if (it == directivesMap_.end()) {
 			// 로케이션 블록 파싱
 			if (tokens[i] == "location") {
-				Block	tmpLocationBlock(this);
+				Block	tmpLocationBlock(*this);
 	
 				tmpLocationBlock.parseLocationBlock(tokens, ++i);
 				locationBlocks_.push_back(tmpLocationBlock);
@@ -172,20 +307,30 @@ void Block::parseLocationBlock(std::vector<std::string> &tokens, int &i) {
 }
 
 void Block::setUri(std::string uri) {
+	if (!checkParentUri(uri))
+		throw InvalidConfigFileException("error: location block's uri doesn't contain parent's location uri.\n");
 	uri_ = uri;
 }
 
 void Block::setIndex(std::vector<std::string> args) {
 	if (args.size() != 1)
-		throw std::runtime_error("Invalid configuration file: port\n");
+		throw InvalidConfigFileException("index\n");
 	index_ = args[0];
+}
+
+void Block::setHost(std::string host) {
+	host_ = host;
+}
+
+void Block::setPort(int port) {
+	port_ = port;
 }
 
 void Block::setHostPort(std::vector<std::string> args) {
 	std::vector<std::string>	hostport;
 
 	if (args.size() != 1)
-		throw std::runtime_error("Invalid configuration file: port\n");
+		throw InvalidConfigFileException("host and port\n");
 	hostport = parseHostPort(args[0]);
 	host_ = hostport[0];
 	port_ = atoi(hostport[1].c_str());
@@ -195,167 +340,212 @@ void Block::setServerNames(std::vector<std::string> args) {
 	std::vector<std::string>::iterator	it;
 
 	if (args.empty())
-		throw std::runtime_error("Invalid configuration file: server name\n");
+		throw InvalidConfigFileException("server name\n");
 	for (it = args.begin(); it != args.end(); it++)
 		serverNames_.insert(*it);
 }
 
 void Block::setWebRoot(std::vector<std::string> args) {
 	if (args.size() != 1)
-		throw std::runtime_error("Invalid configuration file: port\n");
+		throw InvalidConfigFileException("invalid web root\n");
 	webRoot_ = args[0];
 }
 
 void Block::setCgi(std::vector<std::string> args) {
-	std::vector<std::string>::iterator	it;
-
-	if (args.empty())
-		throw std::runtime_error("Invalid configuration file: server name\n");
-	for (it = args.begin(); it != args.end(); it++)
-		cgi_.insert(*it);
+	if (args.size() != 1)
+		throw InvalidConfigFileException("cgi\n");
+	cgi_ = args[0];
 }
 
 void Block::setAllowedMethods(std::vector<std::string> args) {
 	std::vector<std::string>::iterator	it;
 
 	if (args.empty())
-		throw std::runtime_error("Invalid configuration file: server name\n");
+		throw InvalidConfigFileException("invalid allowed methods\n");
 	for (it = args.begin(); it != args.end(); it++)
 		allowedMethods_.insert(*it);
 }
 
+void Block::setClientMaxBodySize(int size) {
+	clientMaxBodySize_= size;
+}
+
 void Block::setClientMaxBodySize(std::vector<std::string> args) {
 	if (args.size() != 1)
-		throw std::runtime_error("Invalid configuration file: port\n");
+		throw InvalidConfigFileException("invalid client max body size\n");
 	clientMaxBodySize_= atoi(args[0].c_str());
 }
 
 void Block::setErrorPages(std::vector<std::string> args) {
 	if (args.size() != 2)
-		throw std::runtime_error("Invalid configuration file: error page\n");
+		throw InvalidConfigFileException("invalid error pages\n");
 	errorPages_.insert(std::pair<int, std::string>(atoi(args[0].c_str()), args[1]));
 }
 
 void Block::setAutoIndex(std::vector<std::string> args) {
 	if (args.size() != 1)
-		throw std::runtime_error("Invalid configuration file: error page\n");
+		throw InvalidConfigFileException("invalid auto index\n");
 	autoIndex_ = args[0];
+}
+
+const std::set<std::string> &Block::getSupportedExtensions() const {
+	return supportedExtensions_;
+}
+
+const std::vector<Block> &Block::getLocationBlocks() const {
+	return locationBlocks_;
 }
 
 const std::string &Block::getHost() const {
 	if (host_ != "")
 		return host_;
-	else if (host_ == "" && parent_)
-		return (parent_->getHost());
-	throw std::runtime_error("Invalid configuration file: no port set\n");
+	return Block::defaultBlock_.getHost();
 }
 
 const int &Block::getPort() const {
 	if (port_)
 		return port_;
-	else if (port_ == 0 && parent_)
-		return (parent_->getPort());
-	throw std::runtime_error("Invalid configuration file: no port set\n");
+	return Block::defaultBlock_.getPort();
 }
 
 const std::set<std::string> &Block::getServerNames() const {
 	if (!serverNames_.empty())
 		return serverNames_;
-	else if (serverNames_.empty() && parent_)
-		return (parent_->getServerNames());
-	throw std::runtime_error("Invalid configuration file: no server names set\n");
+	return Block::defaultBlock_.getServerNames();
 }
 
 const std::string &Block::getWebRoot() const {
 	if (webRoot_ != "")
 		return webRoot_;
-	else if (webRoot_ == "" && parent_)
-		return (parent_->getWebRoot());
-	throw std::runtime_error("Invalid configuration file: no web root set\n");
+	return Block::defaultBlock_.getWebRoot();
 }
 
 const std::set<std::string> &Block::getAllowedMethods() const {
 	if (!allowedMethods_.empty())
 		return allowedMethods_;
-	else if (allowedMethods_.empty() && parent_)
-		return (parent_->getAllowedMethods());
-	throw std::runtime_error("Invalid configuration file: no allowed methods set\n");
+	return Block::defaultBlock_.getAllowedMethods();
 }
 
 const int &Block::getClientMaxBodySize() const {
 	if (clientMaxBodySize_)
 		return clientMaxBodySize_;
-	else if (clientMaxBodySize_  == 0 && parent_)
-		return (parent_->getClientMaxBodySize());
-	throw std::runtime_error("Invalid configuration file: no client body size set\n");
+	return Block::defaultBlock_.getClientMaxBodySize();
 }
 
-const std::map<int, std::string> &Block::getErrorPages() const{
+const std::map<int, std::string> &Block::getErrorPages() const {
 	if (!errorPages_.empty())
 		return (errorPages_);
-	else if (errorPages_.empty() && parent_)
-		return (parent_->getErrorPages());
-	throw std::runtime_error("Invalid configuration file: no error pages set\n");
+	return Block::defaultBlock_.getErrorPages();
 }
 
-const std::string &Block::getErrorPage(int num) const {
+std::string Block::getErrorPage(int num) const {
 	std::map<int, std::string>				pages;
 	std::map<int, std::string>::iterator	it;
 
 	pages = getErrorPages();
 	it = pages.find(num);
 	if (it == pages.end())
-		throw std::runtime_error("No error page set.");
+		return "";
 	return (it->second);
 }
 
 const std::string &Block::getUri() const {
-	if (uri_ != "")
-		return (uri_);
-	else if (uri_ == "" && parent_)
-		return (parent_->getUri());
-	throw std::runtime_error("Invalid configuration file: no uri set\n");
+	return uri_;
 }
 
 const std::string &Block::getIndex() const {
 	if (index_ != "")
 		return (index_);
-	else if (index_ == "" && parent_)
-		return (parent_->getIndex());
-	throw std::runtime_error("Invalid configuration file: no uri set\n");
+	return Block::defaultBlock_.getIndex();
 }
 
 const std::string &Block::getAutoIndex() const {
 	if (autoIndex_ != "")
 		return (autoIndex_);
-	else if (autoIndex_ == "" && parent_)
-		return (parent_->getAutoIndex());
-	throw std::runtime_error("Invalid configuration file: no autoindex set\n");
+	return Block::defaultBlock_.getAutoIndex();
 }
 
-const std::set<std::string> &Block::getCgi() const {
-	if (!cgi_.empty())
+const std::string &Block::getCgi() const {
+	if (cgi_ != "")
 		return (cgi_);
-	else if (cgi_.empty() && parent_)
-		return (parent_->getCgi());
-	throw std::runtime_error("Invalid configuration file: no cgi set\n");
+	throw InvalidConfigFileException("no cgi set\n");
 }
 
-void Block::printBlock() {
+void Block::applyWildCard(std::string &uri, int &dot) const {
+	int			slash = 0;
+
+	slash = uri.find_last_of('/');
+	if (slash == dot - 1)
+		return ;
+	uri.replace(slash + 1, dot - slash - 1, "*");
+}
+
+const Block &Block::getLocationBlock(std::string uri) const {
+	int										dot;
+	std::vector<Block>::const_iterator		it;
+	Block									ret;
+
+	if (isExtension(uri, dot))
+		applyWildCard(uri, dot);
+	if (uri_ == uri)
+		return *this;
+	if (locationBlocks_.empty())
+		return Block::defaultBlock_;
+	for (it = locationBlocks_.begin(); it != locationBlocks_.end(); it++) {
+		return (it->getLocationBlock(uri));
+	}
+	return Block::defaultBlock_;
+}
+
+void Block::printBlock() const {
 	std::set<std::string>::iterator			itset;
+	std::map<int, std::string>				pages;
 	std::map<int, std::string>::iterator	itmap;
 
-	std::cout << "Host: " << host_ << std::endl;
-	std::cout << "Port: " << port_ << std::endl;
+	std::cout << "Host: " << getHost() << std::endl;
+	std::cout << "Port: " << getPort() << std::endl;
 	std::cout << "Server names: ";
-	for (itset = serverNames_.begin(); itset != serverNames_.end(); itset++)
+	for (itset = getServerNames().begin(); itset != getServerNames().end(); itset++)
 		std::cout << *itset << " ";
 	std::cout << std::endl;
 	std::cout << "Web root: ";
-	std::cout << webRoot_ << std::endl;
-	std::cout << "Client body size: ";
-	std::cout << clientMaxBodySize_ << std::endl;
+	std::cout << getWebRoot() << std::endl;
+	std::cout << "Client max body size: ";
+	std::cout << getClientMaxBodySize() << std::endl;
 	std::cout << "Error pages: " << std::endl;
-	for (itmap = errorPages_.begin(); itmap != errorPages_.end(); itmap++)
+	pages = getErrorPages();
+	for (itmap = pages.begin(); itmap != pages.end(); itmap++)
 		std::cout << itmap->first << " " << itmap->second << std::endl;
+	std::cout << "Index: ";
+	std::cout << getIndex() << std::endl;
+	try {
+		std::cout << "Cgi: ";
+		std::cout << getCgi() << std::endl;
+	}
+	catch (std::exception &e) {
+		std::cout << e.what() << std::endl;
+	}
+	std::cout << "Auto index: ";
+	std::cout << getAutoIndex() << std::endl;
+	std::cout << "Allowed methods: " << std::endl;
+	for (itset = getAllowedMethods().begin(); itset != getAllowedMethods().end(); itset++)
+		std::cout << *itset << " ";
+	std::cout << std::endl;
+	std::cout << "Uri: ";
+	std::cout << getUri() << std::endl;
+}
+
+Block::InvalidConfigFileException::InvalidConfigFileException(const std::string msg) {
+	message_ = "Invalid configuration file: ";
+	message_ += msg;
+}
+
+const char *Block::InvalidConfigFileException::what() const throw() {
+	return message_.c_str();
+}
+
+Block::InvalidConfigFileException::~InvalidConfigFileException() throw() {}
+
+const char *Block::InvalidLocationBlockException::what() const throw() {
+	return "There is no location block with the requested uri.\n";
 }

@@ -36,6 +36,7 @@ void Config::parseConfigFile(const char *filePath) {
 		if (tokens[i] == "server") {
 			Block	tmpServerBlock;
 
+			tmpServerBlock.setServerDirectivesMap();
 			tmpServerBlock.parseServerBlock(tokens, ++i);
 			serverBlocks_.push_back(tmpServerBlock);
 		} else
@@ -47,14 +48,34 @@ const std::vector<Block> &Config::getServerBlocks() const {
 	return serverBlocks_;
 }
 
-// Block &Config::getServerBlock(int port) {}
+const Block &Config::getServerBlock(int port) const {
+	std::vector<Block>::const_iterator	it;
 
-// Block &Config::getLocationBlock(std::string uri) {}
-
-Config::Config() {}
-
-Config::Config(char *filePath) {
-	parseConfigFile(filePath);
+	for (it = serverBlocks_.begin(); it != serverBlocks_.end(); it++) {
+		if (it->getPort() == port)
+			return (*it);
+	}
+	return (serverBlocks_[0]);
 }
 
+Config::Config() {
+	Block::setDefaultBlock(DEFAULT_CONF_FILE_PATH);
+}
+
+Config &Config::operator=(const Config &origin) {
+	if (this != &origin) {
+		serverBlocks_ = origin.serverBlocks_;
+	}
+	return (*this);
+}
+
+Config::Config(const Config &origin) {
+	*this = origin; 
+}
+
+
 Config::~Config() {}
+
+const char *Config::InvalidLocationBlockException::what() const throw() {
+	return "There is no location block with the requested uri.\n";
+}
