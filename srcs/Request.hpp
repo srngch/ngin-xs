@@ -12,9 +12,11 @@
 #include "macro.hpp"
 #include "utils.hpp"
 #include "Uri.hpp"
+#include "config/Block.hpp"
 
 class Request {
 private:
+	Block								locationBlock_;
 	std::string							method_;
 	Uri									*uri_;
 	std::string							version_;
@@ -31,6 +33,7 @@ public:
 	Request();
 	~Request();
 
+	const Block									&getLocationBlock();
 	const std::string							&getMethod();
 	const Uri									*getUri();
 	const std::string							&getVersion();
@@ -48,6 +51,7 @@ public:
 	void	setFilePath(const std::string &webRoot);
 	void	setOriginalHeader(const std::vector<char> originalHeader);
 	void	setOriginalBody(const std::vector<char> originalBody);
+	void	setLocationBlock(const Block &locationBlock);
 
 	void	appendOriginalHeader(const char *buf, int length);
 	void	appendOriginalBody(const char *buf, int length);

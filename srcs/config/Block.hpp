@@ -25,7 +25,7 @@ private:
 	std::set<std::string>				serverNames_;
 	std::string							webRoot_;
 	std::set<std::string>				allowedMethods_;
-	int									clientMaxBodySize_;
+	std::size_t							clientMaxBodySize_;
 	std::map<int, std::string>			errorPages_;
 	std::string							uri_;
 	std::string							index_;
@@ -36,6 +36,7 @@ private:
 	ft_bool								checkValidation(std::vector<std::string> &tokens, int &index, std::string &directive);
 	std::vector<std::string>			parseHostPort(const std::string &arg);
 	ft_bool								isExtension(const std::string &uri, int &i) const;
+	ft_bool								isCgiExtension(const std::string &uri, int &i) const;
 	void								addSupportedExtension(const std::string &token);
 	void								deleteBlocks();
 
@@ -79,7 +80,7 @@ public:
 	const std::set<std::string>			&getServerNames() const;
 	const std::string					&getWebRoot() const;
 	const std::set<std::string>			&getAllowedMethods() const;
-	const int							&getClientMaxBodySize() const;
+	const std::size_t					&getClientMaxBodySize() const;
 	const std::map<int, std::string>	&getErrorPages() const;
 	std::string							getErrorPage(int num) const;
 
@@ -89,7 +90,9 @@ public:
 	const std::string					&getCgi() const;
 
 	void								applyWildCard(std::string &uri, int &dot) const;
+	void								removeFileName(std::string &uri, int &dot) const;
 	const Block							&getLocationBlock(std::string uri) const;
+	void								gatherSupportedExtensions();
 	void								printBlock() const;
 
 	class InvalidConfigFileException : public std::exception {
