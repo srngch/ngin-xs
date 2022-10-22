@@ -2,7 +2,7 @@
 # define __MACRO_HPP__
 
 // Default configuration file
-#define DEFAULT_CONF_FILE_PATH "srcs/config/default.conf"
+#define DEFAULT_CONF_FILE_PATH "conf/default.conf"
 
 // Boolean
 #define FT_FALSE	0

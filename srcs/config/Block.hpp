@@ -74,7 +74,7 @@ public:
 
 	const std::set<std::string>			&getSupportedExtensions() const;
 	const std::vector<Block>			&getLocationBlocks() const;
-	const std::string					&getHost() const;
+	std::string							getHost() const;
 	const int							&getPort() const;
 	const std::set<std::string>			&getServerNames() const;
 	const std::string					&getWebRoot() const;

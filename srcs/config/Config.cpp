@@ -73,7 +73,6 @@ Config::Config(const Config &origin) {
 	*this = origin; 
 }
 
-
 Config::~Config() {}
 
 const char *Config::InvalidLocationBlockException::what() const throw() {
