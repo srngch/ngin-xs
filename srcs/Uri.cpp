@@ -34,7 +34,7 @@ Uri::Uri(const std::string &originalUri) {
 	pathInfo_ = "";
 	if (isCgi) {
 		pathInfo_ = tmp.substr(index + cgiExtension.length() + 1);
-		tmp = tmp.substr(0, index + cgiExtension.length() + 1);
+		tmp= tmp.substr(0, index + cgiExtension.length() + 1);
 	}
 	index = tmp.rfind('/');
 	basename_ = "";
@@ -46,6 +46,7 @@ Uri::Uri(const std::string &originalUri) {
 	dir_ = uriDir_;
 
 	// std::cout << "[Uri Class]" << std::endl;
+	// std::cout << "OriginalUri: " << originalUri_ << std::endl;
 	// std::cout << "uriDir: " << uriDir_ << std::endl;
 	// std::cout << "basename_: " << basename_ << std::endl;
 	// std::cout << "pathInfo_: " << pathInfo_ << std::endl;
@@ -72,6 +73,10 @@ const std::string &Uri::getPathInfo() const {
 
 const std::string &Uri::getQueryString() const{
 	return queryString_;
+}
+
+std::string Uri::getParsedUri() const {
+	return uriDir_ + basename_;
 }
 
 // std::string Uri::getPath() {

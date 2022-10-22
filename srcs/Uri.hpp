@@ -24,11 +24,12 @@ public:
 	Uri(const std::string &originalUri);
 	~Uri();
 
-	const std::string &getOriginalUri() const;
-	const std::string &getDir() const;
-	const std::string &getBaseName() const;
-	const std::string &getPathInfo() const;
-	const std::string &getQueryString() const;
+	const std::string	&getOriginalUri() const;
+	const std::string	&getDir() const;
+	const std::string	&getBaseName() const;
+	const std::string	&getPathInfo() const;
+	const std::string	&getQueryString() const;
+	std::string			getParsedUri() const;
 	
 	// std::string getPath();
 };

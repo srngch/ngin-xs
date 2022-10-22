@@ -42,6 +42,11 @@ void	Request::parseChunkedBody() {
 	}
 }
 
+const Block &Request::getLocationBlock() {
+	return locationBlock_;
+}
+
+
 const std::string &Request::getMethod() {
 	return method_;
 }
@@ -79,6 +84,10 @@ const std::vector<char> &Request::getOriginalHeader() {
 
 const std::vector<char> &Request::getOriginalBody() {
 	return originalBody_;
+}
+
+void Request::setLocationBlock(const Block &locationBlock) {
+	locationBlock_ = locationBlock;
 }
 
 std::size_t Request::getContentLengthNumber() {

@@ -55,21 +55,19 @@ std::vector<std::string> Block::parseHostPort(const std::string &arg) {
 }
 
 ft_bool Block::isExtension(const std::string &uri, int &i) const {
-	int										len;
+	int		len;
+
+	len = uri.length();
+	i = uri.find_last_of('.');
+	if (i <= 0 || i == len - 1)
+		return FT_FALSE;
+	return FT_TRUE;
+}
+
+ft_bool Block::isCgiExtension(const std::string &uri, int &i) const {
 	std::string								extension;
 	std::set<std::string>::const_iterator	it;
 
-	len = uri.length();
-	for (i = len - 1; i >= 0; i--) {
-		if (uri[i] == '.') {
-			if (i == len - 1)
-				return FT_FALSE;
-			else
-				break ;
-		}
-	}
-	if (i <= 0)
-		return FT_FALSE;
 	extension = uri.substr(i + 1);
 	for (it = supportedExtensions_.begin(); it != supportedExtensions_.end(); it++) {
 		if (extension == *it)
@@ -257,6 +255,7 @@ void Block::parseServerBlock(std::vector<std::string> &tokens, int &i) {
 		// 토큰이 지시자에 해당
 		else
 			directive = tokens[i];
+		gatherSupportedExtensions();
 		i++;
 	}
 }
@@ -302,6 +301,7 @@ void Block::parseLocationBlock(std::vector<std::string> &tokens, int &i) {
 		// 토큰이 지시자에 해당
 		else
 			directive = tokens[i];
+		gatherSupportedExtensions();
 		i++;
 	}
 }
@@ -428,7 +428,7 @@ const std::set<std::string> &Block::getAllowedMethods() const {
 	return Block::defaultBlock_.getAllowedMethods();
 }
 
-const int &Block::getClientMaxBodySize() const {
+const std::size_t &Block::getClientMaxBodySize() const {
 	if (clientMaxBodySize_)
 		return clientMaxBodySize_;
 	return Block::defaultBlock_.getClientMaxBodySize();
@@ -482,21 +482,50 @@ void Block::applyWildCard(std::string &uri, int &dot) const {
 	uri.replace(slash + 1, dot - slash - 1, "*");
 }
 
+void Block::removeFileName(std::string &uri, int &dot) const {
+	int			slash = 0;
+
+	slash = uri.find_last_of('/');
+	if (slash == dot - 1)
+		return ;
+	uri.erase(slash + 1, dot - slash - 1);
+}
+
 const Block &Block::getLocationBlock(std::string uri) const {
 	int										dot;
 	std::vector<Block>::const_iterator		it;
 	Block									ret;
 
-	if (isExtension(uri, dot))
-		applyWildCard(uri, dot);
+	if (isExtension(uri, dot)) {
+		if (isCgiExtension(uri, dot))
+			applyWildCard(uri, dot);
+		else
+			removeFileName(uri, dot);
+	}
 	if (uri_ == uri)
 		return *this;
 	if (locationBlocks_.empty())
 		return Block::defaultBlock_;
 	for (it = locationBlocks_.begin(); it != locationBlocks_.end(); it++) {
-		return (it->getLocationBlock(uri));
+		ret = it->getLocationBlock(uri);
+		if (ret.getUri() == "")
+			continue ;
+		else
+			return (it->getLocationBlock(uri));
 	}
-	return Block::defaultBlock_;
+	throw InvalidConfigFileException("Invalid location uri.\n");
+}
+
+void Block::gatherSupportedExtensions() {
+	std::vector<Block>::iterator	it;
+	std::set<std::string>			supportedExtensions;
+	std::set<std::string>::iterator	setIt;
+
+	for (it = locationBlocks_.begin(); it != locationBlocks_.end(); it++) {
+		supportedExtensions = it->getSupportedExtensions();
+		for (setIt = supportedExtensions.begin(); setIt != supportedExtensions.end(); setIt++)
+			supportedExtensions_.insert(*setIt);
+	}
 }
 
 void Block::printBlock() const {

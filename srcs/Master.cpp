@@ -79,7 +79,7 @@ void	Master::run() {
 }
 
 void	Master::appendWorker(struct pollfd *pollFd) {
-	Worker	*worker = new Worker(listenSocket_);
+	Worker	*worker = new Worker(listenSocket_, serverBlock_);
 
 	worker->setPollfd(pollFd);
 	workers_.push_back(worker);
