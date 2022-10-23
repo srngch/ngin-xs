@@ -102,8 +102,8 @@ void Request::setHeaders() {
 	splitedMessage = split(std::string(originalHeader_.begin(), originalHeader_.end()), CRLF);
 	parseHeader(splitedMessage);
 
-	for (iter = headers_.begin(); iter != headers_.end(); iter++)
-		std::cout << iter->first << " | " << iter->second << std::endl;
+	// for (iter = headers_.begin(); iter != headers_.end(); iter++)
+	// 	std::cout << iter->first << " | " << iter->second << std::endl;
 }
 
 void Request::setFilePath(const std::string &webRoot) {

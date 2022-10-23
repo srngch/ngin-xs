@@ -4,7 +4,7 @@ INCLUDE_FLAGS = -I srcs
 TARGET = webserv
 
 SRCS_FILES = main.cpp utils.cpp \
-			Master.cpp Worker.cpp Request.cpp Response.cpp Cgi.cpp Uri.cpp \
+			Nginxs.cpp Master.cpp Worker.cpp Request.cpp Response.cpp Cgi.cpp Uri.cpp \
 			autoindex/AutoindexData.cpp autoindex/Autoindex.cpp \
 			config/Config.cpp config/Block.cpp
 SRCS = $(addprefix ./srcs/, $(SRCS_FILES))

@@ -1,33 +1,17 @@
-#include "Master.hpp"
-#include "Request.hpp"
-#include "config/Config.hpp"
+#include "Nginxs.hpp"
 
-int	main(int argc, char **argv, char **env) {
-	if (argc != 2)
-		return 1;
-	try {	
-		Config conf = Config();
-		conf.parseConfigFile(argv[1]);
-
-		Block serverblock = conf.getServerBlock(1111);
-		Block locationblock = serverblock.getLocationBlock("/upload.py");
-		locationblock.printBlock();
-	} catch (std::exception &e) {
-		std::cout << e.what() << std::endl;
+int	main(int argc, char **argv) {
+	if (argc != 2) {
+		std::cout << "Usage: ./webserv [CONF FILE NAME]" << std::endl;
+		return EXIT_FAILURE;
 	}
-
 	try {
-		Master master(env);
+		Nginxs nginxs(argv[1]);
 
-		// print env
-		// char **envs = master.getEnv();
-		// while (envs && *envs) {
-		// 	std::cout << *envs << std::endl;
-		// 	envs++;
-		// }
-		master.run();
+		nginxs.run();
 	} catch (std::exception &e) {
-		std::cout << e.what() << std::endl;
+		std::cout << "main: " << e.what() << std::endl;
+		return EXIT_FAILURE;
 	}
-	return 0;
+	return EXIT_SUCCESS;
 }
