@@ -539,7 +539,6 @@ const Block &Block::getLocationBlockRecursive(std::string uri) const {
 			return (it->getLocationBlockRecursive(uri));
 		}
 	}
-	return Block::defaultBlock_;
 }
 
 Block Block::getLocationBlock(std::string uri) const {
