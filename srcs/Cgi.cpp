@@ -1,7 +1,9 @@
 #include "Cgi.hpp"
 
-Cgi::Cgi(Request *request) {
-	request_ = request;
+Cgi::Cgi() {}
+
+Cgi::Cgi(Request *request)
+	: request_(request) {
 	setEnv();
 }
 
@@ -12,31 +14,39 @@ void Cgi::setEnv() {
 	// if (request_->getAuthType())
 	// 	env_.push_back("AUTH_TYPE=" + request_->getAuthType());
 
-	std::string uri = request_->getUri()->getOriginalUri();
+	std::string uri = request_->getUri()->getParsedUri();
+	std::string contentLength = request_->getHeaderValue("content-length");
 
-	std::string content_length = request_->getHeaderValue("content-length");
-	if (content_length == "")
-		content_length = ntos(request_->getBody().size());
-	env_.push_back("CONTENT_LENGTH=" + content_length);
+	if (contentLength.length() <= 0)
+		contentLength = ntos(request_->getBody().size());
+	env_.push_back("CONTENT_LENGTH=" + contentLength);
 	env_.push_back("CONTENT_TYPE=" + request_->getHeaderValue("content-type"));
 
 	env_.push_back("GATEWAY_INTERFACE=CGI/1.1");
+	std::cout << "PATH_INFO: " << uri + request_->getUri()->getPathInfo() << std::endl;
+	std::cout << "PATH_TRANSLATED: " << request_->getLocationBlock().getWebRoot() + uri << std::endl;
+	env_.push_back("PATH_INFO=" + uri + request_->getUri()->getPathInfo());
+	env_.push_back("PATH_TRANSLATED=" + request_->getLocationBlock().getWebRoot() + uri);
+	env_.push_back("QUERY_STRING=" + request_->getUri()->getQueryString());
 
-	env_.push_back("PATH_INFO=" + uri); // TODO: get pathInfo from request
-	env_.push_back("PATH_TRANSLATED=" + std::string(WEB_ROOT) + uri);
-	// if (request_->getQueryString())
-		env_.push_back("QUERY_STRING="); // TODO: + request_->getQueryString()
-
-	env_.push_back("REMOTE_ADDR=127.0.0.1"); // TODO: get remoteAddr from request
+	env_.push_back("REMOTE_ADDR=127.0.0.1");
 	// env_.push_back("REMOTE_IDENT=");
 	// env_.push_back("REMOTE_USER=");
 	env_.push_back("REQUEST_METHOD=" + request_->getMethod());
-	env_.push_back("REQUEST_URI=" + uri);
+	env_.push_back("REQUEST_URI=" + request_->getUri()->getOriginalUri());
 
 	// env_.push_back("SCRIPT_NAME=");
 
-	env_.push_back("SERVER_NAME=localhost"); // TODO: get serverName from request
-	env_.push_back("SERVER_PORT=4242"); // TODO: get serverPort from request
+	std::string	host = request_->getHeaderValue("host");
+	std::size_t	index = host.find(":");
+	std::string	serverName = host;
+	std::string	serverPort = ntos(request_->getLocationBlock().getPort());
+	if (index != std::string::npos)
+		serverName = host.substr(0, index);
+	std::cout << "serverName: " << serverName << std::endl;
+	std::cout << "serverPort: " << serverPort << std::endl;
+	env_.push_back("SERVER_NAME=" + serverName);
+	env_.push_back("SERVER_PORT=" + serverPort);
 	env_.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	env_.push_back("SERVER_SOFTWARE=ngin-xs");
 	// HTTP_ACCEPT=request_.getMethod()
@@ -105,7 +115,7 @@ std::string	Cgi::execute() {
 		if (dup2(devNull, STDERR_FILENO) == FT_ERROR)
 			exit(EXIT_FAILURE);
 
-		execve("./cgi-bin/python-cgi.py", NULL, getEnv()); // TODO: get cgi from config
+		execve(request_->getLocationBlock().getCgi().c_str(), NULL, getEnv());
 
 		/* if execve() failed */
 		exit(EXIT_FAILURE);

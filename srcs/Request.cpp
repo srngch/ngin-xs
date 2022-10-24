@@ -16,7 +16,7 @@ void	Request::parseHeader(const std::vector<std::string> &splitedMessage) {
 	if (splitedRequstLine.size() != 3)
 		throw std::runtime_error("parse error");
 	method_ = splitedRequstLine[0];
-	uri_ = new Uri(splitedRequstLine[1]);
+	uri_ = new Uri(splitedRequstLine[1], locationBlock_.getSupportedExtensions());
 	version_ = splitedRequstLine[2];
 	iter++;
 	// headers
@@ -115,8 +115,8 @@ void Request::setHeaders() {
 	// 	std::cout << iter->first << " | " << iter->second << std::endl;
 }
 
-void Request::setFilePath(const std::string &webRoot) {
-	filePath_ = webRoot + uri_->getOriginalUri();
+void Request::setFilePath() {
+	filePath_ = locationBlock_.getWebRoot() + uri_->getOriginalUri();
 }
 
 void Request::setOriginalHeader(const std::vector<char> originalHeader) {

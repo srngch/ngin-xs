@@ -58,15 +58,17 @@ public:
 	class HttpException : public std::exception {
 	private:
 		std::string message_;
-		std::string httpCode_;
+		std::string	httpStatus_;
+		int			httpCode_;
 
 	public:
 		HttpException(const std::string message, const std::string httpCode);
 		~HttpException() throw();
 		virtual const char *what() const throw();
 
-		std::string getHttpCode();
-		std::string makeErrorHtml();
+		const std::string	&getHttpStatus();
+		int					getHttpCode();
+		std::vector<char>	makeErrorHtml(const std:: string &errorPage);
 	};
 };
 

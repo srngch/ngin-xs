@@ -2,10 +2,7 @@
 #define __URI_HPP__
 
 #include <string>
-// #include <unistd.h>
-// #include <fcntl.h>
-// #include <iostream>
-// #include <cctype>
+#include <set>
 #include <iostream>
 #include "macro.hpp"
 
@@ -21,7 +18,7 @@ private:
 	Uri();
 
 public:
-	Uri(const std::string &originalUri);
+	Uri(const std::string &originalUri, const std::set<std::string> &supportedExtensions);
 	~Uri();
 
 	const std::string	&getOriginalUri() const;
@@ -30,8 +27,6 @@ public:
 	const std::string	&getPathInfo() const;
 	const std::string	&getQueryString() const;
 	std::string			getParsedUri() const;
-	
-	// std::string getPath();
 };
 
 #endif

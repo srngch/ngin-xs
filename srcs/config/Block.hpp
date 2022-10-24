@@ -15,7 +15,6 @@
 
 class Block {
 private:
-	static Block						defaultBlock_;
 	std::vector<Block>					locationBlocks_;
 	directivesMap						directivesMap_;
 	std::set<std::string>				supportedExtensions_;
@@ -34,6 +33,7 @@ private:
 
 	ft_bool								checkParentUri(std::string uri);
 	ft_bool								checkValidation(std::vector<std::string> &tokens, int &index, std::string &directive);
+	ft_bool								validateSemiColon(ft_bool &hasSemiColonPrev) const;
 	std::vector<std::string>			parseHostPort(const std::string &arg);
 	ft_bool								isExtension(const std::string &uri, int &i) const;
 	ft_bool								isCgiExtension(const std::string &uri, int &i) const;
@@ -41,6 +41,8 @@ private:
 	void								deleteBlocks();
 
 public:
+	static Block						defaultBlock_;
+
 	Block();
 	Block(const Block &origin);
 	~Block();
@@ -52,7 +54,7 @@ public:
 	void								setLocationDirectivesMap();
 	directivesMap						getDirectivesMap();
 	
-	ft_bool								has_semi_colon(std::vector<std::string> &tokens, int &index, std::vector<std::string> *args, std::string &directive);
+	ft_bool								hasSemiColon(std::vector<std::string> &tokens, int &index, std::vector<std::string> *args, std::string &directive);
 	void								parseServerBlock(std::vector<std::string> &tokens, int &index);
 	void								parseLocationBlock(std::vector<std::string> &tokens, int &i);
 	
@@ -86,12 +88,13 @@ public:
 
 	const std::string					&getUri() const;
 	const std::string					&getIndex() const; 
-	const std::string					&getAutoIndex() const;
+	ft_bool								getAutoIndex() const;
 	const std::string					&getCgi() const;
 
 	void								applyWildCard(std::string &uri, int &dot) const;
 	void								removeFileName(std::string &uri, int &dot) const;
-	const Block							&getLocationBlock(std::string uri) const;
+	const Block							&getLocationBlockRecursive(std::string uri) const;
+	Block								getLocationBlock(std::string uri) const;
 	void								gatherSupportedExtensions();
 	void								printBlock() const;
 

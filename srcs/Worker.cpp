@@ -1,7 +1,9 @@
 #include "Worker.hpp"
 
-Worker::HttpException::HttpException(const std::string message, const std::string httpCode)
-	: message_(message), httpCode_(httpCode) {}
+Worker::HttpException::HttpException(const std::string message, const std::string httpStatus)
+	: message_(message), httpStatus_(httpStatus) {
+		httpCode_ = atoi(httpStatus_.substr(0, 3).c_str());
+	}
 
 Worker::HttpException::~HttpException() throw() {}
 
@@ -9,23 +11,30 @@ const char *Worker::HttpException::what() const throw() {
 	return message_.c_str();
 }
 
-std::string Worker::HttpException::getHttpCode() {
+const std::string &Worker::HttpException::getHttpStatus() {
+	return httpStatus_;
+}
+
+int Worker::HttpException::getHttpCode() {
 	return httpCode_;
 }
 
-std::string Worker::HttpException::makeErrorHtml() {
-	return "<!DOCTYPE html>\n\
+std::vector<char> Worker::HttpException::makeErrorHtml(const std::string &errorPage) {
+	std::string html = "<!DOCTYPE html>\n\
 <html>\n\
 <head>\n\
 	<meta charset=\"UTF-8\">\n\
-	<title>" + httpCode_ + "</title>\n\
+	<title>" + httpStatus_ + "</title>\n\
 </head>\n\
 <body>\n\
-	<h1>" + httpCode_ + "</h1>\n\
+	<h1>" + httpStatus_ + "</h1>\n\
 	<hr />\n\
 	ngin-xs\n\
 </body>\n\
 </html>";
+	if (errorPage != "" && isFileExist(errorPage))
+		html = fileToString(errorPage);
+	return stringToCharV(html);
 }
 
 Worker::Worker() {}
@@ -72,15 +81,14 @@ ft_bool Worker::work() {
 				return ret;
 		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
 			request_->setBody();
-			try {
-				Block locationBlock = serverBlock_.getLocationBlock(request_->getUri()->getParsedUri());
-				request_->setLocationBlock(locationBlock);
-			} catch (std::exception &e) {
+			Block locationBlock = serverBlock_.getLocationBlock(request_->getUri()->getParsedUri());
+			if (locationBlock.getUri() == "")
 				throw HttpException("work: Location block not found", HTTP_NOT_FOUND);
-			}
+			request_->setLocationBlock(locationBlock);
 			initRequestState();
 			validate();
-			request_->setFilePath(serverBlock_.getWebRoot());
+			// TODO: redirection
+			request_->setFilePath();
 			std::string	requestMethod = request_->getMethod();
 			if (requestMethod == "GET")
 				return executeGet();
@@ -94,14 +102,14 @@ ft_bool Worker::work() {
 		std::cerr << e.what() << std::endl;
 		tmp_isRecvCompleted = isRecvCompleted_;
 		initRequestState();
-		Response response(e.getHttpCode(), stringToCharV(e.makeErrorHtml()));
+		Response response(e.getHttpStatus(), e.makeErrorHtml(request_->getLocationBlock().getErrorPage(e.getHttpCode())));
 		return send(response.createMessage()) && tmp_isRecvCompleted;
 	} catch (std::exception &e) {
 		HttpException ex = HttpException(e.what(), HTTP_INTERNAL_SERVER_ERROR);
 		std::cerr << "std::exception: " << e.what() << std::endl;
 		tmp_isRecvCompleted = isRecvCompleted_;
 		initRequestState();
-		Response response(ex.getHttpCode(), stringToCharV(ex.makeErrorHtml()));
+		Response response(ex.getHttpStatus(), ex.makeErrorHtml(request_->getLocationBlock().getErrorPage(ex.getHttpCode())));
 		return send(response.createMessage()) && tmp_isRecvCompleted;
 	}
 }
@@ -175,7 +183,7 @@ ft_bool Worker::recv() {
 }
 
 void Worker::validate() {
-	std::set<std::string>					allowedMethods = serverBlock_.getAllowedMethods();
+	std::set<std::string>					allowedMethods = request_->getLocationBlock().getAllowedMethods();
 	std::set<std::string>::const_iterator	it = allowedMethods.find(request_->getMethod());
 
 	if (it == allowedMethods.end())
@@ -196,8 +204,17 @@ ft_bool Worker::executeGet() {
 		redirect(request_->getUri()->getOriginalUri() + "/");
 		return FT_TRUE;
 	}
+	std::string indexPath = request_->getLocationBlock().getIndex();
+	ft_bool	isAutoindex = request_->getLocationBlock().getAutoIndex();
+	if (isFileExist(filePath + indexPath))
+		isAutoindex = FT_FALSE;
+	if (isDirectory(filePath) && isAutoindex) {
+		Autoindex autoindex(filePath, request_->getUri()->getOriginalUri());
+		Response response(HTTP_OK, stringToCharV(autoindex.getHtml()));
+		return send(response.createMessage());
+	}
 	if (isDirectory(filePath))
-		filePath += (request_->getLocationBlock()).getIndex();
+		filePath += indexPath;
 	if (isCgi(filePath)) {
 		Cgi cgi(request_);
 		std::string result = cgi.execute();

@@ -48,7 +48,7 @@ public:
 	
 	void	setBody();
 	void	setHeaders();
-	void	setFilePath(const std::string &webRoot);
+	void	setFilePath();
 	void	setOriginalHeader(const std::vector<char> originalHeader);
 	void	setOriginalBody(const std::vector<char> originalBody);
 	void	setLocationBlock(const Block &locationBlock);

@@ -20,8 +20,10 @@ private:
 	Request						*request_;
 	std::vector<std::string>	env_;
 
-	void setEnv();
+	void	setEnv();
 	char	**getEnv();
+
+	Cgi();
 
 public:
 	Cgi(Request *request);
