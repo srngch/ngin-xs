@@ -1,7 +1,9 @@
 #include "Worker.hpp"
 
-Worker::HttpException::HttpException(const std::string message, const std::string httpCode)
-	: message_(message), httpCode_(httpCode) {}
+Worker::HttpException::HttpException(const std::string message, const std::string httpStatus)
+	: message_(message), httpStatus_(httpStatus) {
+		httpCode_ = atoi(httpStatus_.substr(0, 3).c_str());
+	}
 
 Worker::HttpException::~HttpException() throw() {}
 
@@ -9,29 +11,36 @@ const char *Worker::HttpException::what() const throw() {
 	return message_.c_str();
 }
 
-std::string Worker::HttpException::getHttpCode() {
+const std::string &Worker::HttpException::getHttpStatus() {
+	return httpStatus_;
+}
+
+int Worker::HttpException::getHttpCode() {
 	return httpCode_;
 }
 
-std::string Worker::HttpException::makeErrorHtml() {
-	return "<!DOCTYPE html>\n\
+std::vector<char> Worker::HttpException::makeErrorHtml(const std::string &errorPage) {
+	std::string html = "<!DOCTYPE html>\n\
 <html>\n\
 <head>\n\
 	<meta charset=\"UTF-8\">\n\
-	<title>" + httpCode_ + "</title>\n\
+	<title>" + httpStatus_ + "</title>\n\
 </head>\n\
 <body>\n\
-	<h1>" + httpCode_ + "</h1>\n\
+	<h1>" + httpStatus_ + "</h1>\n\
 	<hr />\n\
 	ngin-xs\n\
 </body>\n\
 </html>";
+	if (errorPage != "" && isFileExist(errorPage))
+		html = fileToString(errorPage);
+	return stringToCharV(html);
 }
 
 Worker::Worker() {}
 
-Worker::Worker(int listenSocket)
-	: request_(nullptr), isHeaderSet_(FT_FALSE), isRecvCompleted_(FT_FALSE), bodyLength_(0) {
+Worker::Worker(int listenSocket, const Block &serverBlock)
+	: serverBlock_(serverBlock), request_(nullptr), isHeaderSet_(FT_FALSE), isRecvCompleted_(FT_FALSE), bodyLength_(0) {
 	struct sockaddr_in	clientAddress;
 	socklen_t			addressLen = sizeof(clientAddress);
 
@@ -72,15 +81,20 @@ ft_bool Worker::work() {
 				return ret;
 		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
 			request_->setBody();
+			Block locationBlock = serverBlock_.getLocationBlock(request_->getUri()->getParsedUri());
+			if (locationBlock.getUri() == "")
+				throw HttpException("work: Location block not found", HTTP_NOT_FOUND);
+			request_->setLocationBlock(locationBlock);
 			initRequestState();
 			validate();
-			// TODO: Config 체크해서 요청 URI가 허용하는 메소드인지 체크
-			request_->setFilePath(std::string(WEB_ROOT));
-			if (request_->getMethod() == "GET")
+			// TODO: redirection
+			request_->setFilePath();
+			std::string	requestMethod = request_->getMethod();
+			if (requestMethod == "GET")
 				return executeGet();
-			if (request_->getMethod() == "POST")
+			if (requestMethod == "POST")
 				return executePost();
-			if (request_->getMethod() == "DELETE")
+			if (requestMethod == "DELETE")
 				return executeDelete();
 		}
 		return ret;
@@ -88,15 +102,14 @@ ft_bool Worker::work() {
 		std::cerr << e.what() << std::endl;
 		tmp_isRecvCompleted = isRecvCompleted_;
 		initRequestState();
-		Response response(e.getHttpCode(), stringToCharV(e.makeErrorHtml()));
+		Response response(e.getHttpStatus(), e.makeErrorHtml(request_->getLocationBlock().getErrorPage(e.getHttpCode())));
 		return send(response.createMessage()) && tmp_isRecvCompleted;
 	} catch (std::exception &e) {
 		HttpException ex = HttpException(e.what(), HTTP_INTERNAL_SERVER_ERROR);
-
 		std::cerr << "std::exception: " << e.what() << std::endl;
 		tmp_isRecvCompleted = isRecvCompleted_;
 		initRequestState();
-		Response response(ex.getHttpCode(), stringToCharV(ex.makeErrorHtml()));
+		Response response(ex.getHttpStatus(), ex.makeErrorHtml(request_->getLocationBlock().getErrorPage(ex.getHttpCode())));
 		return send(response.createMessage()) && tmp_isRecvCompleted;
 	}
 }
@@ -109,11 +122,11 @@ ft_bool Worker::recv() {
 	std::vector<char>			originalBody;
 	const char 					*crlf = EMPTY_LINE;
 	std::vector<char>::iterator it;
+	std::size_t					client_max_body_size = serverBlock_.getClientMaxBodySize();
 
 	memset(buf, 0, BUFFER_LENGTH);
 	ret = ::recv(pollfd_->fd, buf, BUFFER_LENGTH - 1, 0);
 	buf[ret] = '\0';
-	std::string client_max_body_size = "1000000"; // TODO: read from Config class
 	if (isHeaderSet_ == FT_FALSE) {
 		delete request_;
 		request_ = new Request();
@@ -132,8 +145,8 @@ ft_bool Worker::recv() {
 			if (transferEncoding == "chunked" && request_->getHeaderValue("content-length").length() > 0)
 				throw HttpException("recv: Chunked message with content length", HTTP_BAD_REQUEST);
 			originalBody = request_->getOriginalBody();
-			if (request_->getContentLengthNumber() > std::size_t(atol(client_max_body_size.c_str()))
-				|| originalBody.size() > std::size_t(atol(client_max_body_size.c_str())))
+			if ((request_->getContentLengthNumber() > client_max_body_size)
+				|| (originalBody.size() > client_max_body_size))
 				throw HttpException("recv: Content-length is larger than client max body size", HTTP_PAYLOAD_TOO_LARGE);
 			if (ret < BUFFER_LENGTH && bodyLength_ >= request_->getContentLengthNumber())
 				isRecvCompleted_ = FT_TRUE;
@@ -147,7 +160,7 @@ ft_bool Worker::recv() {
 		originalBody = request_->getOriginalBody();
 		transferEncoding = request_->getHeaderValue("transfer-encoding");
 		if (transferEncoding == "chunked") {
-			if (bodyLength_ > std::size_t(atol(client_max_body_size.c_str())))
+			if (bodyLength_ > client_max_body_size)
 				throw HttpException("recv: Body length is larger than client max body size", HTTP_PAYLOAD_TOO_LARGE);
 			originalBody = request_->getOriginalBody();
 			it = std::search(originalBody.begin(), originalBody.end(), crlf, crlf + strlen(crlf));
@@ -161,7 +174,7 @@ ft_bool Worker::recv() {
 	}
 	if (ret == FT_FALSE) {
 		resetPollfd();
-		std::cout << "Client finished connection." << std::endl;
+		std::cout << "recv: Client finished connection." << std::endl;
 		return FT_FALSE;
 	}
 	if (ret == FT_ERROR)
@@ -170,12 +183,10 @@ ft_bool Worker::recv() {
 }
 
 void Worker::validate() {
-	std::vector<std::string>	allowedMethods;
+	std::set<std::string>					allowedMethods = request_->getLocationBlock().getAllowedMethods();
+	std::set<std::string>::const_iterator	it = allowedMethods.find(request_->getMethod());
 
-	allowedMethods.push_back("GET");
-	allowedMethods.push_back("POST");
-	allowedMethods.push_back("DELETE");
-	if (!isIncluded(request_->getMethod(), allowedMethods))
+	if (it == allowedMethods.end())
 		throw HttpException("validate: Invalid method", HTTP_BAD_REQUEST);
 	if (request_->getVersion() != "HTTP/1.1")
 		throw HttpException("validate: HTTP version is not 1.1", HTTP_VERSION_NOT_SUPPORTED);
@@ -193,8 +204,17 @@ ft_bool Worker::executeGet() {
 		redirect(request_->getUri()->getOriginalUri() + "/");
 		return FT_TRUE;
 	}
+	std::string indexPath = request_->getLocationBlock().getIndex();
+	ft_bool	isAutoindex = request_->getLocationBlock().getAutoIndex();
+	if (isFileExist(filePath + indexPath))
+		isAutoindex = FT_FALSE;
+	if (isDirectory(filePath) && isAutoindex) {
+		Autoindex autoindex(filePath, request_->getUri()->getOriginalUri());
+		Response response(HTTP_OK, stringToCharV(autoindex.getHtml()));
+		return send(response.createMessage());
+	}
 	if (isDirectory(filePath))
-		filePath += "index.html"; // TODO: read default file from config
+		filePath += indexPath;
 	if (isCgi(filePath)) {
 		Cgi cgi(request_);
 		std::string result = cgi.execute();

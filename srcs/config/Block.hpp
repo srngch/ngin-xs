@@ -15,7 +15,6 @@
 
 class Block {
 private:
-	static Block						defaultBlock_;
 	std::vector<Block>					locationBlocks_;
 	directivesMap						directivesMap_;
 	std::set<std::string>				supportedExtensions_;
@@ -25,7 +24,7 @@ private:
 	std::set<std::string>				serverNames_;
 	std::string							webRoot_;
 	std::set<std::string>				allowedMethods_;
-	int									clientMaxBodySize_;
+	std::size_t							clientMaxBodySize_;
 	std::map<int, std::string>			errorPages_;
 	std::string							uri_;
 	std::string							index_;
@@ -34,12 +33,16 @@ private:
 
 	ft_bool								checkParentUri(std::string uri);
 	ft_bool								checkValidation(std::vector<std::string> &tokens, int &index, std::string &directive);
+	ft_bool								validateSemiColon(ft_bool &hasSemiColonPrev) const;
 	std::vector<std::string>			parseHostPort(const std::string &arg);
 	ft_bool								isExtension(const std::string &uri, int &i) const;
+	ft_bool								isCgiExtension(const std::string &uri, int &i) const;
 	void								addSupportedExtension(const std::string &token);
 	void								deleteBlocks();
 
 public:
+	static Block						defaultBlock_;
+
 	Block();
 	Block(const Block &origin);
 	~Block();
@@ -51,7 +54,7 @@ public:
 	void								setLocationDirectivesMap();
 	directivesMap						getDirectivesMap();
 	
-	ft_bool								has_semi_colon(std::vector<std::string> &tokens, int &index, std::vector<std::string> *args, std::string &directive);
+	ft_bool								hasSemiColon(std::vector<std::string> &tokens, int &index, std::vector<std::string> *args, std::string &directive);
 	void								parseServerBlock(std::vector<std::string> &tokens, int &index);
 	void								parseLocationBlock(std::vector<std::string> &tokens, int &i);
 	
@@ -79,17 +82,20 @@ public:
 	const std::set<std::string>			&getServerNames() const;
 	const std::string					&getWebRoot() const;
 	const std::set<std::string>			&getAllowedMethods() const;
-	const int							&getClientMaxBodySize() const;
+	const std::size_t					&getClientMaxBodySize() const;
 	const std::map<int, std::string>	&getErrorPages() const;
 	std::string							getErrorPage(int num) const;
 
 	const std::string					&getUri() const;
 	const std::string					&getIndex() const; 
-	const std::string					&getAutoIndex() const;
+	ft_bool								getAutoIndex() const;
 	const std::string					&getCgi() const;
 
 	void								applyWildCard(std::string &uri, int &dot) const;
-	const Block							&getLocationBlock(std::string uri) const;
+	void								removeFileName(std::string &uri, int &dot) const;
+	const Block							&getLocationBlockRecursive(std::string uri) const;
+	Block								getLocationBlock(std::string uri) const;
+	void								gatherSupportedExtensions();
 	void								printBlock() const;
 
 	class InvalidConfigFileException : public std::exception {

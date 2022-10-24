@@ -16,16 +16,19 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <set>
 #include "macro.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
 #include "Cgi.hpp"
 #include "autoindex/Autoindex.hpp"
+#include "config/Block.hpp"
 
 #define BUFFER_LENGTH 1024
 
 class Worker {
 private:
+	Block						serverBlock_;
 	int							connectSocket_;
 	struct pollfd				*pollfd_;
 	Request						*request_;
@@ -46,7 +49,7 @@ private:
 	Worker();
 
 public:
-	Worker(int listenSocket);
+	Worker(int listenSocket, const Block &serverBlock);
 	~Worker();
 
 	void	setPollfd(struct pollfd *pollfd);
@@ -55,15 +58,17 @@ public:
 	class HttpException : public std::exception {
 	private:
 		std::string message_;
-		std::string httpCode_;
+		std::string	httpStatus_;
+		int			httpCode_;
 
 	public:
 		HttpException(const std::string message, const std::string httpCode);
 		~HttpException() throw();
 		virtual const char *what() const throw();
 
-		std::string getHttpCode();
-		std::string makeErrorHtml();
+		const std::string	&getHttpStatus();
+		int					getHttpCode();
+		std::vector<char>	makeErrorHtml(const std:: string &errorPage);
 	};
 };
 

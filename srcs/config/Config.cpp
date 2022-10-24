@@ -12,6 +12,10 @@ std::vector<std::string> Config::readAndSplit(const char *filePath) {
 	if (fd <= 0)
 		throw std::runtime_error("fail: Opening configuration file\n");
 	ret = read(fd, buffer, BUFFER_SIZE);
+	if (ret == 0) {
+		serverBlocks_.push_back(Block::defaultBlock_);
+		return tokens;
+	}
 	while (ret > 0) {
 		buffer[ret] = '\0';
 		line += buffer;

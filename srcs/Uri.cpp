@@ -2,7 +2,8 @@
 
 Uri::Uri() {}
 
-Uri::Uri(const std::string &originalUri) {
+Uri::Uri(const std::string &originalUri, const std::set<std::string> &supportedExtensions) 
+: originalUri_(originalUri){
 	/*
 	** not CGI
   ** /dir/subdir/file.html?qs2=1&qs2=2
@@ -10,12 +11,11 @@ Uri::Uri(const std::string &originalUri) {
 	** CGI
   ** /dir/subdir/file.py/path/info?qs2=1&qs2=2
   */
-	originalUri_ = originalUri;
-	
-	std::string cgiExtension = ".py"; // TODO: get from Config class
-	ft_bool isCgi = false;
-	std::string	tmp;
-	std::size_t	index;
+	std::size_t						index;
+	std::string						tmp;
+	std::string						cgiExtension;
+	std::set<std::string>::iterator	it;
+	ft_bool							isCgi = FT_FALSE;
 
 	index = originalUri.find('?');
 	queryString_ = "";
@@ -23,18 +23,24 @@ Uri::Uri(const std::string &originalUri) {
 		queryString_ = originalUri.substr(index);
 	tmp = originalUri.substr(0, index);
 
-	index = tmp.find(cgiExtension);
+	for (it = supportedExtensions.begin(); it != supportedExtensions.end(); it++) {
+		index = tmp.find("." + *it);
+		if (index != std::string::npos) {
+			cgiExtension = "." + *it;
+			break;
+		}
+	}
 	/* 
 	** CGI 확장자를 가짐 && tmp가 /로 끝나지 않음 (디렉토리가 아님)
 	** tmp가 /로 끝난다면, URI를 디렉토리로 인식해야 됨
 	** 예시: `/dir/cgi.bla/` -> 디렉토리
 	*/
 	if (index != std::string::npos && tmp.find('/', index) != std::string::npos) 
-		isCgi = true;
+		isCgi = FT_TRUE;
 	pathInfo_ = "";
 	if (isCgi) {
 		pathInfo_ = tmp.substr(index + cgiExtension.length() + 1);
-		tmp = tmp.substr(0, index + cgiExtension.length() + 1);
+		tmp= tmp.substr(0, index + cgiExtension.length() + 1);
 	}
 	index = tmp.rfind('/');
 	basename_ = "";
@@ -46,6 +52,7 @@ Uri::Uri(const std::string &originalUri) {
 	dir_ = uriDir_;
 
 	// std::cout << "[Uri Class]" << std::endl;
+	// std::cout << "OriginalUri: " << originalUri_ << std::endl;
 	// std::cout << "uriDir: " << uriDir_ << std::endl;
 	// std::cout << "basename_: " << basename_ << std::endl;
 	// std::cout << "pathInfo_: " << pathInfo_ << std::endl;
@@ -74,6 +81,6 @@ const std::string &Uri::getQueryString() const{
 	return queryString_;
 }
 
-// std::string Uri::getPath() {
-// 	return dir_ + basename_;
-// }
+std::string Uri::getParsedUri() const {
+	return uriDir_ + basename_;
+}
