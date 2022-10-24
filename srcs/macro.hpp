@@ -17,6 +17,7 @@
 // Ngin-xs
 #define CRLF			"\r\n"
 #define EMPTY_LINE		"\r\n\r\n"
+#define CHUNKED_END		"\r\n\r\n"
 
 // Response Status
 #define	HTTP_OK						"200 OK"

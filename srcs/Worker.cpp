@@ -40,7 +40,7 @@ std::vector<char> Worker::HttpException::makeErrorHtml(const std::string &errorP
 Worker::Worker() {}
 
 Worker::Worker(int listenSocket, const Block &serverBlock)
-	: serverBlock_(serverBlock), request_(nullptr), isHeaderSet_(FT_FALSE), isRecvCompleted_(FT_FALSE), bodyLength_(0) {
+	: serverBlock_(serverBlock), request_(nullptr), isHeaderSet_(FT_FALSE), isRecvCompleted_(FT_FALSE), isNewRequest_(FT_TRUE), bodyLength_(0) {
 	struct sockaddr_in	clientAddress;
 	socklen_t			addressLen = sizeof(clientAddress);
 
@@ -81,10 +81,6 @@ ft_bool Worker::work() {
 				return ret;
 		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
 			request_->setBody();
-			Block locationBlock = serverBlock_.getLocationBlock(request_->getUri()->getParsedUri());
-			if (locationBlock.getUri() == "")
-				throw HttpException("work: Location block not found", HTTP_NOT_FOUND);
-			request_->setLocationBlock(locationBlock);
 			initRequestState();
 			validate();
 			// TODO: redirection
@@ -121,24 +117,35 @@ ft_bool Worker::recv() {
 	std::vector<char>			originalHeader;
 	std::vector<char>			originalBody;
 	const char 					*crlf = EMPTY_LINE;
+	const char 					*chunkedEnd = CHUNKED_END;
 	std::vector<char>::iterator it;
-	std::size_t					client_max_body_size = serverBlock_.getClientMaxBodySize();
+	std::size_t					client_max_body_size;
+	std::vector<char>::iterator	tmpIt;
 
 	memset(buf, 0, BUFFER_LENGTH);
 	ret = ::recv(pollfd_->fd, buf, BUFFER_LENGTH - 1, 0);
 	buf[ret] = '\0';
-	if (isHeaderSet_ == FT_FALSE) {
+	if (isNewRequest_ == FT_TRUE) {
 		delete request_;
 		request_ = new Request();
+		isNewRequest_ = FT_FALSE;
+	}
+	if (isHeaderSet_ == FT_FALSE) {
+		bodyLength_ += ret;
 		request_->appendOriginalHeader(buf, ret);
 		originalHeader = request_->getOriginalHeader();
 		it = std::search(originalHeader.begin(), originalHeader.end(), crlf, crlf + strlen(crlf));
-		if (it != originalBody.end()) {
+		if (it != originalHeader.end()) {
 			isHeaderSet_ = FT_TRUE;
 			request_->setOriginalBody(std::vector<char>(it + strlen(EMPTY_LINE), originalHeader.end()));
 			request_->setOriginalHeader(std::vector<char>(originalHeader.begin(), it));
-			bodyLength_ = ret - request_->getOriginalHeader().size() - strlen(EMPTY_LINE);
+			bodyLength_ = bodyLength_ - request_->getOriginalHeader().size() - strlen(EMPTY_LINE);
 			request_->setHeaders();
+			Block locationBlock = serverBlock_.getLocationBlock(request_->getUri()->getParsedUri());
+			if (locationBlock.getUri() == "")
+				throw HttpException("recv: Location block not found", HTTP_NOT_FOUND);
+			request_->setLocationBlock(locationBlock);
+			client_max_body_size = request_->getLocationBlock().getClientMaxBodySize();
 			transferEncoding = request_->getHeaderValue("transfer-encoding");
 			if (transferEncoding.length() > 0 && transferEncoding != "chunked")
 				throw HttpException("Not Implemented", HTTP_NOT_IMPLEMENTED);
@@ -148,10 +155,11 @@ ft_bool Worker::recv() {
 			if ((request_->getContentLengthNumber() > client_max_body_size)
 				|| (originalBody.size() > client_max_body_size))
 				throw HttpException("recv: Content-length is larger than client max body size", HTTP_PAYLOAD_TOO_LARGE);
-			if (ret < BUFFER_LENGTH && bodyLength_ >= request_->getContentLengthNumber())
+			if (ret < BUFFER_LENGTH && transferEncoding != "chunked"
+				&& bodyLength_ >= request_->getContentLengthNumber())
 				isRecvCompleted_ = FT_TRUE;
-			it = std::search(originalBody.begin(), originalBody.end(), crlf, crlf + strlen(crlf));
-			if (transferEncoding == "chunked" && it == originalBody.end())
+			it = std::search(originalBody.begin(), originalBody.end(), chunkedEnd, chunkedEnd + strlen(chunkedEnd));
+			if (transferEncoding == "chunked" && it != originalBody.end())
 				isRecvCompleted_ = FT_TRUE;
 		}
 	} else if (isRecvCompleted_ == FT_FALSE) {
@@ -159,6 +167,7 @@ ft_bool Worker::recv() {
 		bodyLength_ += ret;
 		originalBody = request_->getOriginalBody();
 		transferEncoding = request_->getHeaderValue("transfer-encoding");
+		client_max_body_size = request_->getLocationBlock().getClientMaxBodySize();
 		if (transferEncoding == "chunked") {
 			if (bodyLength_ > client_max_body_size)
 				throw HttpException("recv: Body length is larger than client max body size", HTTP_PAYLOAD_TOO_LARGE);
@@ -187,7 +196,7 @@ void Worker::validate() {
 	std::set<std::string>::const_iterator	it = allowedMethods.find(request_->getMethod());
 
 	if (it == allowedMethods.end())
-		throw HttpException("validate: Invalid method", HTTP_BAD_REQUEST);
+		throw HttpException("validate: Invalid method", HTTP_METHOD_NOT_ALLOWED);
 	if (request_->getVersion() != "HTTP/1.1")
 		throw HttpException("validate: HTTP version is not 1.1", HTTP_VERSION_NOT_SUPPORTED);
 	if (request_->getHeaderValue("host").length() == 0)
@@ -266,6 +275,7 @@ ft_bool	Worker::redirect(const std::string &dest) {
 void	Worker::initRequestState() {
 	isHeaderSet_ = FT_FALSE;
 	isRecvCompleted_ = FT_FALSE;
+	isNewRequest_ = FT_TRUE;
 }
 
 ft_bool Worker::send(const std::vector<char> &message) {

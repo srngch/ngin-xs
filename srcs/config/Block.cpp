@@ -539,6 +539,7 @@ const Block &Block::getLocationBlockRecursive(std::string uri) const {
 			return (it->getLocationBlockRecursive(uri));
 		}
 	}
+	return Block::defaultBlock_;
 }
 
 Block Block::getLocationBlock(std::string uri) const {
@@ -558,7 +559,6 @@ Block Block::getLocationBlock(std::string uri) const {
 			removeFileName(uri, dot);
 	}
 	// 2. 슬래시(/) 단위로 uri 자르기 (예: /abc/def/ghi/ -> / /abc/ /abc/def/ /abc/def/ghi/)
-	// /test/dir/
 	parsedUri = uri;
 	while (FT_TRUE) {
 		uriVector.push_back(parsedUri);
