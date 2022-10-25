@@ -46,6 +46,7 @@ private:
 	ft_bool	executeDelete();
 	ft_bool	redirect(const std::string &des);
 	void	initRequestState();
+	ft_bool	isCgi(const std::string &filePath);
 
 	Worker();
 

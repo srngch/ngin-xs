@@ -7,6 +7,7 @@
 #include <sstream>
 #include <sys/stat.h>
 #include <iostream>
+#include <set>
 #include "macro.hpp"
 
 template <typename T>
@@ -27,7 +28,6 @@ std::string					fileToString(const std::string &filePath);
 std::vector<char>			fileToCharV(const std::string &filePath);
 ft_bool						isIncluded(const std::string &value, const std::vector<std::string> &array);
 ft_bool						isDirectory(const std::string &filePath);
-ft_bool						isCgi(const std::string &filePath);
 std::string					createPadding(int width, int length);
 std::string					createPaddedString(int width, const std::string &str);
 size_t						hexStringToNumber(std::string s);

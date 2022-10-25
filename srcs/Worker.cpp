@@ -242,7 +242,8 @@ ft_bool Worker::executeGet() {
 }
 
 ft_bool Worker::executePost() {
-	// TODO: validate filePath
+	if (request_->getLocationBlock().getCgi().length() <= 0)
+		throw HttpException("executePost: Invaild POST request", HTTP_NOT_FOUND);
 	if (isCgi(request_->getFilePath())) {
 		Cgi cgi(request_);
 		std::string result = cgi.execute();
@@ -276,6 +277,25 @@ void	Worker::initRequestState() {
 	isHeaderSet_ = FT_FALSE;
 	isRecvCompleted_ = FT_FALSE;
 	isNewRequest_ = FT_TRUE;
+}
+
+ft_bool	Worker::isCgi(const std::string &filePath) {
+	std::set<std::string>			supportedExtensions = request_->getLocationBlock().getSupportedExtensions();
+	std::set<std::string>::iterator	it;
+	std::string						extension;
+	int								len;
+	int								i;
+
+	len = filePath.length();
+	i = filePath.find_last_of('.');
+	if (i <= 0 || i == len - 1)
+		return FT_FALSE;
+	extension = filePath.substr(i + 1);
+	for (it = supportedExtensions.begin(); it != supportedExtensions.end(); it++) {
+		if (extension == *it)
+			return FT_TRUE;
+	}
+	return FT_FALSE;
 }
 
 ft_bool Worker::send(const std::vector<char> &message) {

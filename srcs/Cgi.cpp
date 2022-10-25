@@ -70,6 +70,7 @@ std::string	Cgi::execute() {
 	pid_t		pid;
 	int			writePipe[2];
 	int			readPipe[2];
+	int			tmpStderr = STDERR_FILENO;
 	int			devNull;
 	char		readBuf[CGI_READ_BUF_SIZE];
 	std::string	result;
@@ -114,6 +115,7 @@ std::string	Cgi::execute() {
 			exit(EXIT_FAILURE);
 		if (dup2(devNull, STDERR_FILENO) == FT_ERROR)
 			exit(EXIT_FAILURE);
+		close(devNull);
 
 		execve(request_->getLocationBlock().getCgi().c_str(), NULL, getEnv());
 
@@ -124,6 +126,7 @@ std::string	Cgi::execute() {
 	/* parent process */
 	close(writePipe[FT_PIPEOUT]);
 	close(readPipe[FT_PIPEIN]);
+	dup2(tmpStderr, STDERR_FILENO);
 
 	/* if POST method, write request body to child process */
 	if (request_->getMethod() == "POST") {
