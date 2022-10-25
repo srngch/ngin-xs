@@ -84,7 +84,7 @@ NGIN-XS is a simple, lightweight, and fast web server written in C++.
 ### 2022-10-13
 
 - Handled chunked request: [Issue](https://github.com/srngch/ngin-xs/issues/30), [PR](https://github.com/srngch/ngin-xs/pull/33)
-- [WIP] Parse configuration file: [Issue](https://github.com/srngch/ngin-xs/issues/18)
+- Parse configuration file: [Issue](https://github.com/srngch/ngin-xs/issues/18)
 
 ### 2022-10-14
 
@@ -100,6 +100,7 @@ NGIN-XS is a simple, lightweight, and fast web server written in C++.
 ### 2022-10-17
 
 - [WIP] Implement python-cgi: [Issue](https://github.com/srngch/ngin-xs/issues/32)
+- [WIP] Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34)
 
 ### 2022-10-18
 
@@ -120,4 +121,23 @@ NGIN-XS is a simple, lightweight, and fast web server written in C++.
 - Implemented handling Connection header: [Issue](https://github.com/srngch/ngin-xs/issues/47), [PR](https://github.com/srngch/ngin-xs/pull/52)
 - Implemented Limiting client max body size: [Issue](https://github.com/srngch/ngin-xs/issues/50), [PR](https://github.com/srngch/ngin-xs/pull/53)
 - Refactored exception: [Issue](https://github.com/srngch/ngin-xs/issues/54), [PR](https://github.com/srngch/ngin-xs/pull/55)
-- [WIP] Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34)
+- Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34), [PR](https://github.com/srngch/ngin-xs/pull/42)
+
+### 2022-10-21
+
+- Implemented web client: [Issue](https://github.com/srngch/ngin-xs/issues/40), [PR](https://github.com/srngch/ngin-xs/pull/56)
+- Implemented getting required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34), [PR](https://github.com/srngch/ngin-xs/pull/42)
+- [WIP] Implement running multiple servers: [Issue](https://github.com/srngch/ngin-xs/issues/57)
+
+### 2022-10-22
+
+- Implemented running multiple servers: [Issue](https://github.com/srngch/ngin-xs/issues/57), [PR](https://github.com/srngch/ngin-xs/pull/58)
+
+### 2022-10-23
+
+- [WIP] Apply Config class: [Issue](https://github.com/srngch/ngin-xs/issues/39)
+
+### 2022-10-24
+
+- Implemented applying Config class: [Issue](https://github.com/srngch/ngin-xs/issues/39), [PR](https://github.com/srngch/ngin-xs/pull/60)
+- [WIP] Try tester program given by subject: [Issue](https://github.com/srngch/ngin-xs/issues/61)
