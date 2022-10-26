@@ -24,7 +24,7 @@
 #include "autoindex/Autoindex.hpp"
 #include "config/Block.hpp"
 
-#define BUFFER_LENGTH 1024
+#define BUFFER_LENGTH 5024000
 
 class Worker {
 private:
@@ -41,6 +41,7 @@ private:
 	ft_bool	send(const std::vector<char> &message);
 	void	resetPollfd();
 	void	validate();
+	ft_bool	executePutToTest(); // TODO: remove this
 	ft_bool	executeGet();
 	ft_bool	executePost();
 	ft_bool	executeDelete();

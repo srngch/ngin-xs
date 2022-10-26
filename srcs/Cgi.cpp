@@ -10,32 +10,25 @@ Cgi::Cgi(Request *request)
 Cgi::~Cgi() {}
 
 void Cgi::setEnv() {
-	// TODO: AUTH_TYPE
-	// if (request_->getAuthType())
-	// 	env_.push_back("AUTH_TYPE=" + request_->getAuthType());
-
 	std::string uri = request_->getUri()->getParsedUri();
 	std::string contentLength = request_->getHeaderValue("content-length");
 
 	if (contentLength.length() <= 0)
 		contentLength = ntos(request_->getBody().size());
+	std::cout << "CONTENT_LENGTH: " << contentLength << std::endl;
 	env_.push_back("CONTENT_LENGTH=" + contentLength);
 	env_.push_back("CONTENT_TYPE=" + request_->getHeaderValue("content-type"));
 
 	env_.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	std::cout << "PATH_INFO: " << uri + request_->getUri()->getPathInfo() << std::endl;
-	std::cout << "PATH_TRANSLATED: " << request_->getLocationBlock().getWebRoot() + uri << std::endl;
 	env_.push_back("PATH_INFO=" + uri + request_->getUri()->getPathInfo());
-	env_.push_back("PATH_TRANSLATED=" + request_->getLocationBlock().getWebRoot() + uri);
+	env_.push_back("PATH_TRANSLATED=" + request_->getUri()->getFilePath());
 	env_.push_back("QUERY_STRING=" + request_->getUri()->getQueryString());
 
 	env_.push_back("REMOTE_ADDR=127.0.0.1");
-	// env_.push_back("REMOTE_IDENT=");
-	// env_.push_back("REMOTE_USER=");
 	env_.push_back("REQUEST_METHOD=" + request_->getMethod());
 	env_.push_back("REQUEST_URI=" + request_->getUri()->getOriginalUri());
 
-	// env_.push_back("SCRIPT_NAME=");
+	env_.push_back("SCRIPT_NAME=" + uri);
 
 	std::string	host = request_->getHeaderValue("host");
 	std::size_t	index = host.find(":");
@@ -43,16 +36,26 @@ void Cgi::setEnv() {
 	std::string	serverPort = ntos(request_->getLocationBlock().getPort());
 	if (index != std::string::npos)
 		serverName = host.substr(0, index);
-	std::cout << "serverName: " << serverName << std::endl;
-	std::cout << "serverPort: " << serverPort << std::endl;
 	env_.push_back("SERVER_NAME=" + serverName);
 	env_.push_back("SERVER_PORT=" + serverPort);
 	env_.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	env_.push_back("SERVER_SOFTWARE=ngin-xs");
-	// HTTP_ACCEPT=request_.getMethod()
-	// HTTP_HOST= (요청 메시지에 있는 host 헤더)
-	// HTTP_USER_AGENT (요청 메시지에 있는 user agent)
-	// HTTP_COOKIE
+
+	std::map<std::string, std::string> requestHeaders = request_->getHeaders();
+	std::map<std::string, std::string>::iterator it;
+
+	for (it = requestHeaders.begin(); it != requestHeaders.end(); it++) {
+		std::string field = it->first;
+		std::transform(field.begin(), field.end(), field.begin(), ::toupper);
+		std::size_t index;
+
+		index = field.find("-");
+		while (index != std::string::npos) {
+			field.replace(index, 1, "_");
+			index = field.find("-");
+		}
+		env_.push_back("HTTP_" + field + "=" + it->second);
+	}
 }
 
 char **Cgi::getEnv() {
@@ -66,80 +69,68 @@ char **Cgi::getEnv() {
 	return charEnv;
 }
 
-std::string	Cgi::execute() {
+std::string Cgi::execute() {
 	pid_t		pid;
-	int			writePipe[2];
-	int			readPipe[2];
-	int			tmpStderr = STDERR_FILENO;
-	int			devNull;
-	char		readBuf[CGI_READ_BUF_SIZE];
+	int			tmpStd[2];
+	long		fileFds[2];
 	std::string	result;
+	int			ret = 1;
+	std::vector<char> body = request_->getBody();
+	char		readBuf[CGI_BUF_SIZE];
 
-	if (pipe(writePipe) == FT_ERROR) {
-		throw std::runtime_error("fail: pipe()");
-	}
-	if (pipe(readPipe) == FT_ERROR) {
-		close(writePipe[FT_PIPEOUT]);
-		close(writePipe[FT_PIPEIN]);
-		throw std::runtime_error("fail: pipe()");
-	}
+	tmpStd[STDIN_FILENO] = dup(STDIN_FILENO);
+	tmpStd[STDOUT_FILENO] = dup(STDOUT_FILENO);
+
+	FILE *tmpFileIn = tmpfile();
+	FILE *tmpFileOut = tmpfile();
+	fileFds[STDIN_FILENO] = fileno(tmpFileIn);
+	fileFds[STDOUT_FILENO] = fileno(tmpFileOut);
+
+	write(fileFds[STDIN_FILENO], reinterpret_cast<char*> (&body[0]), body.size());
+	lseek(fileFds[STDIN_FILENO], 0, SEEK_SET);
 
 	pid = fork();
 	if (pid < 0) {
-		close(writePipe[FT_PIPEOUT]);
-		close(writePipe[FT_PIPEIN]);
-		close(readPipe[FT_PIPEOUT]);
-		close(readPipe[FT_PIPEIN]);
-		throw std::runtime_error("Fork failed");
+		std::cerr << "Fork crashed." << std::endl;
+		result += "Status: ";
+		result += HTTP_INTERNAL_SERVER_ERROR;
+		result += EMPTY_LINE;
+		return result;
 	}
 
-	/* child process */
+	/* child process */	
 	if (pid == 0) {
-		close(writePipe[FT_PIPEIN]);
-		close(readPipe[FT_PIPEOUT]);
+		dup2(fileFds[STDIN_FILENO], STDIN_FILENO);
+		dup2(fileFds[STDOUT_FILENO], STDOUT_FILENO);
 
-		/*
-		** redirect
-		** - stdin -> writePipe[FT_PIPEOUT]
-		** - stdout -> readPipe[FT_PIPEIN]
-		** - stderr -> /dev/null
-		*/
-		if (dup2(writePipe[FT_PIPEOUT], STDIN_FILENO) == FT_ERROR)
-			exit(EXIT_FAILURE);
-		close(writePipe[FT_PIPEOUT]);
-		if (dup2(readPipe[FT_PIPEIN], STDOUT_FILENO) == FT_ERROR)
-			exit(EXIT_FAILURE);
-		close(readPipe[FT_PIPEIN]);
-		devNull = open("/dev/null", O_WRONLY);
-		if (devNull == FT_ERROR)
-			exit(EXIT_FAILURE);
-		if (dup2(devNull, STDERR_FILENO) == FT_ERROR)
-			exit(EXIT_FAILURE);
-		close(devNull);
-
-		execve(request_->getLocationBlock().getCgi().c_str(), NULL, getEnv());
-
+		ret = execve(request_->getLocationBlock().getCgi().c_str(), NULL, getEnv());
+		
 		/* if execve() failed */
-		exit(EXIT_FAILURE);
+		std::cerr << "execute: CGI execve fail" << std::endl;		
+		result += "Status: ";
+		result += HTTP_INTERNAL_SERVER_ERROR;
+		result += EMPTY_LINE;
+		write(STDOUT_FILENO, result.c_str(), result.length());
+	} else {
+		waitpid(pid, NULL, 0);
+		lseek(fileFds[STDOUT_FILENO], 0, SEEK_SET);
+		while (ret > 0) {
+			memset(readBuf, 0, CGI_BUF_SIZE);
+			ret = read(fileFds[STDOUT_FILENO], readBuf, CGI_BUF_SIZE - 1);
+			result += readBuf;
+		}
 	}
 
 	/* parent process */
-	close(writePipe[FT_PIPEOUT]);
-	close(readPipe[FT_PIPEIN]);
-	dup2(tmpStderr, STDERR_FILENO);
+	dup2(tmpStd[STDIN_FILENO], STDIN_FILENO);
+	dup2(tmpStd[STDOUT_FILENO], STDOUT_FILENO);
 
-	/* if POST method, write request body to child process */
-	if (request_->getMethod() == "POST") {
-		std::vector<char> body = request_->getBody();
-		write(writePipe[FT_PIPEIN], reinterpret_cast<char*> (&body[0]), body.size());
-	}
-	close(writePipe[FT_PIPEIN]);
+	fclose(tmpFileIn);
+	fclose(tmpFileOut);
+	close(fileFds[STDIN_FILENO]);
+	close(fileFds[STDOUT_FILENO]);
+	close(tmpStd[STDIN_FILENO]);
+	close(tmpStd[STDOUT_FILENO]);
 
-	memset(readBuf, 0, sizeof(readBuf));
-	while (read(readPipe[FT_PIPEOUT], readBuf, CGI_READ_BUF_SIZE) > 0) {
-		result += readBuf;
-	}
-	close(readPipe[FT_PIPEOUT]);
-
-	return result;
+	return (result);
 }

@@ -33,10 +33,7 @@
 #define HTTP_NOT_IMPLEMENTED		"501 Not Implemented"
 #define HTTP_VERSION_NOT_SUPPORTED	"505 HTTP Version Not Supported"
 
-#define PYTHON_PATH			"/opt/homebrew/bin/python3"
-#define	CGI_INFILE			"./infile.tmp"
-#define	CGI_OUTFILE			"./outfile.tmp"
 #define CGI_FILE_MODE		0644
-#define CGI_READ_BUF_SIZE	1024
+#define CGI_BUF_SIZE		65000
 
 #endif

@@ -20,7 +20,12 @@ int Worker::HttpException::getHttpCode() {
 }
 
 std::vector<char> Worker::HttpException::makeErrorHtml(const std::string &errorPage) {
-	std::string html = "<!DOCTYPE html>\n\
+	std::string html;
+	if (httpCode_ == 204)
+		return stringToCharV(html);
+	if (errorPage != "" && isFileExist(errorPage))
+		return fileToCharV(errorPage);
+	html = "<!DOCTYPE html>\n\
 <html>\n\
 <head>\n\
 	<meta charset=\"UTF-8\">\n\
@@ -32,8 +37,6 @@ std::vector<char> Worker::HttpException::makeErrorHtml(const std::string &errorP
 	ngin-xs\n\
 </body>\n\
 </html>";
-	if (errorPage != "" && isFileExist(errorPage))
-		html = fileToString(errorPage);
 	return stringToCharV(html);
 }
 
@@ -83,9 +86,10 @@ ft_bool Worker::work() {
 			request_->setBody();
 			initRequestState();
 			validate();
-			// TODO: redirection
 			request_->setFilePath();
 			std::string	requestMethod = request_->getMethod();
+			if (requestMethod == "PUT")
+				return executePutToTest();
 			if (requestMethod == "GET")
 				return executeGet();
 			if (requestMethod == "POST")
@@ -127,6 +131,7 @@ ft_bool Worker::recv() {
 	buf[ret] = '\0';
 	if (isNewRequest_ == FT_TRUE) {
 		delete request_;
+		bodyLength_ = 0;
 		request_ = new Request();
 		isNewRequest_ = FT_FALSE;
 	}
@@ -169,6 +174,9 @@ ft_bool Worker::recv() {
 		transferEncoding = request_->getHeaderValue("transfer-encoding");
 		client_max_body_size = request_->getLocationBlock().getClientMaxBodySize();
 		if (transferEncoding == "chunked") {
+			std::cout << "@@@@@ originalBody.size(): " << originalBody.size() << std::endl;
+			std::cout << "@@@@@ bodyLength_: " << bodyLength_ << std::endl;
+			std::cout << "@@@@@ client_max_body_size: " << client_max_body_size << std::endl;
 			if (bodyLength_ > client_max_body_size)
 				throw HttpException("recv: Body length is larger than client max body size", HTTP_PAYLOAD_TOO_LARGE);
 			originalBody = request_->getOriginalBody();
@@ -203,6 +211,11 @@ void Worker::validate() {
 		throw HttpException("validate: Host header does not exist", HTTP_BAD_REQUEST);
 }
 
+ft_bool Worker::executePutToTest() {
+	Response response(HTTP_CREATED, stringToCharV("PUT success"));
+	return send(response.createMessage());
+}
+
 ft_bool Worker::executeGet() {
 	std::string	filePath;
 	std::size_t	index;
@@ -210,7 +223,7 @@ ft_bool Worker::executeGet() {
 
 	filePath = request_->getFilePath();
 	if (isDirectory(filePath) && request_->getUri()->getBaseName().length() > 0) {
-		redirect(request_->getUri()->getOriginalUri() + "/");
+		redirect(request_->getUri()->getParsedUri() + request_->getUri()->getPathInfo() + "/" + request_->getUri()->getQueryString());
 		return FT_TRUE;
 	}
 	std::string indexPath = request_->getLocationBlock().getIndex();
@@ -243,10 +256,11 @@ ft_bool Worker::executeGet() {
 
 ft_bool Worker::executePost() {
 	if (request_->getLocationBlock().getCgi().length() <= 0)
-		throw HttpException("executePost: Invaild POST request", HTTP_NOT_FOUND);
+		throw HttpException("executePost: Invaild POST request", HTTP_NO_CONTENT);
 	if (isCgi(request_->getFilePath())) {
 		Cgi cgi(request_);
 		std::string result = cgi.execute();
+		// std::cout << "result: " << result << std::endl;
 		Response response(HTTP_CREATED, stringToCharV(result), FT_TRUE);
 		return send(response.createMessage());
 	}
@@ -299,16 +313,12 @@ ft_bool	Worker::isCgi(const std::string &filePath) {
 }
 
 ft_bool Worker::send(const std::vector<char> &message) {
-	int							ret;
-	std::vector<char>			m = message;
-	std::vector<char>::iterator	it = m.begin();
+	int					ret;
+	std::vector<char>	m = message;
 
-	while (it != m.end()) {
-		ret = ::send(pollfd_->fd, &(*it), 1, 0);
-		if (ret == FT_ERROR)
-			throw HttpException("send: send() failed", HTTP_INTERNAL_SERVER_ERROR);
-		it++;
-	}
+	ret = ::send(pollfd_->fd, reinterpret_cast<char*>(&m[0]), m.size(), 0);
+	if (ret == FT_ERROR)
+		throw HttpException("send: send() failed", HTTP_INTERNAL_SERVER_ERROR);
 	if (request_->getHeaderValue("connection") == "close") {
 		std::cout << "connention: close" << std::endl;
 		return FT_FALSE;

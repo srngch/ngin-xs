@@ -98,7 +98,7 @@ void Block::addSupportedExtension(const std::string &token) {
 
 }
 
-Block::Block() : host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("off"), cgi_("") {
+Block::Block() : host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_("index.html"), autoIndex_("off"), cgi_("") {
 	setServerDirectivesMap();
 }
 
@@ -159,23 +159,12 @@ void Block::setDefaultBlock(const char *file) {
 		if (tokens[i] == "server") {
 			Block	tmpServerBlock;
 
-			tmpServerBlock.setDefaultServerDirectivesMap();
+			tmpServerBlock.setServerDirectivesMap();
 			tmpServerBlock.parseServerBlock(tokens, ++i);
 			Block::defaultBlock_ = tmpServerBlock;
 		} else
 			throw std::runtime_error("Wrong default configuration file.\n");
 	}
-}
-
-void Block::setDefaultServerDirectivesMap() {
-	directivesMap_["listen"] = &Block::setHostPort;
-	directivesMap_["server_name"] = &Block::setServerNames;
-	directivesMap_["root"] = &Block::setWebRoot;
-	directivesMap_["allowed_methods"] = &Block::setAllowedMethods;
-	directivesMap_["client_max_body_size"] = &Block::setClientMaxBodySize;
-	directivesMap_["error_page"] = &Block::setErrorPages;
-	directivesMap_["index"] = &Block::setIndex;
-	directivesMap_["autoindex"] = &Block::setAutoIndex;
 }
 
 void Block::setServerDirectivesMap() {
@@ -503,17 +492,14 @@ const std::string &Block::getUri() const {
 }
 
 const std::string &Block::getIndex() const {
-	if (index_ != "")
-		return (index_);
-	return Block::defaultBlock_.getIndex();
+	return index_;
 }
 
 ft_bool Block::getAutoIndex() const {
 	if (autoIndex_ == "on")
 		return FT_TRUE;
-	else if (autoIndex_ == "off")
+	else
 		return FT_FALSE;
-	return Block::defaultBlock_.getAutoIndex();
 }
 
 const std::string &Block::getCgi() const {
@@ -548,12 +534,10 @@ const Block &Block::getLocationBlockRecursive(std::string uri) const {
 		return Block::defaultBlock_;
 	for (it = locationBlocks_.begin(); it != locationBlocks_.end(); it++) {
 		ret = it->getLocationBlockRecursive(uri);
-		if (ret.getUri() == "") {
+		if (ret.getUri() == "")
 			continue;
-		}
-		else {
+		else
 			return (it->getLocationBlockRecursive(uri));
-		}
 	}
 	return Block::defaultBlock_;
 }
@@ -566,6 +550,7 @@ Block Block::getLocationBlock(std::string uri) const {
 	std::vector<std::string>::reverse_iterator	rIt;
 	Block										tmpBlock;
 	Block										ret;
+	std::string									tmpUri;
 
 	/* 1. uri 가공 */
 	if (isExtension(uri, dot)) {
@@ -586,6 +571,9 @@ Block Block::getLocationBlock(std::string uri) const {
 
 	for (rIt = uriVector.rbegin(); rIt != uriVector.rend(); rIt++) {
 		tmpBlock = getLocationBlockRecursive(*rIt);
+		if (tmpBlock.getUri() != "")
+			ret = tmpBlock;
+		tmpBlock = getLocationBlockRecursive(*rIt + "/");
 		if (tmpBlock.getUri() != "")
 			ret = tmpBlock;
 	}
