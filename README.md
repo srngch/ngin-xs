@@ -147,3 +147,7 @@ NGIN-XS is a simple, lightweight, and fast web server written in C++.
 ### 2022-10-26
 
 - [WIP😭] Try tester program given by subject: [Issue](https://github.com/srngch/ngin-xs/issues/61)
+
+### 2022-10-27
+
+- Tested subject tester: [Issue](https://github.com/srngch/ngin-xs/issues/61), [PR](https://github.com/srngch/ngin-xs/pull/63)
