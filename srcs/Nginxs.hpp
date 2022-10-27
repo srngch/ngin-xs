@@ -14,7 +14,7 @@
  * : POLLFDSLEN - number of servers
 */
  
-#define POLLFDSLEN 100
+#define POLLFDSLEN 1000
 
 class Nginxs {
 private:

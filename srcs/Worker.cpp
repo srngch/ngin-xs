@@ -270,7 +270,6 @@ ft_bool Worker::executePost() {
 	if (isCgi(request_->getFilePath())) {
 		Cgi cgi(request_);
 		std::string result = cgi.execute();
-		// std::cout << "result: " << result << std::endl;
 		Response response(HTTP_CREATED, stringToCharV(result), FT_TRUE);
 		return send(response.createMessage());
 	}
@@ -329,10 +328,8 @@ ft_bool Worker::send(const std::vector<char> &message) {
 	ret = ::send(pollfd_->fd, reinterpret_cast<char*>(&m[0]), m.size(), 0);
 	if (ret == FT_ERROR)
 		throw HttpException("send: send() failed", HTTP_INTERNAL_SERVER_ERROR);
-	if (request_->getHeaderValue("connection") == "close") {
-		std::cout << "connention: close" << std::endl;
+	if (request_->getHeaderValue("connection") == "close")
 		return FT_FALSE;
-	}
 	return FT_TRUE;
 }
 

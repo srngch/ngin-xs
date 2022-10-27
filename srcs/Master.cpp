@@ -55,7 +55,7 @@ void	Master::bind() {
 void	Master::listen() {
 	int ret;
 
-	ret = ::listen(listenSocket_, 2);
+	ret = ::listen(listenSocket_, 100000);
 	if (ret == -1) {
 		close(listenSocket_);
 		throw MasterException("listen: listen() failed");
@@ -64,17 +64,16 @@ void	Master::listen() {
 
 void	Master::run() {
 	int								ret;
-	std::vector<Worker *>::iterator	itBegin = workers_.begin();
-	std::vector<Worker *>::iterator	itEnd = workers_.end();
+	std::vector<Worker *>::iterator	it = workers_.begin();
 
-	while (itBegin != itEnd) {
-		ret = (*itBegin)->work();
+	while (it != workers_.end()) {
+		ret = (*it)->work();
 		if (ret == FT_FALSE) {
-			delete *itBegin;
-			itBegin = workers_.erase(itBegin);
+			delete *it;
+			it = workers_.erase(it);
 			continue ;
 		}
-		++itBegin;
+		it++;
 	}
 }
 
