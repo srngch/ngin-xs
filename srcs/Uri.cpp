@@ -80,8 +80,6 @@ void Uri::parseBasename(const std::string &locationUri, const std::string &webro
 	parsedUri = uriDir_;
 	if (getParsedUri() == parsedLocationUri)
 		parsedUri = getParsedUri();
-	std::cout << "parsedLocationUri: " << parsedLocationUri << std::endl;
-	std::cout << "parsedUri: " << parsedUri << std::endl;
 	index = parsedUri.find(parsedLocationUri);
 	if (parsedLocationUri == parsedUri)
 		basename_ = "";
@@ -126,12 +124,12 @@ void	Uri::parseUri(const Block &locationBlock) {
 	parsePathInfo(locationBlock.getSupportedExtensions());
 	parseBasename(locationBlock.getUri(), locationBlock.getWebRoot());
 
-	std::cout << "locationBlock.getUri(): " << locationBlock.getUri() << std::endl;
-	std::cout << "[Uri Class]" << std::endl;
-	std::cout << "OriginalUri: " << originalUri_ << std::endl;
-	std::cout << "uriDir: " << uriDir_ << std::endl;
-	std::cout << "pathDir_: " << pathDir_ << std::endl;
-	std::cout << "basename_: " << basename_ << std::endl;
-	std::cout << "pathInfo_: " << pathInfo_ << std::endl;
-	std::cout << "queryString_: " << queryString_ << std::endl << std::endl;
+	// std::cout << "locationBlock.getUri(): " << locationBlock.getUri() << std::endl;
+	// std::cout << "[Uri Class]" << std::endl;
+	// std::cout << "OriginalUri: " << originalUri_ << std::endl;
+	// std::cout << "uriDir: " << uriDir_ << std::endl;
+	// std::cout << "pathDir_: " << pathDir_ << std::endl;
+	// std::cout << "basename_: " << basename_ << std::endl;
+	// std::cout << "pathInfo_: " << pathInfo_ << std::endl;
+	// std::cout << "queryString_: " << queryString_ << std::endl << std::endl;
 }

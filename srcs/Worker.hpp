@@ -28,14 +28,13 @@
 
 class Worker {
 private:
-	Block						serverBlock_;
-	int							connectSocket_;
-	struct pollfd				*pollfd_;
-	Request						*request_;
-	ft_bool						isHeaderSet_;
-	ft_bool						isRecvCompleted_;
-	ft_bool						isNewRequest_;
-	std::size_t					bodyLength_;
+	Block			serverBlock_;
+	int				connectSocket_;
+	struct pollfd	*pollfd_;
+	Request			*request_;
+	ft_bool			isHeaderSet_;
+	ft_bool			isRecvCompleted_;
+	ft_bool			isNewRequest_;
 
 	ft_bool	recv();
 	ft_bool	send(const std::vector<char> &message);

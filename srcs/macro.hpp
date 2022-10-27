@@ -17,7 +17,7 @@
 // Ngin-xs
 #define CRLF			"\r\n"
 #define EMPTY_LINE		"\r\n\r\n"
-#define CHUNKED_END		"\r\n\r\n"
+#define CHUNKED_END		"0\r\n\r\n"
 
 // Response Status
 #define	HTTP_OK						"200 OK"
@@ -28,7 +28,7 @@
 #define HTTP_FORBIDDEN				"403 Forbidden"
 #define HTTP_NOT_FOUND				"404 Not Found"
 #define HTTP_METHOD_NOT_ALLOWED		"405 Method Not Allowed"
-#define HTTP_PAYLOAD_TOO_LARGE		"413 Payload Too Large"
+#define HTTP_CONTENT_TOO_LARGE		"413 Content Too Large"
 #define HTTP_INTERNAL_SERVER_ERROR	"500 Internal Server Error"
 #define HTTP_NOT_IMPLEMENTED		"501 Not Implemented"
 #define HTTP_VERSION_NOT_SUPPORTED	"505 HTTP Version Not Supported"

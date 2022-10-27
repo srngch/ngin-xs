@@ -1,10 +1,14 @@
 #include "Request.hpp"
 
 Request::Request()
-	: uri_(nullptr) {}
+	: uri_(nullptr), bodyLength_(0), isChunkSize_(FT_TRUE) {}
 
 Request::~Request() {
 	delete uri_;
+}
+
+void Request::appendBody(const std::vector<char> &vec) {
+	body_.insert(body_.end(), vec.begin(), vec.end());
 }
 
 void	Request::parseHeader(const std::vector<std::string> &splitedMessage) {
@@ -25,20 +29,6 @@ void	Request::parseHeader(const std::vector<std::string> &splitedMessage) {
 		std::transform(splitedHeaderLine[0].begin(), splitedHeaderLine[0].end(), splitedHeaderLine[0].begin(), ::tolower);
 		headers_.insert(std::pair<std::string, std::string>(splitedHeaderLine[0], splitedHeaderLine[1]));
 		iter++;
-	}
-}
-
-void	Request::parseChunkedBody() {
-	std::vector<std::string>			splitedBody = split(std::string(originalBody_.begin(), originalBody_.end()), CRLF);
-	std::vector<std::string>::iterator	it;
-	size_t								length;
-
-	for (it = splitedBody.begin(); it != splitedBody.end(); it++) {
-		length = hexStringToNumber(*it);
-		if (length == 0)
-			break;
-		it++;
-		body_.insert(body_.begin(), it->begin(), it->begin() + length);
 	}
 }
 
@@ -86,23 +76,22 @@ const std::vector<char> &Request::getOriginalBody() {
 	return originalBody_;
 }
 
+std::size_t Request::getContentLengthNumber() {
+	return atoi(getHeaderValue("content-length").c_str());
+}
+
+const std::size_t &Request::getBodyLength() {
+	return bodyLength_;
+}
+
 void Request::setLocationBlock(const Block &locationBlock) {
 	locationBlock_ = locationBlock;
 	uri_->parseUri(locationBlock_);
 }
 
-std::size_t Request::getContentLengthNumber() {
-	return atoi(getHeaderValue("content-length").c_str());
-}
-
-
 void	Request::setBody() {
-	if (getHeaderValue("transfer-encoding") == "chunked") {
-		parseChunkedBody();
-	} else {
-		std::size_t contentLength = getContentLengthNumber();
-		body_ = std::vector<char>(originalBody_.begin(), originalBody_.begin() + contentLength);
-	}
+	if (getHeaderValue("transfer-encoding") != "chunked")
+		body_ = std::vector<char>(originalBody_.begin(), originalBody_.begin() + getContentLengthNumber());
 }
 
 void Request::setHeaders() {
@@ -112,8 +101,8 @@ void Request::setHeaders() {
 	splitedMessage = split(std::string(originalHeader_.begin(), originalHeader_.end()), CRLF);
 	parseHeader(splitedMessage);
 
-	for (iter = headers_.begin(); iter != headers_.end(); iter++)
-		std::cout << iter->first << " | " << iter->second << std::endl;
+	// for (iter = headers_.begin(); iter != headers_.end(); iter++)
+	// 	std::cout << iter->first << " | " << iter->second << std::endl;
 }
 
 void Request::setFilePath() {
@@ -128,10 +117,45 @@ void	Request::setOriginalBody(const std::vector<char> originalBody) {
 	originalBody_ = originalBody;
 }
 
+void Request::setBodyLength(const std::size_t bodyLength) {
+	bodyLength_ = bodyLength;
+}
+
 void Request::appendOriginalHeader(const char *buf, int length) {
 	originalHeader_.insert(originalHeader_.end(), buf, buf + length);
 }
 
 void Request::appendOriginalBody(const char *buf, int length) {
 	originalBody_.insert(originalBody_.end(), buf, buf + length);
+}
+
+void Request::addBodyLength(const std::size_t length) {
+	bodyLength_ += length;
+}
+
+void	Request::parseChunkedBody() {
+	const char 					*crlf = "\r\n";
+	std::vector<char>			splitedBody;
+	std::vector<char>::iterator it;
+	std::vector<char>::iterator it2;
+	std::string					chunkSizeString;
+	std::size_t					chunkSize;
+
+	it = std::search(originalBody_.begin(), originalBody_.end(), crlf, crlf + strlen(crlf));
+	while (it != originalBody_.end()) {
+		if (isChunkSize_) {
+			chunkSizeString = std::string(originalBody_.begin(), it);
+			chunkSize = hexStringToNumber(chunkSizeString);
+			if (chunkSize == 0) {
+				break;
+			}
+			addBodyLength(chunkSize);
+		} else {
+			// is chunk data
+			appendBody(std::vector<char>(originalBody_.begin(), it));
+		}
+		originalBody_ = std::vector<char>(it + strlen(crlf), originalBody_.end());
+		isChunkSize_ = !isChunkSize_; // toggle: chunk size or chunk data
+		it = std::search(originalBody_.begin(), originalBody_.end(), crlf, crlf + strlen(crlf));
+	}
 }

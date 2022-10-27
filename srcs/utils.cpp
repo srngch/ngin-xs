@@ -105,3 +105,12 @@ size_t	hexStringToNumber(std::string s) {
 std::vector<char> stringToCharV(std::string s) {
 	return std::vector<char>(s.begin(), s.end());
 }
+
+ft_bool hasWordInCharV(const std::vector<char> &src, const char *word) {
+	std::vector<char>::const_iterator it;
+
+	it = std::search(src.begin(), src.end(), word, word + strlen(word));
+	if (it == src.end())
+		return FT_FALSE;
+	return FT_TRUE;
+}

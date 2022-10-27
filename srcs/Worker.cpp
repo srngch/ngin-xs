@@ -43,7 +43,7 @@ std::vector<char> Worker::HttpException::makeErrorHtml(const std::string &errorP
 Worker::Worker() {}
 
 Worker::Worker(int listenSocket, const Block &serverBlock)
-	: serverBlock_(serverBlock), request_(nullptr), isHeaderSet_(FT_FALSE), isRecvCompleted_(FT_FALSE), isNewRequest_(FT_TRUE), bodyLength_(0) {
+	: serverBlock_(serverBlock), request_(nullptr), isHeaderSet_(FT_FALSE), isRecvCompleted_(FT_FALSE), isNewRequest_(FT_TRUE) {
 	struct sockaddr_in	clientAddress;
 	socklen_t			addressLen = sizeof(clientAddress);
 
@@ -120,7 +120,7 @@ ft_bool Worker::recv() {
 	std::string					transferEncoding;
 	std::vector<char>			originalHeader;
 	std::vector<char>			originalBody;
-	const char 					*crlf = EMPTY_LINE;
+	const char 					*emptyLine = EMPTY_LINE;
 	const char 					*chunkedEnd = CHUNKED_END;
 	std::vector<char>::iterator it;
 	std::size_t					client_max_body_size;
@@ -131,62 +131,72 @@ ft_bool Worker::recv() {
 	buf[ret] = '\0';
 	if (isNewRequest_ == FT_TRUE) {
 		delete request_;
-		bodyLength_ = 0;
 		request_ = new Request();
 		isNewRequest_ = FT_FALSE;
 	}
 	if (isHeaderSet_ == FT_FALSE) {
-		bodyLength_ += ret;
 		request_->appendOriginalHeader(buf, ret);
+		request_->addBodyLength(ret);
 		originalHeader = request_->getOriginalHeader();
-		it = std::search(originalHeader.begin(), originalHeader.end(), crlf, crlf + strlen(crlf));
+		it = std::search(originalHeader.begin(), originalHeader.end(), emptyLine, emptyLine + strlen(emptyLine));
 		if (it != originalHeader.end()) {
+			// start reading body
 			isHeaderSet_ = FT_TRUE;
 			request_->setOriginalBody(std::vector<char>(it + strlen(EMPTY_LINE), originalHeader.end()));
 			request_->setOriginalHeader(std::vector<char>(originalHeader.begin(), it));
-			bodyLength_ = bodyLength_ - request_->getOriginalHeader().size() - strlen(EMPTY_LINE);
 			request_->setHeaders();
+
+			// 현재 요청에 대한 conf 파일의 location block 가져오기
 			Block locationBlock = serverBlock_.getLocationBlock(request_->getUri()->getParsedUri());
 			if (locationBlock.getUri() == "")
 				throw HttpException("recv: Location block not found", HTTP_NOT_FOUND);
 			request_->setLocationBlock(locationBlock);
 			client_max_body_size = request_->getLocationBlock().getClientMaxBodySize();
+
 			transferEncoding = request_->getHeaderValue("transfer-encoding");
+			// transfer-encoding 헤더의 값이 chunked가 아닌 것은 구현하지 않음
 			if (transferEncoding.length() > 0 && transferEncoding != "chunked")
 				throw HttpException("Not Implemented", HTTP_NOT_IMPLEMENTED);
-			if (transferEncoding == "chunked" && request_->getHeaderValue("content-length").length() > 0)
-				throw HttpException("recv: Chunked message with content length", HTTP_BAD_REQUEST);
+
 			originalBody = request_->getOriginalBody();
-			if ((request_->getContentLengthNumber() > client_max_body_size)
-				|| (originalBody.size() > client_max_body_size))
-				throw HttpException("recv: Content-length is larger than client max body size", HTTP_PAYLOAD_TOO_LARGE);
-			if (ret < BUFFER_LENGTH && transferEncoding != "chunked"
-				&& bodyLength_ >= request_->getContentLengthNumber())
-				isRecvCompleted_ = FT_TRUE;
-			it = std::search(originalBody.begin(), originalBody.end(), chunkedEnd, chunkedEnd + strlen(chunkedEnd));
-			if (transferEncoding == "chunked" && it != originalBody.end())
-				isRecvCompleted_ = FT_TRUE;
+			if (transferEncoding == "chunked") {
+				// content-length 헤더가 있다면 400 응답
+				if (request_->getHeaderValue("content-length").length() > 0)
+					throw HttpException("recv: Chunked message with content length", HTTP_BAD_REQUEST);
+				request_->setBodyLength(0);
+				request_->parseChunkedBody();
+				// body가 client_max_body_size 보다 큼
+				if (request_->getBodyLength() > client_max_body_size)
+					throw HttpException("recv: Chunked request body is larger than client max body size", HTTP_CONTENT_TOO_LARGE);
+				// CRLFCRLF를 체크해서 request 내용의 전체를 받았는지 확인
+				if (hasWordInCharV(originalBody, chunkedEnd))
+					isRecvCompleted_ = FT_TRUE;
+			} else {
+				request_->setBodyLength(request_->getBodyLength() - request_->getOriginalHeader().size() - strlen(EMPTY_LINE));
+				// content-length 헤더가 client_max_body_size 보다 큼
+				if (request_->getContentLengthNumber() > client_max_body_size
+					|| originalBody.size() > client_max_body_size)
+					throw HttpException("recv: Content-length is larger than client max body size", HTTP_CONTENT_TOO_LARGE);
+				// 전체 메시지 길이가 버퍼보다 작을 때, 내용의 전체를 다 받았는지 확인
+				if (ret < BUFFER_LENGTH && request_->getBodyLength() >= request_->getContentLengthNumber())
+					isRecvCompleted_ = FT_TRUE;
+			}
 		}
 	} else if (isRecvCompleted_ == FT_FALSE) {
 		request_->appendOriginalBody(buf, ret);
-		bodyLength_ += ret;
-		originalBody = request_->getOriginalBody();
 		transferEncoding = request_->getHeaderValue("transfer-encoding");
 		client_max_body_size = request_->getLocationBlock().getClientMaxBodySize();
 		if (transferEncoding == "chunked") {
-			std::cout << "@@@@@ originalBody.size(): " << originalBody.size() << std::endl;
-			std::cout << "@@@@@ bodyLength_: " << bodyLength_ << std::endl;
-			std::cout << "@@@@@ client_max_body_size: " << client_max_body_size << std::endl;
-			if (bodyLength_ > client_max_body_size)
-				throw HttpException("recv: Body length is larger than client max body size", HTTP_PAYLOAD_TOO_LARGE);
-			originalBody = request_->getOriginalBody();
-			it = std::search(originalBody.begin(), originalBody.end(), crlf, crlf + strlen(crlf));
-			if (it != originalBody.end()) {
-				request_->setOriginalBody(std::vector<char>(originalBody.begin(), it));
+			request_->parseChunkedBody();
+			if (request_->getBodyLength() > client_max_body_size)
+				throw HttpException("recv: Chunked body length is larger than client max body size", HTTP_CONTENT_TOO_LARGE);
+			// CRLFCRLF를 체크해서 request 내용의 전체를 받았는지 확인
+			if (hasWordInCharV(request_->getOriginalBody(), chunkedEnd))
 				isRecvCompleted_ = FT_TRUE;
-			}
-		} else if (bodyLength_ >= request_->getContentLengthNumber()) {
-			isRecvCompleted_ = FT_TRUE;
+		} else {
+			request_->addBodyLength(ret);
+			if (request_->getBodyLength() >= request_->getContentLengthNumber())
+				isRecvCompleted_ = FT_TRUE;
 		}
 	}
 	if (ret == FT_FALSE) {

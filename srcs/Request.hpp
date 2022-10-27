@@ -25,9 +25,12 @@ private:
 	std::string							filePath_;
 	std::vector<char>					originalHeader_;
 	std::vector<char>					originalBody_;
+	std::size_t							bodyLength_;
+	ft_bool								isChunkSize_; // or chunk data
+
+	void								appendBody(const std::vector<char> &vec);
 
 	void	parseHeader(const std::vector<std::string> &splitedMessage);
-	void	parseChunkedBody();
 
 public:
 	Request();
@@ -43,6 +46,7 @@ public:
 	const std::string							&getFilePath();
 	const std::vector<char>						&getOriginalHeader();
 	const std::vector<char>						&getOriginalBody();
+	const std::size_t							&getBodyLength();
 
 	std::size_t	getContentLengthNumber();
 	
@@ -52,9 +56,12 @@ public:
 	void	setOriginalHeader(const std::vector<char> originalHeader);
 	void	setOriginalBody(const std::vector<char> originalBody);
 	void	setLocationBlock(const Block &locationBlock);
+	void	setBodyLength(const std::size_t bodyLength);
 
 	void	appendOriginalHeader(const char *buf, int length);
 	void	appendOriginalBody(const char *buf, int length);
+	void	addBodyLength(const std::size_t length);
+	void	parseChunkedBody();
 };
 
 #endif
