@@ -28,7 +28,7 @@ private:
 	std::size_t							bodyLength_;
 	ft_bool								isChunkSize_; // or chunk data
 
-	void								appendBody(const std::vector<char> &vec);
+	void								appendBody(const std::vector<char>::iterator &startIt, const std::vector<char>::iterator &endIt);
 
 	void	parseHeader(const std::vector<std::string> &splitedMessage);
 

@@ -19,10 +19,10 @@ Response::Response(std::string status, const std::vector<char> &result, ft_bool 
 	if (isCgi) {
 		it = std::search(result.begin(), result.end(), crlf, crlf + strlen(crlf));
 		if (it != result.end()) {
-			body_ = std::vector<char>(it + strlen(crlf), result.end());
+			body_.assign(it + strlen(crlf), result.end());
 			cgiHeaders = std::string(result.begin(), it);
 			// std::cout << "cgiHeaders: " << cgiHeaders << std::endl;
-			splitedHeaders = split(std::string(cgiHeaders.begin(), cgiHeaders.end()), "\r\n");
+			splitedHeaders = split(cgiHeaders, "\r\n");
 			for (it_s = splitedHeaders.begin(); it_s != splitedHeaders.end(); it_s++) {
 				splitedHeaderLine = split(*it_s, ": ");
 				std::transform(splitedHeaderLine[0].begin(), splitedHeaderLine[0].end(), splitedHeaderLine[0].begin(), ::tolower);

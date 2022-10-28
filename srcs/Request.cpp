@@ -9,8 +9,8 @@ Request::~Request() {
 	delete uri_;
 }
 
-void Request::appendBody(const std::vector<char> &vec) {
-	body_.insert(body_.end(), vec.begin(), vec.end());
+void Request::appendBody(const std::vector<char>::iterator &startIt, const std::vector<char>::iterator &endIt) {
+	body_.insert(body_.end(), startIt, endIt);
 }
 
 void	Request::parseHeader(const std::vector<std::string> &splitedMessage) {
@@ -143,7 +143,7 @@ void	Request::parseChunkedBody() {
 	std::string					chunkSizeString;
 	std::size_t					chunkSize;
 
-	// timestamp("parseChunkedBody start", start);
+	// timestamp("* parseChunkedBody start", start);
 	it = std::search(originalBody_.begin(), originalBody_.end(), crlf, crlf + strlen(crlf));
 	while (it != originalBody_.end()) {
 		if (isChunkSize_) {
@@ -155,11 +155,11 @@ void	Request::parseChunkedBody() {
 			addBodyLength(chunkSize);
 		} else {
 			// is chunk data
-			appendBody(std::vector<char>(originalBody_.begin(), it));
+			appendBody(originalBody_.begin(), it);
 		}
-		originalBody_ = std::vector<char>(it + strlen(crlf), originalBody_.end());
+		originalBody_.assign(it + strlen(crlf), originalBody_.end());
 		isChunkSize_ = !isChunkSize_; // toggle: chunk size or chunk data
 		it = std::search(originalBody_.begin(), originalBody_.end(), crlf, crlf + strlen(crlf));
 	}
-	// timestamp("parseChunkedBody end", start);
+	// timestamp("* parseChunkedBody end", start);
 }

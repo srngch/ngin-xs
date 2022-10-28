@@ -86,6 +86,7 @@ ft_bool Worker::work() {
 				return ret;
 		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
 			timestamp("recv end: ", start);
+			std::cerr << "recv end connectsocket: " << connectSocket_ << std::endl;
 			timestamp("setBody start: ", start);
 			request_->setBody();
 			timestamp("setBody end: ", start);
@@ -138,6 +139,7 @@ ft_bool Worker::recv() {
 	buf[ret] = '\0';
 	if (isNewRequest_ == FT_TRUE) {
 		timestamp("recv start: ", start);
+		std::cerr << "recv start connectsocket: " << connectSocket_ << std::endl;
 		delete request_;
 		request_ = new Request();
 		isNewRequest_ = FT_FALSE;
@@ -281,7 +283,7 @@ ft_bool Worker::executePost() {
 		std::string result = cgi.execute();
 		timestamp("Cgi execute end: ", start);
 		timestamp("response make start: ", start);
-		Response response(HTTP_CREATED, stringToCharV(result), FT_TRUE);
+		Response response(HTTP_CREATED, stringToCharV(result), FT_TRUE);	// stringToCharV 오래 걸림 (1103635)
 		timestamp("response make end: ", start);
 		return send(response.createMessage());
 	}
