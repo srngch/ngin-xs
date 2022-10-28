@@ -1,5 +1,7 @@
 #include "Worker.hpp"
 
+extern timeval start;
+
 Worker::HttpException::HttpException(const std::string message, const std::string httpStatus)
 	: message_(message), httpStatus_(httpStatus) {
 		httpCode_ = atoi(httpStatus_.substr(0, 3).c_str());
@@ -83,7 +85,10 @@ ft_bool Worker::work() {
 			if (ret == FT_FALSE)
 				return ret;
 		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
+			timestamp("recv end: ", start);
+			timestamp("setBody start: ", start);
 			request_->setBody();
+			timestamp("setBody end: ", start);
 			initRequestState();
 			validate();
 			request_->setFilePath();
@@ -92,8 +97,10 @@ ft_bool Worker::work() {
 				return executePutToTest();
 			if (requestMethod == "GET")
 				return executeGet();
-			if (requestMethod == "POST")
+			if (requestMethod == "POST") {
+				timestamp("POST start: ", start);
 				return executePost();
+			}
 			if (requestMethod == "DELETE")
 				return executeDelete();
 		}
@@ -116,7 +123,7 @@ ft_bool Worker::work() {
 
 ft_bool Worker::recv() {
 	int 						ret;
-	char						buf[BUFFER_LENGTH];
+	char						buf[RECV_BUF_SIZE];
 	std::string					transferEncoding;
 	std::vector<char>			originalHeader;
 	std::vector<char>			originalBody;
@@ -126,10 +133,11 @@ ft_bool Worker::recv() {
 	std::size_t					client_max_body_size;
 	std::vector<char>::iterator	tmpIt;
 
-	memset(buf, 0, BUFFER_LENGTH);
-	ret = ::recv(pollfd_->fd, buf, BUFFER_LENGTH - 1, 0);
+	memset(buf, 0, RECV_BUF_SIZE);
+	ret = ::recv(pollfd_->fd, buf, RECV_BUF_SIZE - 1, 0);
 	buf[ret] = '\0';
 	if (isNewRequest_ == FT_TRUE) {
+		timestamp("recv start: ", start);
 		delete request_;
 		request_ = new Request();
 		isNewRequest_ = FT_FALSE;
@@ -145,12 +153,12 @@ ft_bool Worker::recv() {
 			request_->setOriginalBody(std::vector<char>(it + strlen(EMPTY_LINE), originalHeader.end()));
 			request_->setOriginalHeader(std::vector<char>(originalHeader.begin(), it));
 			request_->setHeaders();
-
 			// 현재 요청에 대한 conf 파일의 location block 가져오기
 			Block locationBlock = serverBlock_.getLocationBlock(request_->getUri()->getParsedUri());
 			if (locationBlock.getUri() == "")
 				throw HttpException("recv: Location block not found", HTTP_NOT_FOUND);
 			request_->setLocationBlock(locationBlock);
+			std::cerr << "======URI: " << request_->getUri()->getOriginalUri() << std::endl;
 			client_max_body_size = request_->getLocationBlock().getClientMaxBodySize();
 
 			transferEncoding = request_->getHeaderValue("transfer-encoding");
@@ -178,7 +186,7 @@ ft_bool Worker::recv() {
 					|| originalBody.size() > client_max_body_size)
 					throw HttpException("recv: Content-length is larger than client max body size", HTTP_CONTENT_TOO_LARGE);
 				// 전체 메시지 길이가 버퍼보다 작을 때, 내용의 전체를 다 받았는지 확인
-				if (ret < BUFFER_LENGTH && request_->getBodyLength() >= request_->getContentLengthNumber())
+				if (ret < RECV_BUF_SIZE && request_->getBodyLength() >= request_->getContentLengthNumber())
 					isRecvCompleted_ = FT_TRUE;
 			}
 		}
@@ -269,8 +277,12 @@ ft_bool Worker::executePost() {
 		throw HttpException("executePost: Invaild POST request", HTTP_NO_CONTENT);
 	if (isCgi(request_->getFilePath())) {
 		Cgi cgi(request_);
+		timestamp("Cgi execute start: ", start);
 		std::string result = cgi.execute();
+		timestamp("Cgi execute end: ", start);
+		timestamp("response make start: ", start);
 		Response response(HTTP_CREATED, stringToCharV(result), FT_TRUE);
+		timestamp("response make end: ", start);
 		return send(response.createMessage());
 	}
 	return FT_TRUE;
@@ -325,7 +337,10 @@ ft_bool Worker::send(const std::vector<char> &message) {
 	int					ret;
 	std::vector<char>	m = message;
 
+	timestamp("Send start: ", start);
 	ret = ::send(pollfd_->fd, reinterpret_cast<char*>(&m[0]), m.size(), 0);
+	timestamp("Send end: ", start);
+	std::cerr << "===================" << std::endl;
 	if (ret == FT_ERROR)
 		throw HttpException("send: send() failed", HTTP_INTERNAL_SERVER_ERROR);
 	if (request_->getHeaderValue("connection") == "close")

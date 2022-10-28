@@ -1,8 +1,6 @@
 #ifndef __CONFIG_HPP__
 # define __CONFIG_HPP__
 
-# define BUFFER_SIZE 1600
-
 # include "Block.hpp"
 # include <unistd.h>
 # include <fcntl.h>

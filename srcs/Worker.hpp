@@ -24,8 +24,6 @@
 #include "autoindex/Autoindex.hpp"
 #include "config/Block.hpp"
 
-#define BUFFER_LENGTH 5024000
-
 class Worker {
 private:
 	Block			serverBlock_;

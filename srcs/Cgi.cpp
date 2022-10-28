@@ -1,5 +1,7 @@
 #include "Cgi.hpp"
 
+extern timeval start;
+
 Cgi::Cgi() {}
 
 Cgi::Cgi(Request *request)

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <set>
 #include <algorithm>
+#include <sys/time.h>
 #include "macro.hpp"
 
 template <typename T>
@@ -33,5 +34,6 @@ std::string					createPaddedString(int width, const std::string &str);
 size_t						hexStringToNumber(std::string s);
 std::vector<char>			stringToCharV(std::string s);
 ft_bool						hasWordInCharV(const std::vector<char> &src, const char *word);
+void						timestamp(const std::string &msg, timeval from);
 
 #endif

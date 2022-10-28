@@ -110,7 +110,15 @@ ft_bool hasWordInCharV(const std::vector<char> &src, const char *word) {
 	std::vector<char>::const_iterator it;
 
 	it = std::search(src.begin(), src.end(), word, word + strlen(word));
+	
 	if (it == src.end())
 		return FT_FALSE;
 	return FT_TRUE;
+}
+
+void timestamp(const std::string &msg, timeval start) {
+	timeval	now;
+
+	gettimeofday(&now, NULL);
+	std::cerr << msg << ": " << (now.tv_sec - start.tv_sec) * ONE_SEC_IN_MICROSEC + (now.tv_usec - start.tv_usec) << std::endl;
 }

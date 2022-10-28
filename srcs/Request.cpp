@@ -1,5 +1,7 @@
 #include "Request.hpp"
 
+extern timeval start;
+
 Request::Request()
 	: uri_(nullptr), bodyLength_(0), isChunkSize_(FT_TRUE) {}
 
@@ -141,6 +143,7 @@ void	Request::parseChunkedBody() {
 	std::string					chunkSizeString;
 	std::size_t					chunkSize;
 
+	// timestamp("parseChunkedBody start", start);
 	it = std::search(originalBody_.begin(), originalBody_.end(), crlf, crlf + strlen(crlf));
 	while (it != originalBody_.end()) {
 		if (isChunkSize_) {
@@ -158,4 +161,5 @@ void	Request::parseChunkedBody() {
 		isChunkSize_ = !isChunkSize_; // toggle: chunk size or chunk data
 		it = std::search(originalBody_.begin(), originalBody_.end(), crlf, crlf + strlen(crlf));
 	}
+	// timestamp("parseChunkedBody end", start);
 }
