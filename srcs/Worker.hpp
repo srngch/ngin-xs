@@ -24,27 +24,29 @@
 #include "autoindex/Autoindex.hpp"
 #include "config/Block.hpp"
 
-#define BUFFER_LENGTH 1024
+#define BUFFER_LENGTH 5024000
 
 class Worker {
 private:
-	Block						serverBlock_;
-	int							connectSocket_;
-	struct pollfd				*pollfd_;
-	Request						*request_;
-	ft_bool						isHeaderSet_;
-	ft_bool						isRecvCompleted_;
-	std::size_t					bodyLength_;
+	Block			serverBlock_;
+	int				connectSocket_;
+	struct pollfd	*pollfd_;
+	Request			*request_;
+	ft_bool			isHeaderSet_;
+	ft_bool			isRecvCompleted_;
+	ft_bool			isNewRequest_;
 
 	ft_bool	recv();
 	ft_bool	send(const std::vector<char> &message);
 	void	resetPollfd();
 	void	validate();
+	ft_bool	executePutToTest(); // TODO: remove this
 	ft_bool	executeGet();
 	ft_bool	executePost();
 	ft_bool	executeDelete();
 	ft_bool	redirect(const std::string &des);
 	void	initRequestState();
+	ft_bool	isCgi(const std::string &filePath);
 
 	Worker();
 

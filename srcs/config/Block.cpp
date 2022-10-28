@@ -6,12 +6,11 @@ Block Block::defaultBlock_;
 ft_bool Block::checkParentUri(std::string uri) {
 	int			len;
 
-	// parent의 uri
+	/* parent의 uri */
 	if (uri_ == "")
 		return FT_TRUE;
 	len = uri_.length();
 	if (!uri.compare(0, len, uri_))
-	// if (!strncmp(uri.c_str(), uri_.c_str(), len))
 		return FT_TRUE;
 	return FT_FALSE;
 }
@@ -19,20 +18,20 @@ ft_bool Block::checkParentUri(std::string uri) {
 ft_bool	Block::checkValidation(std::vector<std::string> &tokens, int &i, std::string &directive) {
 	directivesMap::iterator	it;
 
-	// ";" 뒤에 오는 토큰이 없이 파일의 끝이면 에러
+	/* ";" 뒤에 오는 토큰이 없이 파일의 끝이면 에러 */
 	if (i + 1 == static_cast<int>(tokens.size()))
 		throw std::runtime_error("Invalid configuration file: semi-colon should not be the end of the file.\n");
-	// ";" 뒤에 오는 토큰이 "}" 이면 유효
+	/* ";" 뒤에 오는 토큰이 "}" 이면 유효 */
 	if (!strcmp(tokens[i + 1].c_str(), "}"))
 		return FT_TRUE;
-	// ";" 뒤에 오는 토큰이 location 이면 유효
+	/* ";" 뒤에 오는 토큰이 location 이면 유효 */
 	if (!strcmp(tokens[i + 1].c_str(), "location"))
 		return FT_TRUE;
-	// ";" 뒤에 오는 토큰이 지시자가 아니면 유효하지 않음
+	/* ";" 뒤에 오는 토큰이 지시자가 아니면 유효하지 않음 */
 	it = directivesMap_.find(tokens[i + 1]);
 	if (it == directivesMap_.end())
 		throw std::runtime_error("Invalid configuration file: directive or } should exist after semi-colon.\n");
-	// directive 가 저장되어 있지 않으면 에러
+	/* directive 가 저장되어 있지 않으면 에러 */
 	if (directive == "")
 		throw std::runtime_error("Invalid configuration file: directive should exist before semi-colon.\n");
 	return FT_TRUE;
@@ -43,12 +42,12 @@ std::vector<std::string> Block::parseHostPort(const std::string &arg) {
 	std::vector<std::string>	args;
 
 	pos = arg.find(":");
-	// x.x.x.x:80 과 같은 형태가 아니면 에러
+	/* x.x.x.x:80 과 같은 형태가 아니면 에러 */
 	if (pos == std::string::npos || pos == 0 || pos == arg.length() - 1)
 		throw std::runtime_error("Wrong formatted configuration file: Listen x.x.x.x:port\n");
-	// host(x.x.x.x)
+	/* host(x.x.x.x) */
 	args.push_back(arg.substr(0, pos));
-	// port(80)
+	/* port(80) */
 	args.push_back(arg.substr(pos + 1, arg.length() - 1 - pos));
 
 	return args;
@@ -96,9 +95,10 @@ void Block::addSupportedExtension(const std::string &token) {
 		return ;
 	extension = token.substr(i + 1);
 	supportedExtensions_.insert(extension);
+
 }
 
-Block::Block() : host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_(""), autoIndex_("off") {
+Block::Block() : host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""), index_("index.html"), autoIndex_("off"), cgi_("") {
 	setServerDirectivesMap();
 }
 
@@ -159,23 +159,12 @@ void Block::setDefaultBlock(const char *file) {
 		if (tokens[i] == "server") {
 			Block	tmpServerBlock;
 
-			tmpServerBlock.setDefaultServerDirectivesMap();
+			tmpServerBlock.setServerDirectivesMap();
 			tmpServerBlock.parseServerBlock(tokens, ++i);
 			Block::defaultBlock_ = tmpServerBlock;
 		} else
 			throw std::runtime_error("Wrong default configuration file.\n");
 	}
-}
-
-void Block::setDefaultServerDirectivesMap() {
-	directivesMap_["listen"] = &Block::setHostPort;
-	directivesMap_["server_name"] = &Block::setServerNames;
-	directivesMap_["root"] = &Block::setWebRoot;
-	directivesMap_["allowed_methods"] = &Block::setAllowedMethods;
-	directivesMap_["client_max_body_size"] = &Block::setClientMaxBodySize;
-	directivesMap_["error_page"] = &Block::setErrorPages;
-	directivesMap_["index"] = &Block::setIndex;
-	directivesMap_["autoindex"] = &Block::setAutoIndex;
 }
 
 void Block::setServerDirectivesMap() {
@@ -195,6 +184,22 @@ void Block::setLocationDirectivesMap() {
 	directivesMap_["error_page"] = &Block::setErrorPages;
 }
 
+void Block::setChildLocationBlock(const Block &parent) {
+	setLocationDirectivesMap();
+	host_ = parent.host_;
+	port_ = parent.port_;
+	serverNames_ = parent.serverNames_;
+	webRoot_ = parent.webRoot_;
+	allowedMethods_ = parent.allowedMethods_;
+	clientMaxBodySize_ = parent.clientMaxBodySize_;
+	errorPages_ = parent.errorPages_;
+	uri_ = parent.uri_;
+	index_ = parent.index_;
+	autoIndex_ = parent.autoIndex_;
+	cgi_ = parent.cgi_;
+}
+
+
 directivesMap Block::getDirectivesMap() {
 	return directivesMap_;
 }
@@ -203,16 +208,16 @@ ft_bool Block::hasSemiColon(std::vector<std::string> &tokens, int &i, std::vecto
 	int	last;
 
 	last = tokens[i].length() - 1;
-	// 토큰이 ";" 자체인 경우
+	/* 토큰이 ";" 자체인 경우 */
 	if (tokens[i] == ";")
 		return (checkValidation(tokens, i, directive));
-	// 토큰의 오른쪽 끝이 ";"인 경우
+	/* 토큰의 오른쪽 끝이 ";"인 경우 */
 	else if (tokens[i][last] == ';') {
 		tokens[i].erase(last, last);
 		args->push_back(tokens[i]);
 		return (checkValidation(tokens, i, directive));
 	}
-	// 토큰이 ";"를 포함하지 않음
+	/* 토큰이 ";"를 포함하지 않음 */
 	else
 		return FT_FALSE;
 }
@@ -233,12 +238,13 @@ void Block::parseServerBlock(std::vector<std::string> &tokens, int &i) {
 		if (tokens[i] == "}" && validateSemiColon(hasSemiColonPrev))
 			break ;
 		it = directivesMap_.find(tokens[i]);
-		// 토큰이 지시자에 해당하지 않음
+		/* 토큰이 지시자에 해당하지 않음 */
 		if (it == directivesMap_.end()) {
-			// 로케이션 블록 파싱
+			/* 로케이션 블록 파싱 */
 			if (tokens[i] == "location") {
-				Block	tmpLocationBlock(*this);
+				Block	tmpLocationBlock;
 
+				tmpLocationBlock.setChildLocationBlock(*this);
 				validateSemiColon(hasSemiColonPrev);
 				hasSemiColonPrev = FT_TRUE;
 				tmpLocationBlock.setLocationDirectivesMap();
@@ -246,28 +252,28 @@ void Block::parseServerBlock(std::vector<std::string> &tokens, int &i) {
 				locationBlocks_.push_back(tmpLocationBlock);
 			}
 			else {
-				// ; 을 포함하고 있으면 멤버변수에 값 저장
+				/* ; 을 포함하고 있으면 멤버변수에 값 저장 */
 				if (hasSemiColon(tokens, i, &args, directive)) {
 					hasSemiColonPrev = FT_TRUE;
 					(this->*Block::getDirectivesMap()[directive])(args);
 					directive = "";
 					args.clear();
 				}
-				// ; 을 포함하지 않은 토큰은 args 에 저장
+				/* ; 을 포함하지 않은 토큰은 args 에 저장 */
 				else {
 					args.push_back(tokens[i]);
 					hasSemiColonPrev = FT_FALSE;
 				}
 			}
 		}
-		// 토큰이 지시자에 해당
+		/* 토큰이 지시자에 해당 */
 		else {
 			validateSemiColon(hasSemiColonPrev);
 			directive = tokens[i];
 		}
-		gatherSupportedExtensions();
 		i++;
 	}
+	gatherSupportedExtensions();
 }
 
 ft_bool Block::validateSemiColon(ft_bool &hasSemiColonPrev) const {
@@ -299,33 +305,34 @@ void Block::parseLocationBlock(std::vector<std::string> &tokens, int &i) {
 		if (tokens[i] == "}" && validateSemiColon(hasSemiColonPrev))
 			break ;
 		it = directivesMap_.find(tokens[i]);
-		// 토큰이 지시자에 해당하지 않음
+		/* 토큰이 지시자에 해당하지 않음 */
 		if (it == directivesMap_.end()) {
-			// 로케이션 블록 파싱
+			/* 로케이션 블록 파싱 */
 			if (tokens[i] == "location") {
-				Block	tmpLocationBlock(*this);
+				Block	tmpLocationBlock;
 
+				tmpLocationBlock.setChildLocationBlock(*this);
 				validateSemiColon(hasSemiColonPrev);
 				hasSemiColonPrev = FT_TRUE;
 				tmpLocationBlock.parseLocationBlock(tokens, ++i);
 				locationBlocks_.push_back(tmpLocationBlock);
 			}
 			else {
-				// ; 을 포함하고 있으면 멤버변수에 값 저장
+				/* ; 을 포함하고 있으면 멤버변수에 값 저장 */
 				if (hasSemiColon(tokens, i, &args, directive)) {
 						hasSemiColonPrev = FT_TRUE;
 						(this->*directivesMap_[directive])(args);
 						directive = "";
 						args.clear();
 				}
-				// ; 을 포함하지 않은 토큰은 args 에 저장
+				/* ; 을 포함하지 않은 토큰은 args 에 저장 */
 				else {
 					args.push_back(tokens[i]);
 					hasSemiColonPrev = FT_FALSE;
 				}
 			}
 		}
-		// 토큰이 지시자에 해당
+		/* 토큰이 지시자에 해당 */
 		else {
 			validateSemiColon(hasSemiColonPrev);
 			directive = tokens[i];
@@ -485,23 +492,18 @@ const std::string &Block::getUri() const {
 }
 
 const std::string &Block::getIndex() const {
-	if (index_ != "")
-		return (index_);
-	return Block::defaultBlock_.getIndex();
+	return index_;
 }
 
 ft_bool Block::getAutoIndex() const {
 	if (autoIndex_ == "on")
 		return FT_TRUE;
-	else if (autoIndex_ == "off")
+	else
 		return FT_FALSE;
-	return Block::defaultBlock_.getAutoIndex();
 }
 
 const std::string &Block::getCgi() const {
-	if (cgi_ != "")
-		return (cgi_);
-	throw InvalidConfigFileException("no cgi set\n");
+	return cgi_;
 }
 
 void Block::applyWildCard(std::string &uri, int &dot) const {
@@ -532,13 +534,12 @@ const Block &Block::getLocationBlockRecursive(std::string uri) const {
 		return Block::defaultBlock_;
 	for (it = locationBlocks_.begin(); it != locationBlocks_.end(); it++) {
 		ret = it->getLocationBlockRecursive(uri);
-		if (ret.getUri() == "") {
+		if (ret.getUri() == "")
 			continue;
-		}
-		else {
+		else
 			return (it->getLocationBlockRecursive(uri));
-		}
 	}
+	return Block::defaultBlock_;
 }
 
 Block Block::getLocationBlock(std::string uri) const {
@@ -549,16 +550,16 @@ Block Block::getLocationBlock(std::string uri) const {
 	std::vector<std::string>::reverse_iterator	rIt;
 	Block										tmpBlock;
 	Block										ret;
+	std::string									tmpUri;
 
-	// 1. uri 가공
+	/* 1. uri 가공 */
 	if (isExtension(uri, dot)) {
 		if (isCgiExtension(uri, dot))
 			applyWildCard(uri, dot);
 		else
 			removeFileName(uri, dot);
 	}
-	// 2. 슬래시(/) 단위로 uri 자르기 (예: /abc/def/ghi/ -> / /abc/ /abc/def/ /abc/def/ghi/)
-	// /test/dir/
+	/* 2. 슬래시(/) 단위로 uri 자르기 (예: /abc/def/ghi/ -> / /abc/ /abc/def/ /abc/def/ghi/) */
 	parsedUri = uri;
 	while (FT_TRUE) {
 		uriVector.push_back(parsedUri);
@@ -572,6 +573,9 @@ Block Block::getLocationBlock(std::string uri) const {
 		tmpBlock = getLocationBlockRecursive(*rIt);
 		if (tmpBlock.getUri() != "")
 			ret = tmpBlock;
+		tmpBlock = getLocationBlockRecursive(*rIt + "/");
+		if (tmpBlock.getUri() != "")
+			ret = tmpBlock;
 	}
 	return ret;
 }
@@ -583,8 +587,9 @@ void Block::gatherSupportedExtensions() {
 
 	for (it = locationBlocks_.begin(); it != locationBlocks_.end(); it++) {
 		supportedExtensions = it->getSupportedExtensions();
-		for (setIt = supportedExtensions.begin(); setIt != supportedExtensions.end(); setIt++)
+		for (setIt = supportedExtensions.begin(); setIt != supportedExtensions.end(); setIt++) {
 			supportedExtensions_.insert(*setIt);
+		}
 	}
 }
 

@@ -27,16 +27,14 @@ try:
     content_type = os.environ.get("CONTENT_TYPE")
     content_length = int(os.environ.get("CONTENT_LENGTH"))
     query_stirng = os.environ.get("QUERY_STRING")
+    script_name = os.environ.get("SCRIPT_NAME")
 
     buf = ""
     buf = sys.stdin.buffer.read()
 
-    """
-    Binary file upload: POST upload.py
-    """
-    message = ""
-    img_tag = ""
-    if request_method == "POST" and request_uri == "/binary.py":
+    status = ""
+
+    if request_method == "POST" and script_name == "/directory/youpi.bla":
         if buf:
             fn = os.path.basename(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
             extension = guess_extension(content_type.partition(";")[0].strip())
@@ -48,13 +46,33 @@ try:
             message = "No file was uploaded"
 
     """
+    Binary file upload: POST upload.py
+    """
+    message = ""
+    img_tag = ""
+    if request_method == "POST" and script_name == "/binary.py":
+        # TODO: handle if buf is not binary
+        if buf:
+            fn = os.path.basename(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+            extension = guess_extension(content_type.partition(";")[0].strip())
+            save_file(buf, f"{fn}{extension}")
+            message = f"""The file <a href="/upload/{fn}">upload/{fn}</a> was uploaded successfully"""
+            if content_type.startswith("image/"):
+                img_tag = f'<img src="/upload/{fn}" alt="uploaded image"/>'
+            status = "201 CREATED"
+        else:
+            message = "No file was uploaded"
+            status = "200 OK"
+
+    """
     multipart/form-data: POST form.py
     """
     formData = ""
-    if request_method == "POST" and request_uri == "/multipart.py":
+    if request_method == "POST" and script_name == "/multipart.py":
         formData += "<h3>Form</h3><ul>"
         ctype, pdict = cgi.parse_header(content_type)
 
+        # TODO: handle if ctype is not "multipart/form-data"
         if ctype == "multipart/form-data":
             form = cgi.FieldStorage(
                 fp=io.BytesIO(buf), environ=os.environ, keep_blank_values=True
@@ -68,6 +86,7 @@ try:
                     else:
                         save_file(data, filename)
                         d = f'File(<a href="/upload/{filename}">upload/{filename}</a>)'
+                        status = "201 CREATED"
                 else:
                     d = form[key].value
                 formData += f"<li>{key}: {d}</li>"
@@ -93,6 +112,10 @@ try:
     </body>
     </html>"""
 
+    if status == "":
+        status = "200 OK"
+
+    print(f"Status: {status}")
     print("Content-type: text/html")
     print(f"Content-Length: {len(body)}")
     print()

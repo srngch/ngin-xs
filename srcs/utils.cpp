@@ -80,15 +80,6 @@ ft_bool isDirectory(const std::string &filePath)
 	return FT_FALSE;
 }
 
-ft_bool	isCgi(const std::string &filePath) {
-	// TODO: 지원하는 모든 CGI 확장자에 대해 검사
-	if (filePath.length() < 3)
-		return FT_FALSE;
-	if (filePath.substr(filePath.length() - 3, std::string::npos) == ".py")
-		return FT_TRUE;
-	return FT_FALSE;
-}
-
 std::string	createPadding(int width, int length) {
 	std::string	result;
 
@@ -113,4 +104,13 @@ size_t	hexStringToNumber(std::string s) {
 
 std::vector<char> stringToCharV(std::string s) {
 	return std::vector<char>(s.begin(), s.end());
+}
+
+ft_bool hasWordInCharV(const std::vector<char> &src, const char *word) {
+	std::vector<char>::const_iterator it;
+
+	it = std::search(src.begin(), src.end(), word, word + strlen(word));
+	if (it == src.end())
+		return FT_FALSE;
+	return FT_TRUE;
 }

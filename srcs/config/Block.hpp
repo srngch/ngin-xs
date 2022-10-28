@@ -52,6 +52,7 @@ public:
 	void								setDefaultServerDirectivesMap();
 	void								setServerDirectivesMap();
 	void								setLocationDirectivesMap();
+	void								setChildLocationBlock(const Block &parent);
 	directivesMap						getDirectivesMap();
 	
 	ft_bool								hasSemiColon(std::vector<std::string> &tokens, int &index, std::vector<std::string> *args, std::string &directive);

@@ -39,7 +39,7 @@ void	Nginxs::run() {
 		pollfds_[fds].fd = -1;
 
 	while (1) {
-		ret = poll(pollfds_, POLLFDSLEN, -1);
+		ret = poll(pollfds_, POLLFDSLEN, 5000);
 		if (ret == -1) {
 			for (int fds = 0; fds < POLLFDSLEN; fds++) {
 				if (pollfds_[fds].fd != -1)
