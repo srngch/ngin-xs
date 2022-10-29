@@ -1,7 +1,7 @@
 #include "Config.hpp"
 
 std::vector<std::string> Config::readAndSplit(const char *filePath) {
-	char						buffer[BUFFER_SIZE + 1];
+	char						buffer[CONFIG_BUF_SIZE + 1];
 	int							fd;
 	int							ret;
 	std::string					line = "";
@@ -11,7 +11,7 @@ std::vector<std::string> Config::readAndSplit(const char *filePath) {
 	fd = open(filePath, O_RDONLY);
 	if (fd <= 0)
 		throw std::runtime_error("fail: Opening configuration file\n");
-	ret = read(fd, buffer, BUFFER_SIZE);
+	ret = read(fd, buffer, CONFIG_BUF_SIZE);
 	if (ret == 0) {
 		serverBlocks_.push_back(Block::defaultBlock_);
 		return tokens;
@@ -19,7 +19,7 @@ std::vector<std::string> Config::readAndSplit(const char *filePath) {
 	while (ret > 0) {
 		buffer[ret] = '\0';
 		line += buffer;
-		ret = read(fd, buffer, BUFFER_SIZE);
+		ret = read(fd, buffer, CONFIG_BUF_SIZE);
 	}
 	if (ret == FT_ERROR) {
 		close(fd);

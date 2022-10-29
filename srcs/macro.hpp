@@ -36,4 +36,9 @@
 #define CGI_FILE_MODE		0644
 #define CGI_BUF_SIZE		65000
 
+#define RECV_BUF_SIZE 21504
+#define CONFIG_BUF_SIZE 1600
+
+#define ONE_SEC_IN_MICROSEC 1000000
+
 #endif

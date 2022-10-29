@@ -1,5 +1,7 @@
 #include "Cgi.hpp"
 
+extern timeval start;
+
 Cgi::Cgi() {}
 
 Cgi::Cgi(Request *request)
@@ -69,14 +71,15 @@ char **Cgi::getEnv() {
 	return charEnv;
 }
 
-std::string Cgi::execute() {
-	pid_t		pid;
-	int			tmpStd[2];
-	long		fileFds[2];
-	std::string	result;
-	int			ret = 1;
-	std::vector<char> body = request_->getBody();
-	char		readBuf[CGI_BUF_SIZE];
+const std::vector<char> &Cgi::execute() {
+	timestampNoSocket("cgi execute start", start);
+	pid_t				pid;
+	int					tmpStd[2];
+	long				fileFds[2];
+	std::string			tmpResult;
+	int					ret = 1;
+	std::vector<char>	body = request_->getBody();
+	char				readBuf[CGI_BUF_SIZE];
 
 	tmpStd[STDIN_FILENO] = dup(STDIN_FILENO);
 	tmpStd[STDOUT_FILENO] = dup(STDOUT_FILENO);
@@ -86,16 +89,20 @@ std::string Cgi::execute() {
 	fileFds[STDIN_FILENO] = fileno(tmpFileIn);
 	fileFds[STDOUT_FILENO] = fileno(tmpFileOut);
 
+	fcntl(fileFds[STDIN_FILENO], F_SETFL, O_NONBLOCK);
+	fcntl(fileFds[STDOUT_FILENO], F_SETFL, O_NONBLOCK);
+
 	write(fileFds[STDIN_FILENO], reinterpret_cast<char*> (&body[0]), body.size());
 	lseek(fileFds[STDIN_FILENO], 0, SEEK_SET);
 
 	pid = fork();
 	if (pid < 0) {
 		std::cerr << "Fork crashed." << std::endl;
-		result += "Status: ";
-		result += HTTP_INTERNAL_SERVER_ERROR;
-		result += EMPTY_LINE;
-		return result;
+		tmpResult += "Status: ";
+		tmpResult += HTTP_INTERNAL_SERVER_ERROR;
+		tmpResult += EMPTY_LINE;
+		result_.insert(result_.end(), tmpResult.begin(), tmpResult.end());
+		return result_;
 	}
 
 	/* child process */	
@@ -107,17 +114,17 @@ std::string Cgi::execute() {
 		
 		/* if execve() failed */
 		std::cerr << "execute: CGI execve fail" << std::endl;		
-		result += "Status: ";
-		result += HTTP_INTERNAL_SERVER_ERROR;
-		result += EMPTY_LINE;
-		write(STDOUT_FILENO, result.c_str(), result.length());
+		tmpResult += "Status: ";
+		tmpResult += HTTP_INTERNAL_SERVER_ERROR;
+		tmpResult += EMPTY_LINE;
+		write(STDOUT_FILENO, tmpResult.c_str(), tmpResult.length());
 	} else {
 		waitpid(pid, NULL, 0);
 		lseek(fileFds[STDOUT_FILENO], 0, SEEK_SET);
 		while (ret > 0) {
 			memset(readBuf, 0, CGI_BUF_SIZE);
 			ret = read(fileFds[STDOUT_FILENO], readBuf, CGI_BUF_SIZE - 1);
-			result += readBuf;
+			result_.insert(result_.end(), readBuf, readBuf + ret);
 		}
 	}
 
@@ -132,5 +139,6 @@ std::string Cgi::execute() {
 	close(tmpStd[STDIN_FILENO]);
 	close(tmpStd[STDOUT_FILENO]);
 
-	return (result);
+	timestampNoSocket("cgi execute end", start);
+	return (result_);
 }

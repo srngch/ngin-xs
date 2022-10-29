@@ -1,6 +1,8 @@
 #include "Worker.hpp"
 
-Worker::HttpException::HttpException(const std::string message, const std::string httpStatus)
+extern timeval start;
+
+Worker::HttpException::HttpException(const std::string &message, const std::string &httpStatus)
 	: message_(message), httpStatus_(httpStatus) {
 		httpCode_ = atoi(httpStatus_.substr(0, 3).c_str());
 	}
@@ -76,14 +78,17 @@ ft_bool Worker::work() {
 			return FT_TRUE;
 		if (pollfd_->revents & POLLHUP) {
 			resetPollfd();
-			std::cout << "socket closed." << std::endl;
+			std::cout << "<socket closed>" << std::endl;
 			return FT_FALSE;
 		} else if (pollfd_->revents == pollfd_->events) {
 			ret = recv();
 			if (ret == FT_FALSE)
 				return ret;
 		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
+			timestamp("recv end", start, connectSocket_);
+			timestamp("setBody start", start, connectSocket_);
 			request_->setBody();
+			timestamp("setBody end", start, connectSocket_);
 			initRequestState();
 			validate();
 			request_->setFilePath();
@@ -92,8 +97,9 @@ ft_bool Worker::work() {
 				return executePutToTest();
 			if (requestMethod == "GET")
 				return executeGet();
-			if (requestMethod == "POST")
+			if (requestMethod == "POST") {
 				return executePost();
+			}
 			if (requestMethod == "DELETE")
 				return executeDelete();
 		}
@@ -116,7 +122,7 @@ ft_bool Worker::work() {
 
 ft_bool Worker::recv() {
 	int 						ret;
-	char						buf[BUFFER_LENGTH];
+	char						buf[RECV_BUF_SIZE];
 	std::string					transferEncoding;
 	std::vector<char>			originalHeader;
 	std::vector<char>			originalBody;
@@ -124,12 +130,12 @@ ft_bool Worker::recv() {
 	const char 					*chunkedEnd = CHUNKED_END;
 	std::vector<char>::iterator it;
 	std::size_t					client_max_body_size;
-	std::vector<char>::iterator	tmpIt;
 
-	memset(buf, 0, BUFFER_LENGTH);
-	ret = ::recv(pollfd_->fd, buf, BUFFER_LENGTH - 1, 0);
+	memset(buf, 0, RECV_BUF_SIZE);
+	ret = ::recv(pollfd_->fd, buf, RECV_BUF_SIZE - 1, 0);
 	buf[ret] = '\0';
 	if (isNewRequest_ == FT_TRUE) {
+		timestamp("recv start", start, connectSocket_);
 		delete request_;
 		request_ = new Request();
 		isNewRequest_ = FT_FALSE;
@@ -142,15 +148,15 @@ ft_bool Worker::recv() {
 		if (it != originalHeader.end()) {
 			// start reading body
 			isHeaderSet_ = FT_TRUE;
-			request_->setOriginalBody(std::vector<char>(it + strlen(EMPTY_LINE), originalHeader.end()));
-			request_->setOriginalHeader(std::vector<char>(originalHeader.begin(), it));
+			request_->setOriginalBody(it + strlen(EMPTY_LINE), originalHeader.end());
+			request_->setOriginalHeader(originalHeader.begin(), it);
 			request_->setHeaders();
-
 			// 현재 요청에 대한 conf 파일의 location block 가져오기
 			Block locationBlock = serverBlock_.getLocationBlock(request_->getUri()->getParsedUri());
 			if (locationBlock.getUri() == "")
 				throw HttpException("recv: Location block not found", HTTP_NOT_FOUND);
 			request_->setLocationBlock(locationBlock);
+			std::cerr << "======URI: " << request_->getUri()->getOriginalUri() << std::endl;
 			client_max_body_size = request_->getLocationBlock().getClientMaxBodySize();
 
 			transferEncoding = request_->getHeaderValue("transfer-encoding");
@@ -178,7 +184,7 @@ ft_bool Worker::recv() {
 					|| originalBody.size() > client_max_body_size)
 					throw HttpException("recv: Content-length is larger than client max body size", HTTP_CONTENT_TOO_LARGE);
 				// 전체 메시지 길이가 버퍼보다 작을 때, 내용의 전체를 다 받았는지 확인
-				if (ret < BUFFER_LENGTH && request_->getBodyLength() >= request_->getContentLengthNumber())
+				if (ret < RECV_BUF_SIZE && request_->getBodyLength() >= request_->getContentLengthNumber())
 					isRecvCompleted_ = FT_TRUE;
 			}
 		}
@@ -249,9 +255,8 @@ ft_bool Worker::executeGet() {
 		filePath += indexPath;
 	if (isCgi(filePath)) {
 		Cgi cgi(request_);
-		std::string result = cgi.execute();
 
-		Response response(HTTP_OK, stringToCharV(result), FT_TRUE);
+		Response response(HTTP_OK, cgi.execute(), FT_TRUE);
 		return send(response.createMessage());
 	}
 	if (isFileExist(filePath) == FT_FALSE)
@@ -269,9 +274,11 @@ ft_bool Worker::executePost() {
 		throw HttpException("executePost: Invaild POST request", HTTP_NO_CONTENT);
 	if (isCgi(request_->getFilePath())) {
 		Cgi cgi(request_);
-		std::string result = cgi.execute();
-		Response response(HTTP_CREATED, stringToCharV(result), FT_TRUE);
-		return send(response.createMessage());
+		timestamp("response make start", start, connectSocket_);
+		Response response(HTTP_CREATED, cgi.execute(), FT_TRUE);	// stringToCharV 오래 걸림 (1103635)
+		timestamp("response make end", start, connectSocket_);
+		timestamp("createMessage start", start, connectSocket_);
+		return send(response.createMessage());	// createMessage 오래 걸림 (1055090)
 	}
 	return FT_TRUE;
 }
@@ -325,7 +332,10 @@ ft_bool Worker::send(const std::vector<char> &message) {
 	int					ret;
 	std::vector<char>	m = message;
 
+	timestamp("Send start", start, connectSocket_);
 	ret = ::send(pollfd_->fd, reinterpret_cast<char*>(&m[0]), m.size(), 0);
+	timestamp("Send end", start, connectSocket_);
+	std::cerr << "===================" << std::endl;
 	if (ret == FT_ERROR)
 		throw HttpException("send: send() failed", HTTP_INTERNAL_SERVER_ERROR);
 	if (request_->getHeaderValue("connection") == "close")

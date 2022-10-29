@@ -93,7 +93,7 @@ std::string createPaddedString(int width, const std::string &str) {
 	return createPadding(width, str.length()) + str;
 }
 
-size_t	hexStringToNumber(std::string s) {
+size_t	hexStringToNumber(const std::string &s) {
 	size_t				n;
 	std::stringstream	ss;
 
@@ -102,7 +102,7 @@ size_t	hexStringToNumber(std::string s) {
 	return n;
 }
 
-std::vector<char> stringToCharV(std::string s) {
+std::vector<char> stringToCharV(const std::string &s) {
 	return std::vector<char>(s.begin(), s.end());
 }
 
@@ -110,7 +110,22 @@ ft_bool hasWordInCharV(const std::vector<char> &src, const char *word) {
 	std::vector<char>::const_iterator it;
 
 	it = std::search(src.begin(), src.end(), word, word + strlen(word));
+	
 	if (it == src.end())
 		return FT_FALSE;
 	return FT_TRUE;
+}
+
+void timestamp(const std::string &msg, timeval start, int socketId) {
+	timeval	now;
+
+	gettimeofday(&now, NULL);
+	std::cerr <<  "(" << socketId << ") \t\t" << (now.tv_sec - start.tv_sec) * ONE_SEC_IN_MICROSEC + (now.tv_usec - start.tv_usec) << " :\t\t" << msg << std::endl;
+}
+
+void timestampNoSocket(const std::string &msg, timeval start) {
+	timeval	now;
+
+	gettimeofday(&now, NULL);
+	std::cerr << (now.tv_sec - start.tv_sec) * ONE_SEC_IN_MICROSEC + (now.tv_usec - start.tv_usec) << " :\t\t" << msg << std::endl;
 }

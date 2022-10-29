@@ -1,30 +1,28 @@
 #include "Response.hpp"
 
-Response::Response(std::string status) {
+Response::Response(const std::string &status) {
 	statusLine_ = "HTTP/1.1 " + status;
 	makeDefaultHeaders();
 }
 
-Response::Response(std::string status, const std::vector<char> &result, ft_bool isCgi) {
-	// Set cgi headers
+Response::Response(const std::string &status, const std::vector<char> &result, ft_bool isCgi) {
 	std::vector<char>::const_iterator	it;
 	const char 							*crlf = "\r\n\r\n";
 	std::string 						cgiHeaders;
 	std::vector<std::string>			splitedHeaders;
 	std::vector<std::string>			splitedHeaderLine;
-	std::vector<std::string>::iterator	it_s;
+	std::vector<std::string>::iterator	sIt;
 
 	statusLine_ = "HTTP/1.1 " + status;
 	body_ = result;
 	if (isCgi) {
 		it = std::search(result.begin(), result.end(), crlf, crlf + strlen(crlf));
 		if (it != result.end()) {
-			body_ = std::vector<char>(it + strlen(crlf), result.end());
+			body_.assign(it + strlen(crlf), result.end());
 			cgiHeaders = std::string(result.begin(), it);
-			// std::cout << "cgiHeaders: " << cgiHeaders << std::endl;
-			splitedHeaders = split(std::string(cgiHeaders.begin(), cgiHeaders.end()), "\r\n");
-			for (it_s = splitedHeaders.begin(); it_s != splitedHeaders.end(); it_s++) {
-				splitedHeaderLine = split(*it_s, ": ");
+			splitedHeaders = split(cgiHeaders, "\r\n");
+			for (sIt = splitedHeaders.begin(); sIt != splitedHeaders.end(); sIt++) {
+				splitedHeaderLine = split(*sIt, ": ");
 				std::transform(splitedHeaderLine[0].begin(), splitedHeaderLine[0].end(), splitedHeaderLine[0].begin(), ::tolower);
 				if (splitedHeaderLine[0] == "status") {
 					statusLine_ = "HTTP/1.1 " + splitedHeaderLine[1];
@@ -60,33 +58,37 @@ void Response::makeDefaultHeaders() {
 		appendHeader("content-type", MIME_HTML);
 }
 
-const std::string Response::getHeaderValue(std::string fieldName) {
+const std::string Response::getHeaderValue(const std::string &fieldName) {
 	std::map<std::string, std::string>::iterator it = headers_.find(fieldName);
 	if (it == headers_.end())
 		return std::string("");
 	return it->second;
 }
 
-std::vector<char>	Response::createMessage() {
-	std::vector<char>								message;
+const std::vector<char>	&Response::createMessage() {
 	std::map<std::string, std::string>::iterator	it;
 	const char 										*crlf = CRLF;
 	const char 										*headerDelim = ": ";
 
-	message.insert(message.end(), statusLine_.begin(), statusLine_.end());
-	message.insert(message.end(), crlf, crlf + strlen(crlf));
+	// status line
+	message_.insert(message_.end(), statusLine_.begin(), statusLine_.end());
+
+	// header
+	message_.insert(message_.end(), crlf, crlf + strlen(crlf));
 	for (it = headers_.begin(); it != headers_.end(); it++) {
-		message.insert(message.end(), it->first.begin(), it->first.end());
-		message.insert(message.end(), headerDelim, headerDelim + strlen(headerDelim));
-		message.insert(message.end(), it->second.begin(), it->second.end());
-		message.insert(message.end(), crlf, crlf + strlen(crlf));
+		message_.insert(message_.end(), it->first.begin(), it->first.end());
+		message_.insert(message_.end(), headerDelim, headerDelim + strlen(headerDelim));
+		message_.insert(message_.end(), it->second.begin(), it->second.end());
+		message_.insert(message_.end(), crlf, crlf + strlen(crlf));
 	}
-	message.insert(message.end(), crlf, crlf + strlen(crlf));
-	message.insert(message.end(), body_.begin(), body_.end());
-	return message;
+	message_.insert(message_.end(), crlf, crlf + strlen(crlf));
+
+	// body
+	message_.insert(message_.end(), body_.begin(), body_.end());
+	return message_;
 }
 
-void	Response::setContentType(std::string fileExtension) {
+void	Response::setContentType(const std::string &fileExtension) {
 	headers_.erase("content-type");
 	if (fileExtension == "html")
 		appendHeader("content-type", MIME_HTML);
@@ -116,6 +118,6 @@ void	Response::setContentType(std::string fileExtension) {
 		appendHeader("content-type", MIME_OCTET);
 }
 
-void	Response::appendHeader(std::string fieldName, std::string value) {
+void	Response::appendHeader(const std::string &fieldName, const std::string &value) {
 	headers_.insert(std::pair<std::string, std::string>(fieldName, value));
 }

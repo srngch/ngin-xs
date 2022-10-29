@@ -133,7 +133,7 @@ Block &Block::operator=(const Block &origin) {
 void Block::setDefaultBlock(const char *file) {
 	std::vector<std::string>	tokens;
 	int							tokenSize;
-	char						buffer[BUFFER_SIZE + 1];
+	char						buffer[CONFIG_BUF_SIZE + 1];
 	int							fd;
 	int							ret;
 	std::string					line = "";
@@ -142,11 +142,11 @@ void Block::setDefaultBlock(const char *file) {
 	fd = open(file, O_RDONLY);
 	if (fd <= 0)
 		throw std::runtime_error("fail: Opening configuration file\n");
-	ret = read(fd, buffer, BUFFER_SIZE);
+	ret = read(fd, buffer, CONFIG_BUF_SIZE);
 	while (ret > 0) {
 		buffer[ret] = '\0';
 		line += buffer;
-		ret = read(fd, buffer, BUFFER_SIZE);
+		ret = read(fd, buffer, CONFIG_BUF_SIZE);
 	}
 	if (ret == FT_ERROR) {
 		close(fd);

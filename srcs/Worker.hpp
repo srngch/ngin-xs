@@ -24,8 +24,6 @@
 #include "autoindex/Autoindex.hpp"
 #include "config/Block.hpp"
 
-#define BUFFER_LENGTH 5024000
-
 class Worker {
 private:
 	Block			serverBlock_;
@@ -64,13 +62,13 @@ public:
 		int			httpCode_;
 
 	public:
-		HttpException(const std::string message, const std::string httpCode);
+		HttpException(const std::string &message, const std::string &httpCode);
 		~HttpException() throw();
 		virtual const char *what() const throw();
 
 		const std::string	&getHttpStatus();
 		int					getHttpCode();
-		std::vector<char>	makeErrorHtml(const std:: string &errorPage);
+		std::vector<char>	makeErrorHtml(const std::string &errorPage);
 	};
 };
 
