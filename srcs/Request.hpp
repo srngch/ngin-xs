@@ -41,7 +41,7 @@ public:
 	const Uri									*getUri();
 	const std::string							&getVersion();
 	const std::map<std::string, std::string>	&getHeaders();
-	const std::string							getHeaderValue(std::string fieldName);
+	const std::string							getHeaderValue(const std::string &fieldName);
 	const std::vector<char>						&getBody();
 	const std::string							&getFilePath();
 	const std::vector<char>						&getOriginalHeader();
@@ -53,8 +53,8 @@ public:
 	void	setBody();
 	void	setHeaders();
 	void	setFilePath();
-	void	setOriginalHeader(const std::vector<char> originalHeader);
-	void	setOriginalBody(const std::vector<char> originalBody);
+	void	setOriginalHeader(const std::vector<char>::iterator &startIt, const std::vector<char>::iterator &endIt);
+	void	setOriginalBody(const std::vector<char>::iterator &startIt, const std::vector<char>::iterator &endIt);
 	void	setLocationBlock(const Block &locationBlock);
 	void	setBodyLength(const std::size_t bodyLength);
 

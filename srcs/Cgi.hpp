@@ -19,6 +19,7 @@ class Cgi {
 private:
 	Request						*request_;
 	std::vector<std::string>	env_;
+	std::vector<char>			result_;
 
 	void	setEnv();
 	char	**getEnv();
@@ -29,7 +30,7 @@ public:
 	Cgi(Request *request);
 	~Cgi();
 
-	std::string	execute();
+	const std::vector<char>	&execute();
 };
 
 #endif

@@ -31,9 +31,10 @@ ft_bool						isIncluded(const std::string &value, const std::vector<std::string>
 ft_bool						isDirectory(const std::string &filePath);
 std::string					createPadding(int width, int length);
 std::string					createPaddedString(int width, const std::string &str);
-size_t						hexStringToNumber(std::string s);
-std::vector<char>			stringToCharV(std::string s);
+size_t						hexStringToNumber(const std::string &s);
+std::vector<char>			stringToCharV(const std::string &s);
 ft_bool						hasWordInCharV(const std::vector<char> &src, const char *word);
-void						timestamp(const std::string &msg, timeval from);
+void						timestamp(const std::string &msg, timeval from, int socketId);
+void						timestampNoSocket(const std::string &msg, timeval start);
 
 #endif
