@@ -2,7 +2,7 @@
 
 timeval start;
 
-int	main(int argc, char **argv) {
+int main(int argc, char **argv) {
 	gettimeofday(&start, NULL);
 
 	if (argc != 2) {
@@ -10,8 +10,7 @@ int	main(int argc, char **argv) {
 		return EXIT_FAILURE;
 	}
 	try {
-		Nginxs nginxs(argv[1]);
-
+		Nginxs	nginxs(argv[1]);
 		nginxs.run();
 	} catch (std::exception &e) {
 		std::cout << "main: " << e.what() << std::endl;

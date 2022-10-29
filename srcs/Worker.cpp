@@ -21,8 +21,9 @@ int Worker::HttpException::getHttpCode() {
 	return httpCode_;
 }
 
-std::vector<char> Worker::HttpException::makeErrorHtml(const std::string &errorPage) {
-	std::string html;
+vectorChar Worker::HttpException::makeErrorHtml(const std::string &errorPage) {
+	std::string	html;
+
 	if (httpCode_ == 204)
 		return stringToCharV(html);
 	if (errorPage != "" && isFileExist(errorPage))
@@ -62,7 +63,7 @@ Worker::~Worker() {
 	delete request_;
 }
 
-void	Worker::setPollfd(struct pollfd *pollfd) {
+void Worker::setPollfd(struct pollfd *pollfd) {
 	pollfd_ = pollfd;
 	pollfd_->fd = connectSocket_;
 	pollfd_->events = POLLIN | POLLOUT;
@@ -121,15 +122,15 @@ ft_bool Worker::work() {
 }
 
 ft_bool Worker::recv() {
-	int 						ret;
-	char						buf[RECV_BUF_SIZE];
-	std::string					transferEncoding;
-	std::vector<char>			originalHeader;
-	std::vector<char>			originalBody;
-	const char 					*emptyLine = EMPTY_LINE;
-	const char 					*chunkedEnd = CHUNKED_END;
-	std::vector<char>::iterator it;
-	std::size_t					client_max_body_size;
+	int 			ret;
+	char			buf[RECV_BUF_SIZE];
+	std::string		transferEncoding;
+	vectorChar		originalHeader;
+	vectorChar		originalBody;
+	const char 		*emptyLine = EMPTY_LINE;
+	const char 		*chunkedEnd = CHUNKED_END;
+	vectorCharIter	it;
+	std::size_t		client_max_body_size;
 
 	memset(buf, 0, RECV_BUF_SIZE);
 	ret = ::recv(pollfd_->fd, buf, RECV_BUF_SIZE - 1, 0);
@@ -216,8 +217,8 @@ ft_bool Worker::recv() {
 }
 
 void Worker::validate() {
-	std::set<std::string>					allowedMethods = request_->getLocationBlock().getAllowedMethods();
-	std::set<std::string>::const_iterator	it = allowedMethods.find(request_->getMethod());
+	setString			allowedMethods = request_->getLocationBlock().getAllowedMethods();
+	setStringConstIter	it = allowedMethods.find(request_->getMethod());
 
 	if (it == allowedMethods.end())
 		throw HttpException("validate: Invalid method", HTTP_METHOD_NOT_ALLOWED);
@@ -297,24 +298,24 @@ ft_bool Worker::executeDelete() {
 	return send(response.createMessage());
 }
 
-ft_bool	Worker::redirect(const std::string &dest) {
+ft_bool Worker::redirect(const std::string &dest) {
 	Response response(HTTP_MOVED_PERMANENTLY);
 	response.appendHeader("location", dest);
 	return send(response.createMessage());
 }
 
-void	Worker::initRequestState() {
+void Worker::initRequestState() {
 	isHeaderSet_ = FT_FALSE;
 	isRecvCompleted_ = FT_FALSE;
 	isNewRequest_ = FT_TRUE;
 }
 
-ft_bool	Worker::isCgi(const std::string &filePath) {
-	std::set<std::string>			supportedExtensions = request_->getLocationBlock().getSupportedExtensions();
-	std::set<std::string>::iterator	it;
-	std::string						extension;
-	int								len;
-	int								i;
+ft_bool Worker::isCgi(const std::string &filePath) {
+	setString		supportedExtensions = request_->getLocationBlock().getSupportedExtensions();
+	setStringIter	it;
+	std::string		extension;
+	int				len;
+	int				i;
 
 	len = filePath.length();
 	i = filePath.find_last_of('.');
@@ -328,9 +329,9 @@ ft_bool	Worker::isCgi(const std::string &filePath) {
 	return FT_FALSE;
 }
 
-ft_bool Worker::send(const std::vector<char> &message) {
-	int					ret;
-	std::vector<char>	m = message;
+ft_bool Worker::send(const vectorChar &message) {
+	int			ret;
+	vectorChar	m = message;
 
 	timestamp("Send start", start, connectSocket_);
 	ret = ::send(pollfd_->fd, reinterpret_cast<char*>(&m[0]), m.size(), 0);

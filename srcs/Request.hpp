@@ -1,6 +1,7 @@
 #ifndef __REQUEST_HPP__
 #define __REQUEST_HPP__
 
+#include "types.hpp"
 #include <string>
 #include <map>
 #include <vector>
@@ -16,45 +17,44 @@
 
 class Request {
 private:
-	Block								locationBlock_;
-	std::string							method_;
-	Uri									*uri_;
-	std::string							version_;
-	std::map<std::string, std::string>	headers_;
-	std::vector<char>					body_;
-	std::string							filePath_;
-	std::vector<char>					originalHeader_;
-	std::vector<char>					originalBody_;
-	std::size_t							bodyLength_;
-	ft_bool								isChunkSize_; // or chunk data
+	Block			locationBlock_;
+	std::string		method_;
+	Uri				*uri_;
+	std::string		version_;
+	mapStringString	headers_;
+	vectorChar		body_;
+	std::string		filePath_;
+	vectorChar		originalHeader_;
+	vectorChar		originalBody_;
+	std::size_t		bodyLength_;
+	ft_bool			isChunkSize_; // or chunk data
 
-	void								appendBody(const std::vector<char>::iterator &startIt, const std::vector<char>::iterator &endIt);
-
-	void	parseHeader(const std::vector<std::string> &splitedMessage);
+	void	appendBody(const vectorCharIter &startIt, const vectorCharIter &endIt);
+	void	parseHeader(const vectorString &splitedMessage);
 
 public:
 	Request();
 	~Request();
 
-	const Block									&getLocationBlock();
-	const std::string							&getMethod();
-	const Uri									*getUri();
-	const std::string							&getVersion();
-	const std::map<std::string, std::string>	&getHeaders();
-	const std::string							getHeaderValue(const std::string &fieldName);
-	const std::vector<char>						&getBody();
-	const std::string							&getFilePath();
-	const std::vector<char>						&getOriginalHeader();
-	const std::vector<char>						&getOriginalBody();
-	const std::size_t							&getBodyLength();
+	const Block				&getLocationBlock();
+	const std::string		&getMethod();
+	const Uri				*getUri();
+	const std::string		&getVersion();
+	const mapStringString	&getHeaders();
+	const std::string		getHeaderValue(const std::string &fieldName);
+	const vectorChar		&getBody();
+	const std::string		&getFilePath();
+	const vectorChar		&getOriginalHeader();
+	const vectorChar		&getOriginalBody();
+	const std::size_t		&getBodyLength();
 
 	std::size_t	getContentLengthNumber();
 	
 	void	setBody();
 	void	setHeaders();
 	void	setFilePath();
-	void	setOriginalHeader(const std::vector<char>::iterator &startIt, const std::vector<char>::iterator &endIt);
-	void	setOriginalBody(const std::vector<char>::iterator &startIt, const std::vector<char>::iterator &endIt);
+	void	setOriginalHeader(const vectorCharIter &startIt, const vectorCharIter &endIt);
+	void	setOriginalBody(const vectorCharIter &startIt, const vectorCharIter &endIt);
 	void	setLocationBlock(const Block &locationBlock);
 	void	setBodyLength(const std::size_t bodyLength);
 

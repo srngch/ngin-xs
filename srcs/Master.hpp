@@ -1,6 +1,7 @@
 #ifndef __MASTER_HPP__
 #define __MASTER_HPP__
 
+#include "types.hpp"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/errno.h>
@@ -19,12 +20,12 @@
 
 class Master {
 private:
-	std::vector<std::string>	env_;
-	struct sockaddr_in 			serverAddress_;
-	int							listenSocket_;
-	std::vector<Worker *>		workers_;
-	Block						serverBlock_;
-	std::size_t					pollIndex_;
+	vectorString			env_;
+	struct sockaddr_in 		serverAddress_;
+	int						listenSocket_;
+	std::vector<Worker *>	workers_;
+	Block					serverBlock_;
+	std::size_t				pollIndex_;
 
 	void	init();
 	void	bind();
@@ -43,7 +44,7 @@ public:
 	int							getListenSocket() const;
 	std::size_t					getPollIndex() const;
 	
-	void						setPollIndex(std::size_t pollIndex);
+	void	setPollIndex(std::size_t pollIndex);
 
 	class MasterException : public std::exception {
 	private:

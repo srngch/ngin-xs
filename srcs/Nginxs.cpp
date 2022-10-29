@@ -13,7 +13,7 @@ Nginxs::~Nginxs() {
 		delete *masterIt;
 }
 
-void	Nginxs::run() {
+void Nginxs::run() {
 	std::size_t	i = 0; 
 	int			ret;
 

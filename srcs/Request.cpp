@@ -9,14 +9,14 @@ Request::~Request() {
 	delete uri_;
 }
 
-void Request::appendBody(const std::vector<char>::iterator &startIt, const std::vector<char>::iterator &endIt) {
+void Request::appendBody(const vectorCharIter &startIt, const vectorCharIter &endIt) {
 	body_.insert(body_.end(), startIt, endIt);
 }
 
-void	Request::parseHeader(const std::vector<std::string> &splitedMessage) {
-	std::vector<std::string>::const_iterator	it = splitedMessage.begin();
-	std::vector<std::string> splitedRequstLine = split(*it, " ");
-	std::vector<std::string> splitedHeaderLine;
+void Request::parseHeader(const vectorString &splitedMessage) {
+	vectorStringConstIter	it = splitedMessage.begin();
+	vectorString			splitedRequstLine = split(*it, " ");
+	vectorString			splitedHeaderLine;
 
 	// request line
 	if (splitedRequstLine.size() != 3)
@@ -51,18 +51,18 @@ const std::string &Request::getVersion() {
 	return version_;
 }
 
-const std::map<std::string, std::string> &Request::getHeaders() {
+const mapStringString &Request::getHeaders() {
 	return headers_;
 }
 
 const std::string Request::getHeaderValue(const std::string &fieldName) {
-	std::map<std::string, std::string>::iterator it = headers_.find(fieldName);
+	mapStringStringIter	it = headers_.find(fieldName);
 	if (it == headers_.end())
 		return std::string("");
 	return it->second;
 }
 
-const std::vector<char> &Request::getBody() {
+const vectorChar &Request::getBody() {
 	return body_;
 }
 
@@ -70,11 +70,11 @@ const std::string &Request::getFilePath() {
 	return filePath_;
 }
 
-const std::vector<char> &Request::getOriginalHeader() {
+const vectorChar &Request::getOriginalHeader() {
 	return originalHeader_;
 }
 
-const std::vector<char> &Request::getOriginalBody() {
+const vectorChar &Request::getOriginalBody() {
 	return originalBody_;
 }
 
@@ -91,18 +91,18 @@ void Request::setLocationBlock(const Block &locationBlock) {
 	uri_->parseUri(locationBlock_);
 }
 
-void	Request::setBody() {
+void Request::setBody() {
 	if (getHeaderValue("transfer-encoding") != "chunked")
 		body_.assign(originalBody_.begin(), originalBody_.begin() + getContentLengthNumber());
 }
 
 void Request::setHeaders() {
-	std::vector<std::string>	splitedMessage;
+	vectorString	splitedMessage;
 
 	splitedMessage = split(std::string(originalHeader_.begin(), originalHeader_.end()), CRLF);
 	parseHeader(splitedMessage);
 
-	// std::map<std::string, std::string>::iterator	iter;
+	// mapStringStringIter	iter;
 	// for (iter = headers_.begin(); iter != headers_.end(); iter++)
 	// 	std::cout << iter->first << " | " << iter->second << std::endl;
 }
@@ -111,11 +111,11 @@ void Request::setFilePath() {
 	filePath_ = uri_->getFilePath();
 }
 
-void Request::setOriginalHeader(const std::vector<char>::iterator &startIt, const std::vector<char>::iterator &endIt) {
+void Request::setOriginalHeader(const vectorCharIter &startIt, const vectorCharIter &endIt) {
 	originalHeader_.assign(startIt, endIt);
 }
 
-void	Request::setOriginalBody(const std::vector<char>::iterator &startIt, const std::vector<char>::iterator &endIt) {
+void Request::setOriginalBody(const vectorCharIter &startIt, const vectorCharIter &endIt) {
 	originalBody_.assign(startIt, endIt);
 }
 
@@ -135,11 +135,11 @@ void Request::addBodyLength(const std::size_t length) {
 	bodyLength_ += length;
 }
 
-void	Request::parseChunkedBody() {
-	const char 					*crlf = "\r\n";
-	std::vector<char>::iterator it;
-	std::string					chunkSizeString;
-	std::size_t					chunkSize;
+void Request::parseChunkedBody() {
+	const char 		*crlf = "\r\n";
+	vectorCharIter	it;
+	std::string		chunkSizeString;
+	std::size_t		chunkSize;
 
 	// timestamp("* parseChunkedBody start", start);
 	it = std::search(originalBody_.begin(), originalBody_.end(), crlf, crlf + strlen(crlf));

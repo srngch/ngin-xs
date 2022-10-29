@@ -1,6 +1,7 @@
 #ifndef __CGI_HPP__
 #define __CGI_HPP__
 
+#include "types.hpp"
 #include <unistd.h>
 #include <fcntl.h>
 #include <string>
@@ -17,9 +18,9 @@
 
 class Cgi {
 private:
-	Request						*request_;
-	std::vector<std::string>	env_;
-	std::vector<char>			result_;
+	Request			*request_;
+	vectorString	env_;
+	vectorChar		result_;
 
 	void	setEnv();
 	char	**getEnv();
@@ -30,7 +31,7 @@ public:
 	Cgi(Request *request);
 	~Cgi();
 
-	const std::vector<char>	&execute();
+	const vectorChar	&execute();
 };
 
 #endif

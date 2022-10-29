@@ -20,14 +20,14 @@ Master::Master(const Block &serverBlock)
 }
 
 Master::~Master() {
-	std::vector<Worker *>::iterator it;
+	std::vector<Worker *>::iterator	it;
 
 	for (it = workers_.begin(); it != workers_.end(); it++)
 		delete *it;
 }
 
-void	Master::init() {
-	int yes = 1;
+void Master::init() {
+	int	yes = 1;
 
 	listenSocket_ = socket(PF_INET, SOCK_STREAM, 0);
 	std::cout << "listenSocket: " << listenSocket_ << std::endl;
@@ -42,7 +42,7 @@ void	Master::init() {
 	setsockopt(listenSocket_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 }
 
-void	Master::bind() {
+void Master::bind() {
 	int	ret;
 
 	ret = ::bind(listenSocket_, (const struct sockaddr *)&serverAddress_, sizeof(serverAddress_));
@@ -52,8 +52,8 @@ void	Master::bind() {
 	}
 }
 
-void	Master::listen() {
-	int ret;
+void Master::listen() {
+	int	ret;
 
 	ret = ::listen(listenSocket_, 100000);
 	if (ret == -1) {
@@ -62,7 +62,7 @@ void	Master::listen() {
 	}
 }
 
-void	Master::run() {
+void Master::run() {
 	int								ret;
 	std::vector<Worker *>::iterator	it = workers_.begin();
 
@@ -77,7 +77,7 @@ void	Master::run() {
 	}
 }
 
-void	Master::appendWorker(struct pollfd *pollFd) {
+void Master::appendWorker(struct pollfd *pollFd) {
 	Worker	*worker = new Worker(listenSocket_, serverBlock_);
 
 	worker->setPollfd(pollFd);

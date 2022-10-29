@@ -13,7 +13,7 @@
  * thus, number of max client
  * : POLLFDSLEN - number of servers
 */
- 
+
 #define POLLFDSLEN 1000
 
 class Nginxs {
@@ -22,7 +22,7 @@ private:
 	Config					config_;
 	struct pollfd			pollfds_[POLLFDSLEN];
 
-	struct pollfd			*findEmptyPollfd();
+	struct pollfd	*findEmptyPollfd();
 
 	Nginxs();
 

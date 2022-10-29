@@ -1,11 +1,11 @@
 #include "Config.hpp"
 
-std::vector<std::string> Config::readAndSplit(const char *filePath) {
-	char						buffer[CONFIG_BUF_SIZE + 1];
-	int							fd;
-	int							ret;
-	std::string					line = "";
-	std::vector<std::string>	tokens;
+vectorString Config::readAndSplit(const char *filePath) {
+	char			buffer[CONFIG_BUF_SIZE + 1];
+	int				fd;
+	int				ret;
+	std::string		line = "";
+	vectorString	tokens;
 
 	memset(buffer, 0, sizeof(buffer));
 	fd = open(filePath, O_RDONLY);
@@ -31,8 +31,8 @@ std::vector<std::string> Config::readAndSplit(const char *filePath) {
 }
 
 void Config::parseConfigFile(const char *filePath) {
-	std::vector<std::string>	tokens;
-	int							tokenSize;
+	vectorString	tokens;
+	int				tokenSize;
 
 	tokens = readAndSplit(filePath);
 	tokenSize = tokens.size();

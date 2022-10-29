@@ -1,16 +1,17 @@
 #ifndef __CONFIG_HPP__
-# define __CONFIG_HPP__
+#define __CONFIG_HPP__
 
-# include "Block.hpp"
-# include <unistd.h>
-# include <fcntl.h>
-# include <vector>
+#include "../types.hpp"
+#include "Block.hpp"
+#include <unistd.h>
+#include <fcntl.h>
+#include <vector>
 
 class Config {
 private:
-	std::vector<Block>			serverBlocks_;
+	std::vector<Block>	serverBlocks_;
 
-	std::vector<std::string>	readAndSplit(const char *filePath);
+	vectorString	readAndSplit(const char *filePath);
 
 public:
 	Config();

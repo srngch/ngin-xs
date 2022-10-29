@@ -35,7 +35,7 @@ private:
 	ft_bool			isNewRequest_;
 
 	ft_bool	recv();
-	ft_bool	send(const std::vector<char> &message);
+	ft_bool	send(const vectorChar &message);
 	void	resetPollfd();
 	void	validate();
 	ft_bool	executePutToTest(); // TODO: remove this
@@ -68,7 +68,8 @@ public:
 
 		const std::string	&getHttpStatus();
 		int					getHttpCode();
-		std::vector<char>	makeErrorHtml(const std::string &errorPage);
+
+		vectorChar	makeErrorHtml(const std::string &errorPage);
 	};
 };
 

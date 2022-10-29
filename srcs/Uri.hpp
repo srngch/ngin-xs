@@ -1,6 +1,7 @@
 #ifndef __URI_HPP__
 #define __URI_HPP__
 
+#include "types.hpp"
 #include <string>
 #include <set>
 #include <iostream>
@@ -9,7 +10,7 @@
 
 class Uri {
 private:
-	std::string originalUri_;
+	std::string	originalUri_;
 	std::string	uriDir_;
 	std::string	pathDir_;
 	std::string	basename_;
@@ -17,7 +18,7 @@ private:
 	std::string	queryString_;
 
 	void	parseQueryString();
-	void	parsePathInfo(const std::set<std::string> &supportedExtensions);
+	void	parsePathInfo(const setString &supportedExtensions);
 	void	parseBasename(const std::string &locationUri, const std::string &webroot);
 
 	Uri();

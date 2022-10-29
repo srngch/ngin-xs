@@ -27,7 +27,7 @@ void Uri::parseQueryString() {
 	uriDir_ = originalUri_.substr(0, index);
 }
 
-void	Uri::parsePathInfo(const std::set<std::string> &supportedExtensions) {
+void Uri::parsePathInfo(const setString &supportedExtensions) {
 	// Separate path_info with cgi extension setted in conf file
 	
 	/*
@@ -37,10 +37,10 @@ void	Uri::parsePathInfo(const std::set<std::string> &supportedExtensions) {
 	** CGI
   ** /dir/subdir/file.py/path/info?qs2=1&qs2=2
   */
-	std::size_t						index;
-	std::string						cgiExtension;
-	std::set<std::string>::iterator	it;
-	ft_bool							isCgi = FT_FALSE;
+	std::size_t		index;
+	std::string		cgiExtension;
+	setStringIter	it;
+	ft_bool			isCgi = FT_FALSE;
 
 	for (it = supportedExtensions.begin(); it != supportedExtensions.end(); it++) {
 		index = uriDir_.find("." + *it);
@@ -120,7 +120,7 @@ std::string Uri::getParsedUri() const {
 	return uriDir_ + basename_;
 }
 
-void	Uri::parseUri(const Block &locationBlock) {
+void Uri::parseUri(const Block &locationBlock) {
 	parsePathInfo(locationBlock.getSupportedExtensions());
 	parseBasename(locationBlock.getUri(), locationBlock.getWebRoot());
 

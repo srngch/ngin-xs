@@ -15,7 +15,7 @@ ft_bool Block::checkParentUri(std::string uri) {
 	return FT_FALSE;
 }
 
-ft_bool	Block::checkValidation(std::vector<std::string> &tokens, int &i, std::string &directive) {
+ft_bool	Block::checkValidation(vectorString &tokens, int &i, std::string &directive) {
 	directivesMap::iterator	it;
 
 	/* ";" 뒤에 오는 토큰이 없이 파일의 끝이면 에러 */
@@ -37,9 +37,9 @@ ft_bool	Block::checkValidation(std::vector<std::string> &tokens, int &i, std::st
 	return FT_TRUE;
 }
 
-std::vector<std::string> Block::parseHostPort(const std::string &arg) {
-	size_t						pos;
-	std::vector<std::string>	args;
+vectorString Block::parseHostPort(const std::string &arg) {
+	size_t			pos;
+	vectorString	args;
 
 	pos = arg.find(":");
 	/* x.x.x.x:80 과 같은 형태가 아니면 에러 */
@@ -64,8 +64,8 @@ ft_bool Block::isExtension(const std::string &uri, int &i) const {
 }
 
 ft_bool Block::isCgiExtension(const std::string &uri, int &i) const {
-	std::string								extension;
-	std::set<std::string>::const_iterator	it;
+	std::string			extension;
+	setStringConstIter	it;
 
 	extension = uri.substr(i + 1);
 	for (it = supportedExtensions_.begin(); it != supportedExtensions_.end(); it++) {
@@ -131,12 +131,12 @@ Block &Block::operator=(const Block &origin) {
 }
 
 void Block::setDefaultBlock(const char *file) {
-	std::vector<std::string>	tokens;
-	int							tokenSize;
-	char						buffer[CONFIG_BUF_SIZE + 1];
-	int							fd;
-	int							ret;
-	std::string					line = "";
+	vectorString	tokens;
+	int				tokenSize;
+	char			buffer[CONFIG_BUF_SIZE + 1];
+	int				fd;
+	int				ret;
+	std::string		line = "";
 
 	memset(buffer, 0, sizeof(buffer));
 	fd = open(file, O_RDONLY);
@@ -204,7 +204,7 @@ directivesMap Block::getDirectivesMap() {
 	return directivesMap_;
 }
 
-ft_bool Block::hasSemiColon(std::vector<std::string> &tokens, int &i, std::vector<std::string> *args, std::string &directive) {
+ft_bool Block::hasSemiColon(vectorString &tokens, int &i, vectorString *args, std::string &directive) {
 	int	last;
 
 	last = tokens[i].length() - 1;
@@ -222,12 +222,12 @@ ft_bool Block::hasSemiColon(std::vector<std::string> &tokens, int &i, std::vecto
 		return FT_FALSE;
 }
 
-void Block::parseServerBlock(std::vector<std::string> &tokens, int &i) {
-	int							tokenSize;
-	directivesMap::iterator		it;
-	std::string					directive = "";
-	std::vector<std::string>	args;
-	ft_bool						hasSemiColonPrev = FT_TRUE;
+void Block::parseServerBlock(vectorString &tokens, int &i) {
+	int						tokenSize;
+	directivesMap::iterator	it;
+	std::string				directive = "";
+	vectorString			args;
+	ft_bool					hasSemiColonPrev = FT_TRUE;
 
 	if (tokens[i] != "{")
 		throw std::runtime_error("Wrong formatted configuration file.\n");
@@ -285,12 +285,12 @@ ft_bool Block::validateSemiColon(ft_bool &hasSemiColonPrev) const {
 		throw InvalidConfigFileException("parseLocationBlock: No semi-colon");
 }
 
-void Block::parseLocationBlock(std::vector<std::string> &tokens, int &i) {
-	int							tokenSize;
-	directivesMap::iterator		it;
-	std::string					directive = "";
-	std::vector<std::string>	args;
-	ft_bool						hasSemiColonPrev = FT_TRUE;
+void Block::parseLocationBlock(vectorString &tokens, int &i) {
+	int						tokenSize;
+	directivesMap::iterator	it;
+	std::string				directive = "";
+	vectorString			args;
+	ft_bool					hasSemiColonPrev = FT_TRUE;
 
 	if (tokens[i] == "{")
 		throw std::runtime_error("Wrong formatted configuration file.\n");
@@ -348,7 +348,7 @@ void Block::setUri(std::string uri) {
 	uri_ = uri;
 }
 
-void Block::setIndex(std::vector<std::string> args) {
+void Block::setIndex(vectorString args) {
 	if (args.size() != 1)
 		throw InvalidConfigFileException("index\n");
 	index_ = args[0];
@@ -362,8 +362,8 @@ void Block::setPort(int port) {
 	port_ = port;
 }
 
-void Block::setHostPort(std::vector<std::string> args) {
-	std::vector<std::string>	hostport;
+void Block::setHostPort(vectorString args) {
+	vectorString	hostport;
 
 	if (args.size() != 1)
 		throw InvalidConfigFileException("host and port\n");
@@ -372,8 +372,8 @@ void Block::setHostPort(std::vector<std::string> args) {
 	port_ = atoi(hostport[1].c_str());
 }
 
-void Block::setServerNames(std::vector<std::string> args) {
-	std::vector<std::string>::iterator	it;
+void Block::setServerNames(vectorString args) {
+	vectorStringIter	it;
 
 	if (args.empty())
 		throw InvalidConfigFileException("server name\n");
@@ -381,20 +381,20 @@ void Block::setServerNames(std::vector<std::string> args) {
 		serverNames_.insert(*it);
 }
 
-void Block::setWebRoot(std::vector<std::string> args) {
+void Block::setWebRoot(vectorString args) {
 	if (args.size() != 1)
 		throw InvalidConfigFileException("invalid web root\n");
 	webRoot_ = args[0];
 }
 
-void Block::setCgi(std::vector<std::string> args) {
+void Block::setCgi(vectorString args) {
 	if (args.size() != 1)
 		throw InvalidConfigFileException("cgi\n");
 	cgi_ = args[0];
 }
 
-void Block::setAllowedMethods(std::vector<std::string> args) {
-	std::vector<std::string>::iterator	it;
+void Block::setAllowedMethods(vectorString args) {
+	vectorStringIter	it;
 
 	if (args.empty())
 		throw InvalidConfigFileException("invalid allowed methods\n");
@@ -406,25 +406,25 @@ void Block::setClientMaxBodySize(int size) {
 	clientMaxBodySize_= size;
 }
 
-void Block::setClientMaxBodySize(std::vector<std::string> args) {
+void Block::setClientMaxBodySize(vectorString args) {
 	if (args.size() != 1)
 		throw InvalidConfigFileException("invalid client max body size\n");
 	clientMaxBodySize_= atoi(args[0].c_str());
 }
 
-void Block::setErrorPages(std::vector<std::string> args) {
+void Block::setErrorPages(vectorString args) {
 	if (args.size() != 2)
 		throw InvalidConfigFileException("invalid error pages\n");
 	errorPages_.insert(std::pair<int, std::string>(atoi(args[0].c_str()), args[1]));
 }
 
-void Block::setAutoIndex(std::vector<std::string> args) {
+void Block::setAutoIndex(vectorString args) {
 	if (args.size() != 1)
 		throw InvalidConfigFileException("invalid auto index\n");
 	autoIndex_ = args[0];
 }
 
-const std::set<std::string> &Block::getSupportedExtensions() const {
+const setString &Block::getSupportedExtensions() const {
 	return supportedExtensions_;
 }
 
@@ -446,7 +446,7 @@ const int &Block::getPort() const {
 	return Block::defaultBlock_.getPort();
 }
 
-const std::set<std::string> &Block::getServerNames() const {
+const setString &Block::getServerNames() const {
 	if (!serverNames_.empty())
 		return serverNames_;
 	return Block::defaultBlock_.getServerNames();
@@ -458,7 +458,7 @@ const std::string &Block::getWebRoot() const {
 	return Block::defaultBlock_.getWebRoot();
 }
 
-const std::set<std::string> &Block::getAllowedMethods() const {
+const setString &Block::getAllowedMethods() const {
 	if (!allowedMethods_.empty())
 		return allowedMethods_;
 	return Block::defaultBlock_.getAllowedMethods();
@@ -470,15 +470,15 @@ const std::size_t &Block::getClientMaxBodySize() const {
 	return Block::defaultBlock_.getClientMaxBodySize();
 }
 
-const std::map<int, std::string> &Block::getErrorPages() const {
+const mapIntString &Block::getErrorPages() const {
 	if (!errorPages_.empty())
 		return (errorPages_);
 	return Block::defaultBlock_.getErrorPages();
 }
 
 std::string Block::getErrorPage(int num) const {
-	std::map<int, std::string>				pages;
-	std::map<int, std::string>::iterator	it;
+	mapIntString		pages;
+	mapIntStringIter	it;
 
 	pages = getErrorPages();
 	it = pages.find(num);
@@ -543,14 +543,14 @@ const Block &Block::getLocationBlockRecursive(std::string uri) const {
 }
 
 Block Block::getLocationBlock(std::string uri) const {
-	int											dot;
-	std::string									parsedUri;
-	std::vector<std::string>					uriVector;
-	int											index;
-	std::vector<std::string>::reverse_iterator	rIt;
-	Block										tmpBlock;
-	Block										ret;
-	std::string									tmpUri;
+	int						dot;
+	std::string				parsedUri;
+	vectorString			uriVector;
+	int						index;
+	vectorStringReverseIter	rIt;
+	Block					tmpBlock;
+	Block					ret;
+	std::string				tmpUri;
 
 	/* 1. uri 가공 */
 	if (isExtension(uri, dot)) {
@@ -582,8 +582,8 @@ Block Block::getLocationBlock(std::string uri) const {
 
 void Block::gatherSupportedExtensions() {
 	std::vector<Block>::iterator	it;
-	std::set<std::string>			supportedExtensions;
-	std::set<std::string>::iterator	setIt;
+	setString						supportedExtensions;
+	setStringIter					setIt;
 
 	for (it = locationBlocks_.begin(); it != locationBlocks_.end(); it++) {
 		supportedExtensions = it->getSupportedExtensions();
@@ -594,9 +594,9 @@ void Block::gatherSupportedExtensions() {
 }
 
 void Block::printBlock() const {
-	std::set<std::string>::iterator			itset;
-	std::map<int, std::string>				pages;
-	std::map<int, std::string>::iterator	itmap;
+	setStringIter		itset;
+	mapIntString		pages;
+	mapIntStringIter	itmap;
 
 	std::cout << "Host: " << getHost() << std::endl;
 	std::cout << "Port: " << getPort() << std::endl;

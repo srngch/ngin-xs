@@ -12,8 +12,8 @@ Cgi::Cgi(Request *request)
 Cgi::~Cgi() {}
 
 void Cgi::setEnv() {
-	std::string uri = request_->getUri()->getParsedUri();
-	std::string contentLength = request_->getHeaderValue("content-length");
+	std::string	uri = request_->getUri()->getParsedUri();
+	std::string	contentLength = request_->getHeaderValue("content-length");
 
 	if (contentLength.length() <= 0)
 		contentLength = ntos(request_->getBody().size());
@@ -43,8 +43,8 @@ void Cgi::setEnv() {
 	env_.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	env_.push_back("SERVER_SOFTWARE=ngin-xs");
 
-	std::map<std::string, std::string> requestHeaders = request_->getHeaders();
-	std::map<std::string, std::string>::iterator it;
+	mapStringString			requestHeaders = request_->getHeaders();
+	mapStringStringIter	it;
 
 	for (it = requestHeaders.begin(); it != requestHeaders.end(); it++) {
 		std::string field = it->first;
@@ -61,7 +61,7 @@ void Cgi::setEnv() {
 }
 
 char **Cgi::getEnv() {
-	char	**charEnv;
+	char		**charEnv;
 	size_t	i;
 
 	charEnv = (char **)malloc(sizeof(char *) * (env_.size() + 1));
@@ -71,15 +71,15 @@ char **Cgi::getEnv() {
 	return charEnv;
 }
 
-const std::vector<char> &Cgi::execute() {
+const vectorChar &Cgi::execute() {
 	timestampNoSocket("cgi execute start", start);
-	pid_t				pid;
-	int					tmpStd[2];
-	long				fileFds[2];
-	std::string			tmpResult;
-	int					ret = 1;
-	std::vector<char>	body = request_->getBody();
-	char				readBuf[CGI_BUF_SIZE];
+	pid_t		pid;
+	int			tmpStd[2];
+	long		fileFds[2];
+	std::string	tmpResult;
+	int			ret = 1;
+	vectorChar	body = request_->getBody();
+	char		readBuf[CGI_BUF_SIZE];
 
 	tmpStd[STDIN_FILENO] = dup(STDIN_FILENO);
 	tmpStd[STDOUT_FILENO] = dup(STDOUT_FILENO);
