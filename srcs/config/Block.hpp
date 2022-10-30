@@ -1,15 +1,10 @@
 #ifndef __BLOCK_HPP__
 #define __BLOCK_HPP__
 
-#include "../types.hpp"
 #include <cstdlib> 
-#include <iostream>
-#include <set>
-#include <string>
-#include <vector>
 #include <map>
 #include <cstring>
-#include "../macro.hpp"
+#include <exception>
 #include "../utils.hpp"
 
 #define directivesMap std::map<std::string, void (Block::*)(std::vector<std::string>)>
@@ -38,7 +33,6 @@ private:
 	ft_bool			isExtension(const std::string &uri, int &i) const;
 	ft_bool			isCgiExtension(const std::string &uri, int &i) const;
 	void			addSupportedExtension(const std::string &token);
-	void			deleteBlocks();
 
 public:
 	static Block	defaultBlock_;
@@ -48,34 +42,15 @@ public:
 	~Block();
 	Block &operator=(const Block &origin);
 
-	static void					setDefaultBlock(const char *file);
-	void						setDefaultServerDirectivesMap();
-	void						setServerDirectivesMap();
-	void						setLocationDirectivesMap();
-	void						setChildLocationBlock(const Block &parent);
-	directivesMap				getDirectivesMap();
-	
-	ft_bool						hasSemiColon(vectorString &tokens, int &index, vectorString *args, std::string &directive);
-	void						parseServerBlock(vectorString &tokens, int &index);
-	void						parseLocationBlock(vectorString &tokens, int &i);
-	
-	// ServerBlock 만 해당
-	void						setHostPort(vectorString args);
-	void						setHost(std::string host);
-	void						setPort(int port);
-	void						setServerNames(vectorString args);
-	// ServerBlock, LocationBlock 공통
-	void						setWebRoot(vectorString args);
-	void						setAllowedMethods(vectorString args);
-	void						setClientMaxBodySize(int size);
-	void						setClientMaxBodySize(vectorString args);
-	void						setErrorPages(vectorString args);
-	// LocationBlock 만 해당
-	void						setUri(std::string uri);
-	void						setIndex(vectorString args);
-	void						setAutoIndex(vectorString args);
-	void						setCgi(vectorString args);
+	ft_bool	hasSemiColon(vectorString &tokens, int &index, vectorString *args, std::string &directive);
+	void	parseServerBlock(vectorString &tokens, int &index);
+	void	parseLocationBlock(vectorString &tokens, int &i);
+	void	applyWildCard(std::string &uri, int &dot) const;
+	void	removeFileName(std::string &uri, int &dot) const;
+	void	gatherSupportedExtensions();
+	void	printBlock() const;
 
+	directivesMap				getDirectivesMap() const;
 	const setString				&getSupportedExtensions() const;
 	const std::vector<Block>	&getLocationBlocks() const;
 	std::string					getHost() const;
@@ -86,18 +61,33 @@ public:
 	const std::size_t			&getClientMaxBodySize() const;
 	const mapIntString			&getErrorPages() const;
 	std::string					getErrorPage(int num) const;
-
 	const std::string			&getUri() const;
 	const std::string			&getIndex() const; 
 	ft_bool						getAutoIndex() const;
 	const std::string			&getCgi() const;
-
-	void						applyWildCard(std::string &uri, int &dot) const;
-	void						removeFileName(std::string &uri, int &dot) const;
 	const Block					&getLocationBlockRecursive(std::string uri) const;
 	Block						getLocationBlock(std::string uri) const;
-	void						gatherSupportedExtensions();
-	void						printBlock() const;
+
+	static void	setDefaultBlock(const char *file);
+	void		setServerDirectivesMap();
+	void		setLocationDirectivesMap();
+	void		setChildLocationBlock(const Block &parent);
+	// ServerBlock 만 해당
+	void		setHostPort(vectorString args);
+	void		setHost(std::string host);
+	void		setPort(int port);
+	void		setServerNames(vectorString args);
+	// ServerBlock, LocationBlock 공통
+	void		setWebRoot(vectorString args);
+	void		setAllowedMethods(vectorString args);
+	void		setClientMaxBodySize(int size);
+	void		setClientMaxBodySize(vectorString args);
+	void		setErrorPages(vectorString args);
+	// LocationBlock 만 해당
+	void		setUri(std::string uri);
+	void		setIndex(vectorString args);
+	void		setAutoIndex(vectorString args);
+	void		setCgi(vectorString args);
 
 	class InvalidConfigFileException : public std::exception {
 	private:

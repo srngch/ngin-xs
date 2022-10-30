@@ -34,10 +34,47 @@ void Request::parseHeader(const vectorString &splitedMessage) {
 	}
 }
 
+void Request::appendOriginalHeader(const char *buf, int length) {
+	originalHeader_.insert(originalHeader_.end(), buf, buf + length);
+}
+
+void Request::appendOriginalBody(const char *buf, int length) {
+	originalBody_.insert(originalBody_.end(), buf, buf + length);
+}
+
+void Request::addBodyLength(const std::size_t length) {
+	bodyLength_ += length;
+}
+
+void Request::parseChunkedBody() {
+	const char 		*crlf = "\r\n";
+	vectorCharIter	it;
+	std::string		chunkSizeString;
+	std::size_t		chunkSize;
+
+	// timestamp("* parseChunkedBody start", start);
+	it = std::search(originalBody_.begin(), originalBody_.end(), crlf, crlf + strlen(crlf));
+	while (it != originalBody_.end()) {
+		if (isChunkSize_) {
+			chunkSizeString = std::string(originalBody_.begin(), it);
+			chunkSize = hexStringToNumber(chunkSizeString);
+			if (chunkSize == 0)
+				break;
+			addBodyLength(chunkSize);
+		} else {
+			// is chunk data
+			appendBody(originalBody_.begin(), it);
+		}
+		originalBody_.assign(it + strlen(crlf), originalBody_.end());
+		isChunkSize_ = !isChunkSize_; // toggle: chunk size or chunk data
+		it = std::search(originalBody_.begin(), originalBody_.end(), crlf, crlf + strlen(crlf));
+	}
+	// timestamp("* parseChunkedBody end", start);
+}
+
 const Block &Request::getLocationBlock() {
 	return locationBlock_;
 }
-
 
 const std::string &Request::getMethod() {
 	return method_;
@@ -78,17 +115,12 @@ const vectorChar &Request::getOriginalBody() {
 	return originalBody_;
 }
 
-std::size_t Request::getContentLengthNumber() {
-	return atoi(getHeaderValue("content-length").c_str());
-}
-
 const std::size_t &Request::getBodyLength() {
 	return bodyLength_;
 }
 
-void Request::setLocationBlock(const Block &locationBlock) {
-	locationBlock_ = locationBlock;
-	uri_->parseUri(locationBlock_);
+std::size_t Request::getContentLengthNumber() {
+	return atoi(getHeaderValue("content-length").c_str());
 }
 
 void Request::setBody() {
@@ -119,45 +151,11 @@ void Request::setOriginalBody(const vectorCharIter &startIt, const vectorCharIte
 	originalBody_.assign(startIt, endIt);
 }
 
+void Request::setLocationBlock(const Block &locationBlock) {
+	locationBlock_ = locationBlock;
+	uri_->parseUri(locationBlock_);
+}
+
 void Request::setBodyLength(const std::size_t bodyLength) {
 	bodyLength_ = bodyLength;
-}
-
-void Request::appendOriginalHeader(const char *buf, int length) {
-	originalHeader_.insert(originalHeader_.end(), buf, buf + length);
-}
-
-void Request::appendOriginalBody(const char *buf, int length) {
-	originalBody_.insert(originalBody_.end(), buf, buf + length);
-}
-
-void Request::addBodyLength(const std::size_t length) {
-	bodyLength_ += length;
-}
-
-void Request::parseChunkedBody() {
-	const char 		*crlf = "\r\n";
-	vectorCharIter	it;
-	std::string		chunkSizeString;
-	std::size_t		chunkSize;
-
-	// timestamp("* parseChunkedBody start", start);
-	it = std::search(originalBody_.begin(), originalBody_.end(), crlf, crlf + strlen(crlf));
-	while (it != originalBody_.end()) {
-		if (isChunkSize_) {
-			chunkSizeString = std::string(originalBody_.begin(), it);
-			chunkSize = hexStringToNumber(chunkSizeString);
-			if (chunkSize == 0) {
-				break;
-			}
-			addBodyLength(chunkSize);
-		} else {
-			// is chunk data
-			appendBody(originalBody_.begin(), it);
-		}
-		originalBody_.assign(it + strlen(crlf), originalBody_.end());
-		isChunkSize_ = !isChunkSize_; // toggle: chunk size or chunk data
-		it = std::search(originalBody_.begin(), originalBody_.end(), crlf, crlf + strlen(crlf));
-	}
-	// timestamp("* parseChunkedBody end", start);
 }

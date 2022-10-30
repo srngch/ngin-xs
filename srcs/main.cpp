@@ -3,13 +3,12 @@
 timeval start;
 
 int main(int argc, char **argv) {
-	gettimeofday(&start, NULL);
-
-	if (argc != 2) {
-		std::cout << "Usage: ./webserv [CONF FILE NAME]" << std::endl;
-		return EXIT_FAILURE;
-	}
 	try {
+		if (argc != 2) {
+			std::cout << "Usage: ./webserv [CONF FILE NAME]" << std::endl;
+			return EXIT_FAILURE;
+		}
+		gettimeofday(&start, NULL);
 		Nginxs	nginxs(argv[1]);
 		nginxs.run();
 	} catch (std::exception &e) {

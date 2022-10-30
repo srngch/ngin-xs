@@ -3,26 +3,12 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/errno.h>
 #include <arpa/inet.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
 #include <poll.h>
-#include <fcntl.h>
-#include <exception>
-#include <iostream>
-#include <fstream>
-#include <cstdio>
-#include <string>
-#include <vector>
-#include <set>
-#include "macro.hpp"
-#include "Request.hpp"
-#include "Response.hpp"
+#include "config/Block.hpp"
 #include "Cgi.hpp"
 #include "autoindex/Autoindex.hpp"
-#include "config/Block.hpp"
+#include "Response.hpp"
 
 class Worker {
 private:
@@ -35,8 +21,6 @@ private:
 	ft_bool			isNewRequest_;
 
 	ft_bool	recv();
-	ft_bool	send(const vectorChar &message);
-	void	resetPollfd();
 	void	validate();
 	ft_bool	executePutToTest(); // TODO: remove this
 	ft_bool	executeGet();
@@ -45,15 +29,16 @@ private:
 	ft_bool	redirect(const std::string &des);
 	void	initRequestState();
 	ft_bool	isCgi(const std::string &filePath);
-
-	Worker();
+	ft_bool	send(const vectorChar &message);
+	void	resetPollfd();
 
 public:
 	Worker(int listenSocket, const Block &serverBlock);
 	~Worker();
 
-	void	setPollfd(struct pollfd *pollfd);
 	ft_bool	work();
+
+	void	setPollfd(struct pollfd *pollfd);
 
 	class HttpException : public std::exception {
 	private:
@@ -66,10 +51,11 @@ public:
 		~HttpException() throw();
 		virtual const char *what() const throw();
 
+		vectorChar	makeErrorHtml(const std::string &errorPage);
+
 		const std::string	&getHttpStatus();
 		int					getHttpCode();
 
-		vectorChar	makeErrorHtml(const std::string &errorPage);
 	};
 };
 

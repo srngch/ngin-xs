@@ -16,17 +16,17 @@ public:
 	AutoindexData();
 	~AutoindexData();
 
-	void	setName(const std::string &name);
-	void	setDate(const std::string &date);
-	void	setSize(std::size_t size);
-	void	setPath(const std::string &path);
-	void	setIsDirectory(ft_bool isDirectory);
-
 	std::string	getName();
 	std::string	getDate();
 	std::size_t	getSize();
 	std::string	getPath();
 	ft_bool		getIsDirectory();
+
+	void	setName(const std::string &name);
+	void	setDate(const std::string &date);
+	void	setSize(std::size_t size);
+	void	setPath(const std::string &path);
+	void	setIsDirectory(ft_bool isDirectory);
 };
 
 #endif

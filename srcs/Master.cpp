@@ -1,7 +1,5 @@
 #include "Master.hpp"
 
-Master::Master() {}
-
 Master::Master(const Block &serverBlock)
 	: serverBlock_(serverBlock) {
 	init();

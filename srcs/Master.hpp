@@ -1,23 +1,7 @@
 #ifndef __MASTER_HPP__
 #define __MASTER_HPP__
 
-#include "types.hpp"
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/errno.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <poll.h>
-#include <fcntl.h>
-#include <vector>
-#include <iostream>
-#include <exception>
-#include "config/Block.hpp"
 #include "Worker.hpp"
-#include "macro.hpp"
-
 class Master {
 private:
 	vectorString			env_;
@@ -30,8 +14,6 @@ private:
 	void	init();
 	void	bind();
 	void	listen();
-
-	Master();
 
 public:
 	Master(const Block &serverBlock);

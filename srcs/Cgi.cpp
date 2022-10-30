@@ -2,14 +2,23 @@
 
 extern timeval start;
 
-Cgi::Cgi() {}
-
 Cgi::Cgi(Request *request)
 	: request_(request) {
 	setEnv();
 }
 
 Cgi::~Cgi() {}
+
+char **Cgi::getEnv() {
+	char	**charEnv;
+	size_t	i;
+
+	charEnv = (char **)malloc(sizeof(char *) * (env_.size() + 1));
+	for (i = 0; i < env_.size(); i++)
+		charEnv[i] = strdup(env_[i].c_str());
+	charEnv[i] = nullptr;
+	return charEnv;
+}
 
 void Cgi::setEnv() {
 	std::string	uri = request_->getUri()->getParsedUri();
@@ -36,6 +45,7 @@ void Cgi::setEnv() {
 	std::size_t	index = host.find(":");
 	std::string	serverName = host;
 	std::string	serverPort = ntos(request_->getLocationBlock().getPort());
+
 	if (index != std::string::npos)
 		serverName = host.substr(0, index);
 	env_.push_back("SERVER_NAME=" + serverName);
@@ -43,14 +53,13 @@ void Cgi::setEnv() {
 	env_.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	env_.push_back("SERVER_SOFTWARE=ngin-xs");
 
-	mapStringString			requestHeaders = request_->getHeaders();
+	mapStringString		requestHeaders = request_->getHeaders();
 	mapStringStringIter	it;
 
 	for (it = requestHeaders.begin(); it != requestHeaders.end(); it++) {
 		std::string field = it->first;
-		std::transform(field.begin(), field.end(), field.begin(), ::toupper);
-		std::size_t index;
 
+		std::transform(field.begin(), field.end(), field.begin(), ::toupper);
 		index = field.find("-");
 		while (index != std::string::npos) {
 			field.replace(index, 1, "_");
@@ -58,17 +67,6 @@ void Cgi::setEnv() {
 		}
 		env_.push_back("HTTP_" + field + "=" + it->second);
 	}
-}
-
-char **Cgi::getEnv() {
-	char		**charEnv;
-	size_t	i;
-
-	charEnv = (char **)malloc(sizeof(char *) * (env_.size() + 1));
-	for (i = 0; i < env_.size(); i++)
-		charEnv[i] = strdup(env_[i].c_str());
-	charEnv[i] = nullptr;
-	return charEnv;
 }
 
 const vectorChar &Cgi::execute() {
@@ -97,7 +95,7 @@ const vectorChar &Cgi::execute() {
 
 	pid = fork();
 	if (pid < 0) {
-		std::cerr << "Fork crashed." << std::endl;
+		std::cerr << "execute: fork() failed" << std::endl;
 		tmpResult += "Status: ";
 		tmpResult += HTTP_INTERNAL_SERVER_ERROR;
 		tmpResult += EMPTY_LINE;
@@ -113,7 +111,7 @@ const vectorChar &Cgi::execute() {
 		ret = execve(request_->getLocationBlock().getCgi().c_str(), NULL, getEnv());
 		
 		/* if execve() failed */
-		std::cerr << "execute: CGI execve fail" << std::endl;		
+		std::cerr << "execute: CGI execve() failed" << std::endl;		
 		tmpResult += "Status: ";
 		tmpResult += HTTP_INTERNAL_SERVER_ERROR;
 		tmpResult += EMPTY_LINE;

@@ -1,16 +1,16 @@
 #ifndef __UTILS_HPP
 #define __UTILS_HPP
 
-#include "types.hpp"
 #include <string>
-#include <vector>
 #include <fstream>
 #include <sstream>
-#include <sys/stat.h>
 #include <iostream>
 #include <set>
+#include <vector>
 #include <algorithm>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include "types.hpp"
 #include "macro.hpp"
 
 template <typename T>

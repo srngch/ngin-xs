@@ -1,7 +1,5 @@
 #include "Uri.hpp"
 
-Uri::Uri() {}
-
 Uri::Uri(const std::string &originalUri) 
 : originalUri_(originalUri){
 	parseQueryString();
@@ -10,14 +8,13 @@ Uri::Uri(const std::string &originalUri)
 Uri::~Uri() {}
 
 void Uri::parseQueryString() {
-	/*
-	** Separate query string from requested original uri
-	**
-  ** /dir/subdir/file.html?qs2=1&qs2=2
-	** -> 
-	** 1. uriDir_: /dir/subdir/file.html
-	** 2. queryString_: ?qs2=1&qs2=2
-  */
+	/**
+	 * Separate query string from requested original uri
+	 * 
+	 * ex) /dir/subdir/file.html?qs2=1&qs2=2
+	 * 1. uriDir_: /dir/subdir/file.html
+	 * 2. queryString_: ?qs2=1&qs2=2
+	 */
 	std::size_t	index;
 
 	index = originalUri_.find('?');
@@ -28,15 +25,15 @@ void Uri::parseQueryString() {
 }
 
 void Uri::parsePathInfo(const setString &supportedExtensions) {
-	// Separate path_info with cgi extension setted in conf file
-	
-	/*
-	** not CGI
-  ** /dir/subdir/file.html?qs2=1&qs2=2
-	**
-	** CGI
-  ** /dir/subdir/file.py/path/info?qs2=1&qs2=2
-  */
+	/**
+	 * Separate path_info with cgi extension setted in conf file
+	 * 
+	 * not CGI
+	 * /dir/subdir/file.html?qs2=1&qs2=2
+	 * 
+	 * CGI
+	 * /dir/subdir/file.py/path/info?qs2=1&qs2=2
+	 */
 	std::size_t		index;
 	std::string		cgiExtension;
 	setStringIter	it;
@@ -49,11 +46,11 @@ void Uri::parsePathInfo(const setString &supportedExtensions) {
 			break;
 		}
 	}
-	/* 
-	** CGI 확장자를 가짐 && uriDir_가 /로 끝나지 않음 (디렉토리가 아님)
-	** uriDir_가 /로 끝난다면, URI를 디렉토리로 인식해야 됨
-	** 예시: `/dir/cgi.bla/` -> 디렉토리
-	*/
+	/**
+	 * CGI 확장자를 가짐 && uriDir_가 /로 끝나지 않음 (디렉토리가 아님)
+	 * uriDir_가 /로 끝난다면, URI를 디렉토리로 인식해야 됨
+	 * ex) `/dir/cgi.bla/` -> 디렉토리
+	 */
 	if (index != std::string::npos && uriDir_.find('/', index) != std::string::npos) 
 		isCgi = FT_TRUE;
 	if (isCgi) {
@@ -92,6 +89,20 @@ void Uri::parseBasename(const std::string &locationUri, const std::string &webro
 	}
 }
 
+void Uri::parseUri(const Block &locationBlock) {
+	parsePathInfo(locationBlock.getSupportedExtensions());
+	parseBasename(locationBlock.getUri(), locationBlock.getWebRoot());
+
+	// std::cout << "locationBlock.getUri(): " << locationBlock.getUri() << std::endl;
+	// std::cout << "[Uri Class]" << std::endl;
+	// std::cout << "OriginalUri: " << originalUri_ << std::endl;
+	// std::cout << "uriDir: " << uriDir_ << std::endl;
+	// std::cout << "pathDir_: " << pathDir_ << std::endl;
+	// std::cout << "basename_: " << basename_ << std::endl;
+	// std::cout << "pathInfo_: " << pathInfo_ << std::endl;
+	// std::cout << "queryString_: " << queryString_ << std::endl << std::endl;
+}
+
 const std::string &Uri::getOriginalUri() const {
 	return originalUri_;
 }
@@ -118,18 +129,4 @@ std::string Uri::getFilePath() const {
 
 std::string Uri::getParsedUri() const {
 	return uriDir_ + basename_;
-}
-
-void Uri::parseUri(const Block &locationBlock) {
-	parsePathInfo(locationBlock.getSupportedExtensions());
-	parseBasename(locationBlock.getUri(), locationBlock.getWebRoot());
-
-	// std::cout << "locationBlock.getUri(): " << locationBlock.getUri() << std::endl;
-	// std::cout << "[Uri Class]" << std::endl;
-	// std::cout << "OriginalUri: " << originalUri_ << std::endl;
-	// std::cout << "uriDir: " << uriDir_ << std::endl;
-	// std::cout << "pathDir_: " << pathDir_ << std::endl;
-	// std::cout << "basename_: " << basename_ << std::endl;
-	// std::cout << "pathInfo_: " << pathInfo_ << std::endl;
-	// std::cout << "queryString_: " << queryString_ << std::endl << std::endl;
 }

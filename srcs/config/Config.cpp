@@ -1,5 +1,22 @@
 #include "Config.hpp"
 
+Config::Config() {
+	Block::setDefaultBlock(DEFAULT_CONF_FILE_PATH);
+}
+
+Config::Config(const Config &origin) {
+	*this = origin; 
+}
+
+Config::~Config() {}
+
+Config &Config::operator=(const Config &origin) {
+	if (this != &origin) {
+		serverBlocks_ = origin.serverBlocks_;
+	}
+	return (*this);
+}
+
 vectorString Config::readAndSplit(const char *filePath) {
 	char			buffer[CONFIG_BUF_SIZE + 1];
 	int				fd;
@@ -61,21 +78,3 @@ const Block &Config::getServerBlock(int port) const {
 	}
 	return (serverBlocks_[0]);
 }
-
-Config::Config() {
-	Block::setDefaultBlock(DEFAULT_CONF_FILE_PATH);
-}
-
-Config &Config::operator=(const Config &origin) {
-	if (this != &origin) {
-		serverBlocks_ = origin.serverBlocks_;
-	}
-	return (*this);
-}
-
-Config::Config(const Config &origin) {
-	*this = origin; 
-}
-
-Config::~Config() {}
-

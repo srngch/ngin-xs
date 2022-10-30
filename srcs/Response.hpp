@@ -1,17 +1,10 @@
 #ifndef __RESPONSE_HPP__
 #define __RESPONSE_HPP__
 
-#include "types.hpp"
-#include <string>
 #include <map>
-#include <vector>
-#include <iterator>
-#include <iostream>
 #include <cctype>
 #include <cstdlib>
-#include <algorithm>
 #include <exception>
-#include "macro.hpp"
 #include "utils.hpp"
 #include "mime.hpp"
 
@@ -34,9 +27,9 @@ public:
 	~Response();
 
 	const vectorChar	&createMessage();
+	void				appendHeader(const std::string &fieldName, const std::string &value);
 
 	void	setContentType(const std::string &fileExtension);
-	void	appendHeader(const std::string &fieldName, const std::string &value);
 };
 
 #endif

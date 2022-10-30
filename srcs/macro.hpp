@@ -1,5 +1,5 @@
 #ifndef	__MACRO_HPP__
-# define __MACRO_HPP__
+#define __MACRO_HPP__
 
 // Default configuration file
 #define DEFAULT_CONF_FILE_PATH "conf/default.conf"

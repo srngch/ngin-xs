@@ -89,6 +89,10 @@ const vectorChar &Response::createMessage() {
 	return message_;
 }
 
+void Response::appendHeader(const std::string &fieldName, const std::string &value) {
+	headers_.insert(std::pair<std::string, std::string>(fieldName, value));
+}
+
 void Response::setContentType(const std::string &fileExtension) {
 	headers_.erase("content-type");
 	if (fileExtension == "html")
@@ -117,8 +121,4 @@ void Response::setContentType(const std::string &fileExtension) {
 		appendHeader("content-type", MIME_APP_ZIP);
 	else // .bin .exe .dll or unknown MIME
 		appendHeader("content-type", MIME_OCTET);
-}
-
-void Response::appendHeader(const std::string &fieldName, const std::string &value) {
-	headers_.insert(std::pair<std::string, std::string>(fieldName, value));
 }

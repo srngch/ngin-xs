@@ -1,19 +1,8 @@
 #ifndef __REQUEST_HPP__
 #define __REQUEST_HPP__
 
-#include "types.hpp"
-#include <string>
-#include <map>
-#include <vector>
-#include <iterator>
-#include <iostream>
 #include <cctype>
-#include <algorithm>
-#include <exception>
-#include "macro.hpp"
-#include "utils.hpp"
 #include "Uri.hpp"
-#include "config/Block.hpp"
 
 class Request {
 private:
@@ -36,6 +25,11 @@ public:
 	Request();
 	~Request();
 
+	void	appendOriginalHeader(const char *buf, int length);
+	void	appendOriginalBody(const char *buf, int length);
+	void	addBodyLength(const std::size_t length);
+	void	parseChunkedBody();
+
 	const Block				&getLocationBlock();
 	const std::string		&getMethod();
 	const Uri				*getUri();
@@ -47,9 +41,8 @@ public:
 	const vectorChar		&getOriginalHeader();
 	const vectorChar		&getOriginalBody();
 	const std::size_t		&getBodyLength();
+	std::size_t				getContentLengthNumber();
 
-	std::size_t	getContentLengthNumber();
-	
 	void	setBody();
 	void	setHeaders();
 	void	setFilePath();
@@ -57,11 +50,6 @@ public:
 	void	setOriginalBody(const vectorCharIter &startIt, const vectorCharIter &endIt);
 	void	setLocationBlock(const Block &locationBlock);
 	void	setBodyLength(const std::size_t bodyLength);
-
-	void	appendOriginalHeader(const char *buf, int length);
-	void	appendOriginalBody(const char *buf, int length);
-	void	addBodyLength(const std::size_t length);
-	void	parseChunkedBody();
 };
 
 #endif
