@@ -20,7 +20,7 @@ void Request::parseHeader(const vectorString &splitedMessage) {
 
 	// request line
 	if (splitedRequstLine.size() != 3)
-		throw std::runtime_error("parse error");
+		throw std::runtime_error("parseHeader: request line parsing failed");
 	method_ = splitedRequstLine[0];
 	uri_ = new Uri(splitedRequstLine[1]);
 	version_ = splitedRequstLine[2];

@@ -54,7 +54,7 @@ Worker::Worker(int listenSocket, const Block &serverBlock)
 	std::cout << "connectSocket_: " << connectSocket_ << std::endl;
 	if (connectSocket_ == -1) {
 		close(listenSocket);
-		throw std::runtime_error("fail: accept()\n");
+		throw std::runtime_error("Worker constructor: accept() failed");
 	}
 }
 
@@ -134,6 +134,13 @@ ft_bool Worker::recv() {
 
 	memset(buf, 0, RECV_BUF_SIZE);
 	ret = ::recv(pollfd_->fd, buf, RECV_BUF_SIZE - 1, 0);
+	if (ret == FT_FALSE) {
+		resetPollfd();
+		std::cout << "recv: Client finished connection." << std::endl;
+		return FT_FALSE;
+	}
+	if (ret == FT_ERROR)
+		throw HttpException("recv: recv() failed", HTTP_INTERNAL_SERVER_ERROR);
 	buf[ret] = '\0';
 	if (isNewRequest_ == FT_TRUE) {
 		timestamp("recv start", start, connectSocket_);
@@ -163,13 +170,13 @@ ft_bool Worker::recv() {
 			transferEncoding = request_->getHeaderValue("transfer-encoding");
 			// transfer-encoding 헤더의 값이 chunked가 아닌 것은 구현하지 않음
 			if (transferEncoding.length() > 0 && transferEncoding != "chunked")
-				throw HttpException("Not Implemented", HTTP_NOT_IMPLEMENTED);
+				throw HttpException("recv: Not implemented transfer-encoding", HTTP_NOT_IMPLEMENTED);
 
 			originalBody = request_->getOriginalBody();
 			if (transferEncoding == "chunked") {
 				// content-length 헤더가 있다면 400 응답
 				if (request_->getHeaderValue("content-length").length() > 0)
-					throw HttpException("recv: Chunked message with content length", HTTP_BAD_REQUEST);
+					throw HttpException("recv: Chunked message with content-length", HTTP_BAD_REQUEST);
 				request_->setBodyLength(0);
 				request_->parseChunkedBody();
 				// body가 client_max_body_size 보다 큼
@@ -196,7 +203,7 @@ ft_bool Worker::recv() {
 		if (transferEncoding == "chunked") {
 			request_->parseChunkedBody();
 			if (request_->getBodyLength() > client_max_body_size)
-				throw HttpException("recv: Chunked body length is larger than client max body size", HTTP_CONTENT_TOO_LARGE);
+				throw HttpException("recv: Chunked request body is larger than client max body size", HTTP_CONTENT_TOO_LARGE);
 			// CRLFCRLF를 체크해서 request 내용의 전체를 받았는지 확인
 			if (hasWordInCharV(request_->getOriginalBody(), chunkedEnd))
 				isRecvCompleted_ = FT_TRUE;
@@ -206,13 +213,6 @@ ft_bool Worker::recv() {
 				isRecvCompleted_ = FT_TRUE;
 		}
 	}
-	if (ret == FT_FALSE) {
-		resetPollfd();
-		std::cout << "recv: Client finished connection." << std::endl;
-		return FT_FALSE;
-	}
-	if (ret == FT_ERROR)
-		throw HttpException("recv: fail", HTTP_INTERNAL_SERVER_ERROR);
 	return FT_TRUE;
 }
 

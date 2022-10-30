@@ -23,10 +23,6 @@ public:
 
 	const std::vector<Block>	&getServerBlocks() const;
 	const Block					&getServerBlock(int port) const;
-
-	class InvalidLocationBlockException : public std::exception {
-		virtual const char *what() const throw();
-	};
 };
 
 #endif

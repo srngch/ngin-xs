@@ -10,7 +10,7 @@ vectorString Config::readAndSplit(const char *filePath) {
 	memset(buffer, 0, sizeof(buffer));
 	fd = open(filePath, O_RDONLY);
 	if (fd <= 0)
-		throw std::runtime_error("fail: Opening configuration file\n");
+		throw std::runtime_error("readAndSplit: Configuration file opening failed");
 	ret = read(fd, buffer, CONFIG_BUF_SIZE);
 	if (ret == 0) {
 		serverBlocks_.push_back(Block::defaultBlock_);
@@ -23,7 +23,7 @@ vectorString Config::readAndSplit(const char *filePath) {
 	}
 	if (ret == FT_ERROR) {
 		close(fd);
-		throw std::runtime_error("fail: Reading configuration file\n");
+		throw std::runtime_error("readAndSplit: Configuration file reading failed");
 	}
 	tokens = parseLine(line, std::string(" \n\t"));
 	close(fd);
@@ -44,7 +44,7 @@ void Config::parseConfigFile(const char *filePath) {
 			tmpServerBlock.parseServerBlock(tokens, ++i);
 			serverBlocks_.push_back(tmpServerBlock);
 		} else
-			throw std::runtime_error("Wrong directive type in configuration file.\n");
+			throw std::runtime_error("parseConfigFile: Wrong directive type in configuration file");
 	}
 }
 
@@ -79,6 +79,3 @@ Config::Config(const Config &origin) {
 
 Config::~Config() {}
 
-const char *Config::InvalidLocationBlockException::what() const throw() {
-	return "There is no location block with the requested uri.\n";
-}

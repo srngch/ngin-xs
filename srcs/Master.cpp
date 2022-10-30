@@ -1,15 +1,5 @@
 #include "Master.hpp"
 
-Master::MasterException::MasterException(const std::string str) {
-	message_ = str;
-}
-
-Master::MasterException::~MasterException() throw() {}
-
-const char *Master::MasterException::what() const throw() {
-	return message_.c_str();
-}
-
 Master::Master() {}
 
 Master::Master(const Block &serverBlock)
@@ -33,7 +23,7 @@ void Master::init() {
 	std::cout << "listenSocket: " << listenSocket_ << std::endl;
 	std::cout << "Port: " << serverBlock_.getPort() << std::endl;
 	if (listenSocket_ == FT_ERROR)
-		throw MasterException("init: socket() failed");
+		throw std::runtime_error("init: socket() failed");
 	memset(&serverAddress_, 0, sizeof(serverAddress_));
 	serverAddress_.sin_len = sizeof(struct sockaddr_in);
 	serverAddress_.sin_family = PF_INET;
@@ -48,7 +38,7 @@ void Master::bind() {
 	ret = ::bind(listenSocket_, (const struct sockaddr *)&serverAddress_, sizeof(serverAddress_));
 	if (ret == FT_ERROR) {
 		close(listenSocket_);
-		throw MasterException("bind: bind() failed");
+		throw std::runtime_error("bind: bind() failed");
 	}
 }
 
@@ -58,7 +48,7 @@ void Master::listen() {
 	ret = ::listen(listenSocket_, 100000);
 	if (ret == -1) {
 		close(listenSocket_);
-		throw MasterException("listen: listen() failed");
+		throw std::runtime_error("listen: listen() failed");
 	}
 }
 

@@ -20,7 +20,7 @@ ft_bool	Block::checkValidation(vectorString &tokens, int &i, std::string &direct
 
 	/* ";" 뒤에 오는 토큰이 없이 파일의 끝이면 에러 */
 	if (i + 1 == static_cast<int>(tokens.size()))
-		throw std::runtime_error("Invalid configuration file: semi-colon should not be the end of the file.\n");
+		throw std::runtime_error("checkValidation: Semi-colon should not be the end of the file");
 	/* ";" 뒤에 오는 토큰이 "}" 이면 유효 */
 	if (!strcmp(tokens[i + 1].c_str(), "}"))
 		return FT_TRUE;
@@ -30,10 +30,10 @@ ft_bool	Block::checkValidation(vectorString &tokens, int &i, std::string &direct
 	/* ";" 뒤에 오는 토큰이 지시자가 아니면 유효하지 않음 */
 	it = directivesMap_.find(tokens[i + 1]);
 	if (it == directivesMap_.end())
-		throw std::runtime_error("Invalid configuration file: directive or } should exist after semi-colon.\n");
+		throw std::runtime_error("checkValidation: Directive or } should exist after semi-colon");
 	/* directive 가 저장되어 있지 않으면 에러 */
 	if (directive == "")
-		throw std::runtime_error("Invalid configuration file: directive should exist before semi-colon.\n");
+		throw std::runtime_error("checkValidation: Directive should exist before semi-colon");
 	return FT_TRUE;
 }
 
@@ -44,7 +44,7 @@ vectorString Block::parseHostPort(const std::string &arg) {
 	pos = arg.find(":");
 	/* x.x.x.x:80 과 같은 형태가 아니면 에러 */
 	if (pos == std::string::npos || pos == 0 || pos == arg.length() - 1)
-		throw std::runtime_error("Wrong formatted configuration file: Listen x.x.x.x:port\n");
+		throw std::runtime_error("parseHostPort: Wrong formatted configuration file (listen x.x.x.x:port)");
 	/* host(x.x.x.x) */
 	args.push_back(arg.substr(0, pos));
 	/* port(80) */
@@ -141,7 +141,7 @@ void Block::setDefaultBlock(const char *file) {
 	memset(buffer, 0, sizeof(buffer));
 	fd = open(file, O_RDONLY);
 	if (fd <= 0)
-		throw std::runtime_error("fail: Opening configuration file\n");
+		throw std::runtime_error("setDefaultBlock: Configuration file opening failed");
 	ret = read(fd, buffer, CONFIG_BUF_SIZE);
 	while (ret > 0) {
 		buffer[ret] = '\0';
@@ -150,7 +150,7 @@ void Block::setDefaultBlock(const char *file) {
 	}
 	if (ret == FT_ERROR) {
 		close(fd);
-		throw std::runtime_error("fail: Reading configuration file\n");
+		throw std::runtime_error("setDefaultBlock: Configuration file reading failed");
 	}
 	tokens = parseLine(line, std::string(" \n\t"));
 	close(fd);
@@ -163,7 +163,7 @@ void Block::setDefaultBlock(const char *file) {
 			tmpServerBlock.parseServerBlock(tokens, ++i);
 			Block::defaultBlock_ = tmpServerBlock;
 		} else
-			throw std::runtime_error("Wrong default configuration file.\n");
+			throw std::runtime_error("setDefaultBlock: Wrong default configuration file");
 	}
 }
 
@@ -230,7 +230,7 @@ void Block::parseServerBlock(vectorString &tokens, int &i) {
 	ft_bool					hasSemiColonPrev = FT_TRUE;
 
 	if (tokens[i] != "{")
-		throw std::runtime_error("Wrong formatted configuration file.\n");
+		throw std::runtime_error("parseServerBlock: Wrong formatted configuration file");
 	tokenSize = tokens.size();
 	i++;
 	while (i < tokenSize)
@@ -282,7 +282,7 @@ ft_bool Block::validateSemiColon(ft_bool &hasSemiColonPrev) const {
 		return FT_TRUE;
 	}
 	else
-		throw InvalidConfigFileException("parseLocationBlock: No semi-colon");
+		throw InvalidConfigFileException("validateSemiColon: No semi-colon");
 }
 
 void Block::parseLocationBlock(vectorString &tokens, int &i) {
@@ -293,11 +293,11 @@ void Block::parseLocationBlock(vectorString &tokens, int &i) {
 	ft_bool					hasSemiColonPrev = FT_TRUE;
 
 	if (tokens[i] == "{")
-		throw std::runtime_error("Wrong formatted configuration file.\n");
+		throw std::runtime_error("parseLocationBlock: Wrong formatted configuration file");
 	setUri(tokens[i]);
 	addSupportedExtension(tokens[i]);
 	if (tokens[++i] != "{")
-		throw std::runtime_error("Wrong formatted configuration file.\n");
+		throw std::runtime_error("parseLocationBlock: Wrong formatted configuration file");
 	i++;
 	tokenSize = tokens.size();
 	while (i < tokenSize)
@@ -344,13 +344,13 @@ void Block::parseLocationBlock(vectorString &tokens, int &i) {
 
 void Block::setUri(std::string uri) {
 	if (!checkParentUri(uri))
-		throw InvalidConfigFileException("error: location block's uri doesn't contain parent's location uri.\n");
+		throw InvalidConfigFileException("setUri: Location block's uri doesn't contain parent's location uri");
 	uri_ = uri;
 }
 
 void Block::setIndex(vectorString args) {
 	if (args.size() != 1)
-		throw InvalidConfigFileException("index\n");
+		throw InvalidConfigFileException("setIndex: failed");
 	index_ = args[0];
 }
 
@@ -366,7 +366,7 @@ void Block::setHostPort(vectorString args) {
 	vectorString	hostport;
 
 	if (args.size() != 1)
-		throw InvalidConfigFileException("host and port\n");
+		throw InvalidConfigFileException("setHostPort: failed");
 	hostport = parseHostPort(args[0]);
 	host_ = hostport[0];
 	port_ = atoi(hostport[1].c_str());
@@ -376,20 +376,20 @@ void Block::setServerNames(vectorString args) {
 	vectorStringIter	it;
 
 	if (args.empty())
-		throw InvalidConfigFileException("server name\n");
+		throw InvalidConfigFileException("setServerNames: failed");
 	for (it = args.begin(); it != args.end(); it++)
 		serverNames_.insert(*it);
 }
 
 void Block::setWebRoot(vectorString args) {
 	if (args.size() != 1)
-		throw InvalidConfigFileException("invalid web root\n");
+		throw InvalidConfigFileException("setWebRoot: failed");
 	webRoot_ = args[0];
 }
 
 void Block::setCgi(vectorString args) {
 	if (args.size() != 1)
-		throw InvalidConfigFileException("cgi\n");
+		throw InvalidConfigFileException("setCgi: falied");
 	cgi_ = args[0];
 }
 
@@ -397,7 +397,7 @@ void Block::setAllowedMethods(vectorString args) {
 	vectorStringIter	it;
 
 	if (args.empty())
-		throw InvalidConfigFileException("invalid allowed methods\n");
+		throw InvalidConfigFileException("setAllowedMethods: Invalid allowed methods");
 	for (it = args.begin(); it != args.end(); it++)
 		allowedMethods_.insert(*it);
 }
@@ -408,19 +408,19 @@ void Block::setClientMaxBodySize(int size) {
 
 void Block::setClientMaxBodySize(vectorString args) {
 	if (args.size() != 1)
-		throw InvalidConfigFileException("invalid client max body size\n");
+		throw InvalidConfigFileException("setClientMaxBodySize: Invalid client max body size");
 	clientMaxBodySize_= atoi(args[0].c_str());
 }
 
 void Block::setErrorPages(vectorString args) {
 	if (args.size() != 2)
-		throw InvalidConfigFileException("invalid error pages\n");
+		throw InvalidConfigFileException("setErrorPages: Invalid error pages");
 	errorPages_.insert(std::pair<int, std::string>(atoi(args[0].c_str()), args[1]));
 }
 
 void Block::setAutoIndex(vectorString args) {
 	if (args.size() != 1)
-		throw InvalidConfigFileException("invalid auto index\n");
+		throw InvalidConfigFileException("setAutoIndex: Invalid autoindex");
 	autoIndex_ = args[0];
 }
 
@@ -641,7 +641,3 @@ const char *Block::InvalidConfigFileException::what() const throw() {
 }
 
 Block::InvalidConfigFileException::~InvalidConfigFileException() throw() {}
-
-const char *Block::InvalidLocationBlockException::what() const throw() {
-	return "There is no location block with the requested uri.\n";
-}

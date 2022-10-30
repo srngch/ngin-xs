@@ -45,15 +45,6 @@ public:
 	std::size_t					getPollIndex() const;
 	
 	void	setPollIndex(std::size_t pollIndex);
-
-	class MasterException : public std::exception {
-	private:
-		std::string message_;
-	public:
-		MasterException(const std::string str);
-		~MasterException() throw();
-		const char *what() const throw();
-	};
 };
 
 #endif
