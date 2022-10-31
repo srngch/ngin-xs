@@ -5,33 +5,18 @@ Nginxs::Nginxs(const char *confFilePath) {
 }
 
 Nginxs::~Nginxs() {
-	std::vector<Master *>::iterator	masterIt;
+	std::vector<Master *>::iterator	it;
 	
-	for (masterIt = masters_.begin(); masterIt != masters_.end(); masterIt++)
-		delete *masterIt;
+	for (it = masters_.begin(); it != masters_.end(); it++)
+		delete *it;
 }
 
-struct pollfd *Nginxs::findEmptyPollfd()
-{
-	for (int i = 0; i < POLLFDSLEN; i++) {
-		if (pollfds_[i].fd == -1) {
-			std::cout << "pollfd index: " << i << std::endl;
-			return &pollfds_[i];
-		}
-	}
-	return nullptr;
-}
-
-void Nginxs::run() {
-	std::size_t	i = 0; 
-	int			ret;
-
+void	Nginxs::initPollFds() {
+	std::size_t						i = 0; 
 	std::vector<Block>				serverBlocks = config_.getServerBlocks();
 	std::vector<Block>::iterator	it;
-	std::vector<Master *>::iterator	masterIt;
 	
-	for (it = serverBlocks.begin();	it != serverBlocks.end(); it++)
-	{
+	for (it = serverBlocks.begin();	it != serverBlocks.end(); it++) {
 		Master *m = new Master(*it);
 		m->setPollIndex(i);
 		std::cout << "setPollIndex: " << i << std::endl;
@@ -46,6 +31,24 @@ void Nginxs::run() {
 	// Initialize pollfds for workers
 	for (int fds = i; fds < POLLFDSLEN; fds++)
 		pollfds_[fds].fd = -1;
+}
+
+struct pollfd *Nginxs::findEmptyPollfd()
+{
+	for (int i = 0; i < POLLFDSLEN; i++) {
+		if (pollfds_[i].fd == -1) {
+			std::cout << "pollfd index: " << i << std::endl;
+			return &pollfds_[i];
+		}
+	}
+	return nullptr;
+}
+
+void Nginxs::run() {
+	int								ret;
+	std::vector<Master *>::iterator	it;
+	
+	initPollFds();
 
 	while (FT_TRUE) {
 		ret = poll(pollfds_, POLLFDSLEN, 1000);
@@ -58,17 +61,17 @@ void Nginxs::run() {
 			}
 			throw std::runtime_error("run: poll() failed");
 		}
-		for(masterIt = masters_.begin(); masterIt != masters_.end(); masterIt++) {
-			if (pollfds_[(*masterIt)->getPollIndex()].revents & POLLIN) {
+		for (it = masters_.begin(); it != masters_.end(); it++) {
+			if (pollfds_[(*it)->getPollIndex()].revents & POLLIN) {
 				struct pollfd	*emptyPollFd = findEmptyPollfd();
-			// 	// if (emptyPollFd == nullptr)
-			// 	// 	throw 503
-				// std::cout << "master: " << masterIt->getPollIndex() << std::endl;
-				(*masterIt)->appendWorker(emptyPollFd);
+				// TODO?: response 503 when pollfd is full
+				(*it)->appendWorker(emptyPollFd);
 			}
-			(*masterIt)->run();
+			(*it)->run();
 		}
 	}
+
+	// close opened poll fds
 	for (int fds = 0; fds < POLLFDSLEN; fds++) {
 		if (pollfds_[fds].fd != -1)
 			close(pollfds_[fds].fd);

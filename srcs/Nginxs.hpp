@@ -12,6 +12,7 @@ private:
 	Config					config_;
 	struct pollfd			pollfds_[POLLFDSLEN];
 
+	void			initPollFds();
 	struct pollfd	*findEmptyPollfd();
 
 public:

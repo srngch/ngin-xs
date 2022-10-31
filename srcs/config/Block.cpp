@@ -400,9 +400,7 @@ const std::size_t &Block::getClientMaxBodySize() const {
 }
 
 const mapIntString &Block::getErrorPages() const {
-	if (!errorPages_.empty())
-		return (errorPages_);
-	return Block::defaultBlock_.getErrorPages();
+	return errorPages_;
 }
 
 std::string Block::getErrorPage(int num) const {
@@ -413,7 +411,7 @@ std::string Block::getErrorPage(int num) const {
 	it = pages.find(num);
 	if (it == pages.end())
 		return "";
-	return (it->second);
+	return it->second;
 }
 
 const std::string &Block::getUri() const {

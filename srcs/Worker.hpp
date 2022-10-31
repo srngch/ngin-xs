@@ -20,9 +20,15 @@ private:
 	ft_bool			isRecvCompleted_;
 	ft_bool			isNewRequest_;
 
+	void	setNewRequest();
+	void	findLocationBlock();
+	ft_bool	processHeader(const char *buf, int ret);
+	void	processChunkedBody();
+	void	processBodyBeforeHeaderSet(int ret);
+	void	processBodyAfterHeaderSet(const char *buf, int ret);
 	ft_bool	recv();
 	void	validate();
-	ft_bool	executePutToTest(); // TODO: remove this
+	ft_bool	executePutToTest();
 	ft_bool	executeGet();
 	ft_bool	executePost();
 	ft_bool	executeDelete();
@@ -55,7 +61,6 @@ public:
 
 		const std::string	&getHttpStatus();
 		int					getHttpCode();
-
 	};
 };
 

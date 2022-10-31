@@ -2,8 +2,8 @@
 
 Master::Master(const Block &serverBlock)
 	: serverBlock_(serverBlock) {
-	init();
-	bind();
+	initListenSocket();
+	bindListenSocket();
 	listen();
 }
 
@@ -12,9 +12,10 @@ Master::~Master() {
 
 	for (it = workers_.begin(); it != workers_.end(); it++)
 		delete *it;
+	close(listenSocket_);
 }
 
-void Master::init() {
+void Master::initListenSocket() {
 	int	yes = 1;
 
 	listenSocket_ = socket(PF_INET, SOCK_STREAM, 0);
@@ -22,6 +23,8 @@ void Master::init() {
 	std::cout << "Port: " << serverBlock_.getPort() << std::endl;
 	if (listenSocket_ == FT_ERROR)
 		throw std::runtime_error("init: socket() failed");
+
+	
 	memset(&serverAddress_, 0, sizeof(serverAddress_));
 	serverAddress_.sin_len = sizeof(struct sockaddr_in);
 	serverAddress_.sin_family = PF_INET;
@@ -30,7 +33,7 @@ void Master::init() {
 	setsockopt(listenSocket_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 }
 
-void Master::bind() {
+void Master::bindListenSocket() {
 	int	ret;
 
 	ret = ::bind(listenSocket_, (const struct sockaddr *)&serverAddress_, sizeof(serverAddress_));
