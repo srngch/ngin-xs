@@ -90,7 +90,7 @@ ft_bool Worker::processHeader(const char *buf, int ret) {
 	originalHeader = request_->getOriginalHeader();
 
 	emptyLineIt = std::search(originalHeader.begin(), originalHeader.end(), emptyLine, emptyLine + strlen(emptyLine));
-	if (emptyLineIt == originalHeader.end()) 
+	if (emptyLineIt == originalHeader.end())
 		return FT_FALSE;
 	isHeaderSet_ = FT_TRUE;
 
@@ -359,6 +359,10 @@ ft_bool Worker::work() {
 		tmp_isRecvCompleted = isRecvCompleted_;
 		initRequestState();
 		Response response(e.getHttpStatus(), e.makeErrorHtml(request_->getLocationBlock().getErrorPage(e.getHttpCode())));
+		if (e.getHttpStatus() == HTTP_METHOD_NOT_ALLOWED) {
+			setString allowedMethods = request_->getLocationBlock().getAllowedMethods();
+			response.appendHeader("Allow", concatSetString(allowedMethods, ", "));
+		}
 		return send(response.createMessage()) && tmp_isRecvCompleted;
 	} catch (std::exception &e) {
 		HttpException ex = HttpException(e.what(), HTTP_INTERNAL_SERVER_ERROR);
