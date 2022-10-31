@@ -109,7 +109,7 @@ ft_bool hasWordInCharV(const vectorChar &src, const char *word) {
 	vectorCharConstIter	it;
 
 	it = std::search(src.begin(), src.end(), word, word + strlen(word));
-	
+
 	if (it == src.end())
 		return FT_FALSE;
 	return FT_TRUE;
@@ -127,4 +127,16 @@ void timestampNoSocket(const std::string &msg, timeval start) {
 
 	gettimeofday(&now, NULL);
 	std::cerr << (now.tv_sec - start.tv_sec) * ONE_SEC_IN_MICROSEC + (now.tv_usec - start.tv_usec) << " :\t\t" << msg << std::endl;
+}
+
+std::string concatSetString(const setString &set, const std::string &sep) {
+	setStringIter	it;
+	std::string		str;
+
+	for (it = set.begin(); it != set.end(); it++) {
+		str += *it;
+		if (it != --set.end())
+			str += sep;
+	}
+	return str;
 }

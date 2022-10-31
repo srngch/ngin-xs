@@ -36,5 +36,6 @@ vectorChar		stringToCharV(const std::string &s);
 ft_bool			hasWordInCharV(const vectorChar &src, const char *word);
 void			timestamp(const std::string &msg, timeval from, int socketId);
 void			timestampNoSocket(const std::string &msg, timeval start);
+std::string		concatSetString(const setString &set, const std::string &sep);
 
 #endif
