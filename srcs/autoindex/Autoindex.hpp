@@ -4,7 +4,7 @@
 #include <dirent.h>
 #include <ctime>
 #include "AutoindexData.hpp"
-#include "../utils.hpp"
+#include "utils.hpp"
 
 class Autoindex {
 private:

@@ -5,7 +5,7 @@
 #include <map>
 #include <cstring>
 #include <exception>
-#include "../utils.hpp"
+#include "utils.hpp"
 
 #define directivesMap std::map<std::string, void (Block::*)(std::vector<std::string>)>
 

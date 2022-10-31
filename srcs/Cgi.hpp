@@ -13,6 +13,8 @@ private:
 
 	char	**getEnv();
 
+	void	setServerEnv();
+	void	setHttpEnv();
 	void	setEnv();
 
 public:

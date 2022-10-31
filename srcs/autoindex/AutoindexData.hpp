@@ -2,7 +2,7 @@
 #define __AutoindexData_HPP__
 
 #include <string>
-#include "../macro.hpp"
+#include "macro.hpp"
 
 class AutoindexData {
 private:

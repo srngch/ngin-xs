@@ -1,6 +1,6 @@
 CC = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic
-INCLUDE_FLAGS = -I srcs
+INCLUDE_FLAGS = -I srcs -I includes
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic $(INCLUDE_FLAGS)
 TARGET = webserv
 
 SRCS_FILES = main.cpp utils.cpp \
@@ -15,7 +15,7 @@ OBJS = $(SRCS:.cpp=.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CXXFLAGS) $(INCLUDE_FLAGS) $(OBJS) -o $(TARGET)
+	$(CC) $(CXXFLAGS) $(OBJS) -o $(TARGET)
 
 .PHONY: clean
 clean:

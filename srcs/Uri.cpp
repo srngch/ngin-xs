@@ -9,7 +9,7 @@ Uri::~Uri() {}
 
 void Uri::parseQueryString() {
 	/**
-	 * Separate query string from requested original uri
+	 * 요청 원본 URI에서 쿼리 스트링 부분만 분리
 	 * 
 	 * ex) /dir/subdir/file.html?qs2=1&qs2=2
 	 * 1. uriDir_: /dir/subdir/file.html
@@ -26,7 +26,7 @@ void Uri::parseQueryString() {
 
 void Uri::parsePathInfo(const setString &supportedExtensions) {
 	/**
-	 * Separate path_info with cgi extension setted in conf file
+	 * CGI 확장자를 기준으로 path_info 분리
 	 * 
 	 * not CGI
 	 * /dir/subdir/file.html?qs2=1&qs2=2
@@ -34,9 +34,9 @@ void Uri::parsePathInfo(const setString &supportedExtensions) {
 	 * CGI
 	 * /dir/subdir/file.py/path/info?qs2=1&qs2=2
 	 */
+	setStringIter	it;
 	std::size_t		index;
 	std::string		cgiExtension;
-	setStringIter	it;
 	ft_bool			isCgi = FT_FALSE;
 
 	for (it = supportedExtensions.begin(); it != supportedExtensions.end(); it++) {

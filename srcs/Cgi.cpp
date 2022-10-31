@@ -20,6 +20,38 @@ char **Cgi::getEnv() {
 	return charEnv;
 }
 
+void Cgi::setServerEnv() {
+	std::string	host = request_->getHeaderValue("host");
+	std::size_t	index = host.find(":");
+	std::string	serverName = host;
+	std::string	serverPort = ntos(request_->getLocationBlock().getPort());
+
+	if (index != std::string::npos)
+		serverName = host.substr(0, index);
+	env_.push_back("SERVER_NAME=" + serverName);
+	env_.push_back("SERVER_PORT=" + serverPort);
+	env_.push_back("SERVER_PROTOCOL=HTTP/1.1");
+	env_.push_back("SERVER_SOFTWARE=ngin-xs");
+}
+
+void Cgi::setHttpEnv() {
+	mapStringString		requestHeaders = request_->getHeaders();
+	mapStringStringIter	it;
+	std::string			field;
+	std::size_t			index;
+
+	for (it = requestHeaders.begin(); it != requestHeaders.end(); it++) {
+		field = it->first;
+		std::transform(field.begin(), field.end(), field.begin(), ::toupper);
+		index = field.find("-");
+		while (index != std::string::npos) {
+			field.replace(index, 1, "_");
+			index = field.find("-");
+		}
+		env_.push_back("HTTP_" + field + "=" + it->second);
+	}
+}
+
 void Cgi::setEnv() {
 	std::string	uri = request_->getUri()->getParsedUri();
 	std::string	contentLength = request_->getHeaderValue("content-length");
@@ -41,32 +73,8 @@ void Cgi::setEnv() {
 
 	env_.push_back("SCRIPT_NAME=" + uri);
 
-	std::string	host = request_->getHeaderValue("host");
-	std::size_t	index = host.find(":");
-	std::string	serverName = host;
-	std::string	serverPort = ntos(request_->getLocationBlock().getPort());
-
-	if (index != std::string::npos)
-		serverName = host.substr(0, index);
-	env_.push_back("SERVER_NAME=" + serverName);
-	env_.push_back("SERVER_PORT=" + serverPort);
-	env_.push_back("SERVER_PROTOCOL=HTTP/1.1");
-	env_.push_back("SERVER_SOFTWARE=ngin-xs");
-
-	mapStringString		requestHeaders = request_->getHeaders();
-	mapStringStringIter	it;
-
-	for (it = requestHeaders.begin(); it != requestHeaders.end(); it++) {
-		std::string field = it->first;
-
-		std::transform(field.begin(), field.end(), field.begin(), ::toupper);
-		index = field.find("-");
-		while (index != std::string::npos) {
-			field.replace(index, 1, "_");
-			index = field.find("-");
-		}
-		env_.push_back("HTTP_" + field + "=" + it->second);
-	}
+	setServerEnv();
+	setHttpEnv();
 }
 
 const vectorChar &Cgi::execute() {
@@ -116,17 +124,16 @@ const vectorChar &Cgi::execute() {
 		tmpResult += HTTP_INTERNAL_SERVER_ERROR;
 		tmpResult += EMPTY_LINE;
 		write(STDOUT_FILENO, tmpResult.c_str(), tmpResult.length());
-	} else {
-		waitpid(pid, NULL, 0);
-		lseek(fileFds[STDOUT_FILENO], 0, SEEK_SET);
-		while (ret > 0) {
-			memset(readBuf, 0, CGI_BUF_SIZE);
-			ret = read(fileFds[STDOUT_FILENO], readBuf, CGI_BUF_SIZE - 1);
-			result_.insert(result_.end(), readBuf, readBuf + ret);
-		}
+	}
+	/* parent process */
+	waitpid(pid, NULL, 0);
+	lseek(fileFds[STDOUT_FILENO], 0, SEEK_SET);
+	while (ret > 0) {
+		memset(readBuf, 0, CGI_BUF_SIZE);
+		ret = read(fileFds[STDOUT_FILENO], readBuf, CGI_BUF_SIZE - 1);
+		result_.insert(result_.end(), readBuf, readBuf + ret);
 	}
 
-	/* parent process */
 	dup2(tmpStd[STDIN_FILENO], STDIN_FILENO);
 	dup2(tmpStd[STDOUT_FILENO], STDOUT_FILENO);
 

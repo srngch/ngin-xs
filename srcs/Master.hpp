@@ -11,8 +11,8 @@ private:
 	Block					serverBlock_;
 	std::size_t				pollIndex_;
 
-	void	init();
-	void	bind();
+	void	initListenSocket();
+	void	bindListenSocket();
 	void	listen();
 
 public:
