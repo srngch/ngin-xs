@@ -78,7 +78,6 @@ void Cgi::setEnv() {
 }
 
 const vectorChar &Cgi::execute() {
-	timestampNoSocket("cgi execute start", start);
 	pid_t		pid;
 	int			tmpStd[2];
 	long		fileFds[2];
@@ -144,6 +143,5 @@ const vectorChar &Cgi::execute() {
 	close(tmpStd[STDIN_FILENO]);
 	close(tmpStd[STDOUT_FILENO]);
 
-	timestampNoSocket("cgi execute end", start);
 	return (result_);
 }

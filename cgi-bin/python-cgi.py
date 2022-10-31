@@ -51,7 +51,6 @@ try:
     message = ""
     img_tag = ""
     if request_method == "POST" and script_name == "/binary.py":
-        # TODO: handle if buf is not binary
         if buf:
             fn = os.path.basename(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
             extension = guess_extension(content_type.partition(";")[0].strip())
@@ -72,7 +71,6 @@ try:
         formData += "<h3>Form</h3><ul>"
         ctype, pdict = cgi.parse_header(content_type)
 
-        # TODO: handle if ctype is not "multipart/form-data"
         if ctype == "multipart/form-data":
             form = cgi.FieldStorage(
                 fp=io.BytesIO(buf), environ=os.environ, keep_blank_values=True
