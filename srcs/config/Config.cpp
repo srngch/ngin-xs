@@ -51,6 +51,8 @@ void Config::parseConfigFile(const char *filePath) {
 	vectorString	tokens;
 	int				tokenSize;
 
+	if (!filePath)
+		filePath = DEFAULT_CONF_FILE_PATH;
 	tokens = readAndSplit(filePath);
 	tokenSize = tokens.size();
 	for (int i = 0; i < tokenSize; i++) {

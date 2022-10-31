@@ -4,8 +4,8 @@ timeval start;
 
 int main(int argc, char **argv) {
 	try {
-		if (argc != 2) {
-			std::cout << "Usage: ./webserv [CONF FILE NAME]" << std::endl;
+		if (argc > 2) {
+			std::cout << "Usage: ./webserv [CONF_FILE_NAME]" << std::endl;
 			return EXIT_FAILURE;
 		}
 		gettimeofday(&start, NULL);
