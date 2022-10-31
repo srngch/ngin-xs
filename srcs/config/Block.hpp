@@ -25,6 +25,7 @@ private:
 	std::string			index_;
 	std::string			autoIndex_;
 	std::string			cgi_;
+	std::string			redirect_;
 
 	ft_bool			checkParentUri(std::string uri);
 	ft_bool			checkValidation(vectorString &tokens, int &index, std::string &directive);
@@ -67,6 +68,7 @@ public:
 	const std::string			&getCgi() const;
 	const Block					&getLocationBlockRecursive(std::string uri) const;
 	Block						getLocationBlock(std::string uri) const;
+	const std::string			&getRedirect() const;
 
 	static void	setDefaultBlock(const char *file);
 	void		setServerDirectivesMap();
@@ -88,6 +90,7 @@ public:
 	void		setIndex(vectorString args);
 	void		setAutoIndex(vectorString args);
 	void		setCgi(vectorString args);
+	void		setRedirect(vectorString args);
 
 	class InvalidConfigFileException : public std::exception {
 	private:

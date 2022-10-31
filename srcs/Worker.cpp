@@ -213,6 +213,10 @@ ft_bool Worker::executeGet() {
 		redirect(request_->getUri()->getParsedUri() + request_->getUri()->getPathInfo() + "/" + request_->getUri()->getQueryString());
 		return FT_TRUE;
 	}
+	if (request_->getLocationBlock().getRedirect().length() > 0) {
+		redirect(request_->getLocationBlock().getRedirect() + request_->getUri()->getPathInfo() + "/" + request_->getUri()->getQueryString());
+		return FT_TRUE;
+	}
 	std::string indexPath = request_->getLocationBlock().getIndex();
 	ft_bool	isAutoindex = request_->getLocationBlock().getAutoIndex();
 	if (isFileExist(filePath + indexPath))
@@ -224,7 +228,7 @@ ft_bool Worker::executeGet() {
 	}
 	if (isDirectory(filePath))
 		filePath += indexPath;
-	if (isCgi(filePath)) {
+	if (isFileExist(filePath) == FT_FALSE && isCgi(filePath)) {
 		Cgi cgi(request_);
 		Response response(HTTP_OK, cgi.execute(), FT_TRUE);
 		return send(response.createMessage());
