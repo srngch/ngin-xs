@@ -1,7 +1,5 @@
 #include "Nginxs.hpp"
 
-Nginxs::Nginxs() {}
-
 Nginxs::Nginxs(const char *confFilePath) {
 	config_.parseConfigFile(confFilePath);
 }
@@ -13,7 +11,18 @@ Nginxs::~Nginxs() {
 		delete *masterIt;
 }
 
-void	Nginxs::run() {
+struct pollfd *Nginxs::findEmptyPollfd()
+{
+	for (int i = 0; i < POLLFDSLEN; i++) {
+		if (pollfds_[i].fd == -1) {
+			std::cout << "pollfd index: " << i << std::endl;
+			return &pollfds_[i];
+		}
+	}
+	return nullptr;
+}
+
+void Nginxs::run() {
 	std::size_t	i = 0; 
 	int			ret;
 
@@ -38,11 +47,11 @@ void	Nginxs::run() {
 	for (int fds = i; fds < POLLFDSLEN; fds++)
 		pollfds_[fds].fd = -1;
 
-	while (1) {
+	while (FT_TRUE) {
 		ret = poll(pollfds_, POLLFDSLEN, 1000);
-		if (ret == 0)
+		if (ret == FT_FALSE)
 			continue ;
-		if (ret == -1) {
+		if (ret == FT_ERROR) {
 			for (int fds = 0; fds < POLLFDSLEN; fds++) {
 				if (pollfds_[fds].fd != -1)
 					close(pollfds_[fds].fd);
@@ -64,15 +73,4 @@ void	Nginxs::run() {
 		if (pollfds_[fds].fd != -1)
 			close(pollfds_[fds].fd);
 	}
-}
-
-struct pollfd *Nginxs::findEmptyPollfd()
-{
-	for (int i = 0; i < POLLFDSLEN; i++) {
-		if (pollfds_[i].fd == -1) {
-			std::cout << "pollfd index: " << i << std::endl;
-			return &pollfds_[i];
-		}
-	}
-	return nullptr;
 }

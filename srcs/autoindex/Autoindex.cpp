@@ -1,7 +1,5 @@
 #include "Autoindex.hpp"
 
-Autoindex::Autoindex() {}
-
 Autoindex::Autoindex(const std::string &filePath, const std::string &uri)
 	: filePath_(filePath), uri_(uri) {
 	DIR	*dir;

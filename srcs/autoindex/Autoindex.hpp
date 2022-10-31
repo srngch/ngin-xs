@@ -2,11 +2,7 @@
 #define __AUTOINDEX_HPP__
 
 #include <dirent.h>
-#include <string>
 #include <ctime>
-#include <algorithm>
-#include <sys/stat.h>
-#include <vector>
 #include "AutoindexData.hpp"
 #include "../utils.hpp"
 
@@ -21,8 +17,6 @@ private:
 
 	void	setAutoindexes(DIR *dir);
 	void	setHtml();
-
-	Autoindex();
 
 public:
 	Autoindex(const std::string &filePath, const std::string &uri);

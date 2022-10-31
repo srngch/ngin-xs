@@ -1,5 +1,5 @@
 #ifndef	__MACRO_HPP__
-# define __MACRO_HPP__
+#define __MACRO_HPP__
 
 // Default configuration file
 #define DEFAULT_CONF_FILE_PATH "conf/default.conf"
@@ -15,9 +15,9 @@
 #define FT_PIPEOUT	0
 
 // Ngin-xs
-#define CRLF			"\r\n"
-#define EMPTY_LINE		"\r\n\r\n"
-#define CHUNKED_END		"0\r\n\r\n"
+#define CRLF		"\r\n"
+#define EMPTY_LINE	"\r\n\r\n"
+#define CHUNKED_END	"0\r\n\r\n"
 
 // Response Status
 #define	HTTP_OK						"200 OK"
@@ -33,11 +33,11 @@
 #define HTTP_NOT_IMPLEMENTED		"501 Not Implemented"
 #define HTTP_VERSION_NOT_SUPPORTED	"505 HTTP Version Not Supported"
 
-#define CGI_FILE_MODE		0644
-#define CGI_BUF_SIZE		65000
+#define CGI_FILE_MODE	0644
+#define CGI_BUF_SIZE	65000
 
-#define RECV_BUF_SIZE 21504
-#define CONFIG_BUF_SIZE 1600
+#define RECV_BUF_SIZE	21504
+#define CONFIG_BUF_SIZE	1600
 
 #define ONE_SEC_IN_MICROSEC 1000000
 

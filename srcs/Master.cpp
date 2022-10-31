@@ -1,17 +1,5 @@
 #include "Master.hpp"
 
-Master::MasterException::MasterException(const std::string str) {
-	message_ = str;
-}
-
-Master::MasterException::~MasterException() throw() {}
-
-const char *Master::MasterException::what() const throw() {
-	return message_.c_str();
-}
-
-Master::Master() {}
-
 Master::Master(const Block &serverBlock)
 	: serverBlock_(serverBlock) {
 	init();
@@ -20,20 +8,20 @@ Master::Master(const Block &serverBlock)
 }
 
 Master::~Master() {
-	std::vector<Worker *>::iterator it;
+	std::vector<Worker *>::iterator	it;
 
 	for (it = workers_.begin(); it != workers_.end(); it++)
 		delete *it;
 }
 
-void	Master::init() {
-	int yes = 1;
+void Master::init() {
+	int	yes = 1;
 
 	listenSocket_ = socket(PF_INET, SOCK_STREAM, 0);
 	std::cout << "listenSocket: " << listenSocket_ << std::endl;
 	std::cout << "Port: " << serverBlock_.getPort() << std::endl;
 	if (listenSocket_ == FT_ERROR)
-		throw MasterException("init: socket() failed");
+		throw std::runtime_error("init: socket() failed");
 	memset(&serverAddress_, 0, sizeof(serverAddress_));
 	serverAddress_.sin_len = sizeof(struct sockaddr_in);
 	serverAddress_.sin_family = PF_INET;
@@ -42,27 +30,27 @@ void	Master::init() {
 	setsockopt(listenSocket_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 }
 
-void	Master::bind() {
+void Master::bind() {
 	int	ret;
 
 	ret = ::bind(listenSocket_, (const struct sockaddr *)&serverAddress_, sizeof(serverAddress_));
 	if (ret == FT_ERROR) {
 		close(listenSocket_);
-		throw MasterException("bind: bind() failed");
+		throw std::runtime_error("bind: bind() failed");
 	}
 }
 
-void	Master::listen() {
-	int ret;
+void Master::listen() {
+	int	ret;
 
 	ret = ::listen(listenSocket_, 100000);
 	if (ret == -1) {
 		close(listenSocket_);
-		throw MasterException("listen: listen() failed");
+		throw std::runtime_error("listen: listen() failed");
 	}
 }
 
-void	Master::run() {
+void Master::run() {
 	int								ret;
 	std::vector<Worker *>::iterator	it = workers_.begin();
 
@@ -77,7 +65,7 @@ void	Master::run() {
 	}
 }
 
-void	Master::appendWorker(struct pollfd *pollFd) {
+void Master::appendWorker(struct pollfd *pollFd) {
 	Worker	*worker = new Worker(listenSocket_, serverBlock_);
 
 	worker->setPollfd(pollFd);

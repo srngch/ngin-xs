@@ -13,16 +13,9 @@ const char *Worker::HttpException::what() const throw() {
 	return message_.c_str();
 }
 
-const std::string &Worker::HttpException::getHttpStatus() {
-	return httpStatus_;
-}
+vectorChar Worker::HttpException::makeErrorHtml(const std::string &errorPage) {
+	std::string	html;
 
-int Worker::HttpException::getHttpCode() {
-	return httpCode_;
-}
-
-std::vector<char> Worker::HttpException::makeErrorHtml(const std::string &errorPage) {
-	std::string html;
 	if (httpCode_ == 204)
 		return stringToCharV(html);
 	if (errorPage != "" && isFileExist(errorPage))
@@ -42,7 +35,13 @@ std::vector<char> Worker::HttpException::makeErrorHtml(const std::string &errorP
 	return stringToCharV(html);
 }
 
-Worker::Worker() {}
+const std::string &Worker::HttpException::getHttpStatus() {
+	return httpStatus_;
+}
+
+int Worker::HttpException::getHttpCode() {
+	return httpCode_;
+}
 
 Worker::Worker(int listenSocket, const Block &serverBlock)
 	: serverBlock_(serverBlock), request_(nullptr), isHeaderSet_(FT_FALSE), isRecvCompleted_(FT_FALSE), isNewRequest_(FT_TRUE) {
@@ -53,7 +52,7 @@ Worker::Worker(int listenSocket, const Block &serverBlock)
 	std::cout << "connectSocket_: " << connectSocket_ << std::endl;
 	if (connectSocket_ == -1) {
 		close(listenSocket);
-		throw std::runtime_error("fail: accept()\n");
+		throw std::runtime_error("Worker constructor: accept() failed");
 	}
 }
 
@@ -62,77 +61,26 @@ Worker::~Worker() {
 	delete request_;
 }
 
-void	Worker::setPollfd(struct pollfd *pollfd) {
-	pollfd_ = pollfd;
-	pollfd_->fd = connectSocket_;
-	pollfd_->events = POLLIN | POLLOUT;
-	pollfd_->revents = 0;
-}
-
-ft_bool Worker::work() {
-	ft_bool	ret = FT_TRUE;
-	ft_bool	tmp_isRecvCompleted;
-
-	try {
-		if (pollfd_->revents == 0)
-			return FT_TRUE;
-		if (pollfd_->revents & POLLHUP) {
-			resetPollfd();
-			std::cout << "<socket closed>" << std::endl;
-			return FT_FALSE;
-		} else if (pollfd_->revents == pollfd_->events) {
-			ret = recv();
-			if (ret == FT_FALSE)
-				return ret;
-		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
-			timestamp("recv end", start, connectSocket_);
-			timestamp("setBody start", start, connectSocket_);
-			request_->setBody();
-			timestamp("setBody end", start, connectSocket_);
-			initRequestState();
-			validate();
-			request_->setFilePath();
-			std::string	requestMethod = request_->getMethod();
-			if (requestMethod == "PUT")
-				return executePutToTest();
-			if (requestMethod == "GET")
-				return executeGet();
-			if (requestMethod == "POST") {
-				return executePost();
-			}
-			if (requestMethod == "DELETE")
-				return executeDelete();
-		}
-		return ret;
-	} catch (HttpException &e) {
-		std::cerr << e.what() << std::endl;
-		tmp_isRecvCompleted = isRecvCompleted_;
-		initRequestState();
-		Response response(e.getHttpStatus(), e.makeErrorHtml(request_->getLocationBlock().getErrorPage(e.getHttpCode())));
-		return send(response.createMessage()) && tmp_isRecvCompleted;
-	} catch (std::exception &e) {
-		HttpException ex = HttpException(e.what(), HTTP_INTERNAL_SERVER_ERROR);
-		std::cerr << "std::exception: " << e.what() << std::endl;
-		tmp_isRecvCompleted = isRecvCompleted_;
-		initRequestState();
-		Response response(ex.getHttpStatus(), ex.makeErrorHtml(request_->getLocationBlock().getErrorPage(ex.getHttpCode())));
-		return send(response.createMessage()) && tmp_isRecvCompleted;
-	}
-}
-
 ft_bool Worker::recv() {
-	int 						ret;
-	char						buf[RECV_BUF_SIZE];
-	std::string					transferEncoding;
-	std::vector<char>			originalHeader;
-	std::vector<char>			originalBody;
-	const char 					*emptyLine = EMPTY_LINE;
-	const char 					*chunkedEnd = CHUNKED_END;
-	std::vector<char>::iterator it;
-	std::size_t					client_max_body_size;
+	int 			ret;
+	char			buf[RECV_BUF_SIZE];
+	std::string		transferEncoding;
+	vectorChar		originalHeader;
+	vectorChar		originalBody;
+	const char 		*emptyLine = EMPTY_LINE;
+	const char 		*chunkedEnd = CHUNKED_END;
+	vectorCharIter	it;
+	std::size_t		client_max_body_size;
 
 	memset(buf, 0, RECV_BUF_SIZE);
 	ret = ::recv(pollfd_->fd, buf, RECV_BUF_SIZE - 1, 0);
+	if (ret == FT_FALSE) {
+		resetPollfd();
+		std::cout << "recv: Client finished connection." << std::endl;
+		return FT_FALSE;
+	}
+	if (ret == FT_ERROR)
+		throw HttpException("recv: recv() failed", HTTP_INTERNAL_SERVER_ERROR);
 	buf[ret] = '\0';
 	if (isNewRequest_ == FT_TRUE) {
 		timestamp("recv start", start, connectSocket_);
@@ -162,13 +110,13 @@ ft_bool Worker::recv() {
 			transferEncoding = request_->getHeaderValue("transfer-encoding");
 			// transfer-encoding 헤더의 값이 chunked가 아닌 것은 구현하지 않음
 			if (transferEncoding.length() > 0 && transferEncoding != "chunked")
-				throw HttpException("Not Implemented", HTTP_NOT_IMPLEMENTED);
+				throw HttpException("recv: Not implemented transfer-encoding", HTTP_NOT_IMPLEMENTED);
 
 			originalBody = request_->getOriginalBody();
 			if (transferEncoding == "chunked") {
 				// content-length 헤더가 있다면 400 응답
 				if (request_->getHeaderValue("content-length").length() > 0)
-					throw HttpException("recv: Chunked message with content length", HTTP_BAD_REQUEST);
+					throw HttpException("recv: Chunked message with content-length", HTTP_BAD_REQUEST);
 				request_->setBodyLength(0);
 				request_->parseChunkedBody();
 				// body가 client_max_body_size 보다 큼
@@ -195,7 +143,7 @@ ft_bool Worker::recv() {
 		if (transferEncoding == "chunked") {
 			request_->parseChunkedBody();
 			if (request_->getBodyLength() > client_max_body_size)
-				throw HttpException("recv: Chunked body length is larger than client max body size", HTTP_CONTENT_TOO_LARGE);
+				throw HttpException("recv: Chunked request body is larger than client max body size", HTTP_CONTENT_TOO_LARGE);
 			// CRLFCRLF를 체크해서 request 내용의 전체를 받았는지 확인
 			if (hasWordInCharV(request_->getOriginalBody(), chunkedEnd))
 				isRecvCompleted_ = FT_TRUE;
@@ -205,19 +153,12 @@ ft_bool Worker::recv() {
 				isRecvCompleted_ = FT_TRUE;
 		}
 	}
-	if (ret == FT_FALSE) {
-		resetPollfd();
-		std::cout << "recv: Client finished connection." << std::endl;
-		return FT_FALSE;
-	}
-	if (ret == FT_ERROR)
-		throw HttpException("recv: fail", HTTP_INTERNAL_SERVER_ERROR);
 	return FT_TRUE;
 }
 
 void Worker::validate() {
-	std::set<std::string>					allowedMethods = request_->getLocationBlock().getAllowedMethods();
-	std::set<std::string>::const_iterator	it = allowedMethods.find(request_->getMethod());
+	setString			allowedMethods = request_->getLocationBlock().getAllowedMethods();
+	setStringConstIter	it = allowedMethods.find(request_->getMethod());
 
 	if (it == allowedMethods.end())
 		throw HttpException("validate: Invalid method", HTTP_METHOD_NOT_ALLOWED);
@@ -297,24 +238,24 @@ ft_bool Worker::executeDelete() {
 	return send(response.createMessage());
 }
 
-ft_bool	Worker::redirect(const std::string &dest) {
+ft_bool Worker::redirect(const std::string &dest) {
 	Response response(HTTP_MOVED_PERMANENTLY);
 	response.appendHeader("location", dest);
 	return send(response.createMessage());
 }
 
-void	Worker::initRequestState() {
+void Worker::initRequestState() {
 	isHeaderSet_ = FT_FALSE;
 	isRecvCompleted_ = FT_FALSE;
 	isNewRequest_ = FT_TRUE;
 }
 
-ft_bool	Worker::isCgi(const std::string &filePath) {
-	std::set<std::string>			supportedExtensions = request_->getLocationBlock().getSupportedExtensions();
-	std::set<std::string>::iterator	it;
-	std::string						extension;
-	int								len;
-	int								i;
+ft_bool Worker::isCgi(const std::string &filePath) {
+	setString		supportedExtensions = request_->getLocationBlock().getSupportedExtensions();
+	setStringIter	it;
+	std::string		extension;
+	int				len;
+	int				i;
 
 	len = filePath.length();
 	i = filePath.find_last_of('.');
@@ -328,9 +269,9 @@ ft_bool	Worker::isCgi(const std::string &filePath) {
 	return FT_FALSE;
 }
 
-ft_bool Worker::send(const std::vector<char> &message) {
-	int					ret;
-	std::vector<char>	m = message;
+ft_bool Worker::send(const vectorChar &message) {
+	int			ret;
+	vectorChar	m = message;
 
 	timestamp("Send start", start, connectSocket_);
 	ret = ::send(pollfd_->fd, reinterpret_cast<char*>(&m[0]), m.size(), 0);
@@ -346,5 +287,62 @@ ft_bool Worker::send(const std::vector<char> &message) {
 void Worker::resetPollfd() {
 	close(pollfd_->fd);
 	pollfd_->fd = -1;
+	pollfd_->revents = 0;
+}
+
+ft_bool Worker::work() {
+	ft_bool	ret = FT_TRUE;
+	ft_bool	tmp_isRecvCompleted;
+
+	try {
+		if (pollfd_->revents == 0)
+			return FT_TRUE;
+		if (pollfd_->revents & POLLHUP) {
+			resetPollfd();
+			std::cout << "<socket closed>" << std::endl;
+			return FT_FALSE;
+		} else if (pollfd_->revents == pollfd_->events) {
+			ret = recv();
+			if (ret == FT_FALSE)
+				return ret;
+		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
+			timestamp("recv end", start, connectSocket_);
+			timestamp("setBody start", start, connectSocket_);
+			request_->setBody();
+			timestamp("setBody end", start, connectSocket_);
+			initRequestState();
+			validate();
+			request_->setFilePath();
+			std::string	requestMethod = request_->getMethod();
+			if (requestMethod == "PUT")
+				return executePutToTest();
+			if (requestMethod == "GET")
+				return executeGet();
+			if (requestMethod == "POST")
+				return executePost();
+			if (requestMethod == "DELETE")
+				return executeDelete();
+		}
+		return ret;
+	} catch (HttpException &e) {
+		std::cerr << e.what() << std::endl;
+		tmp_isRecvCompleted = isRecvCompleted_;
+		initRequestState();
+		Response response(e.getHttpStatus(), e.makeErrorHtml(request_->getLocationBlock().getErrorPage(e.getHttpCode())));
+		return send(response.createMessage()) && tmp_isRecvCompleted;
+	} catch (std::exception &e) {
+		HttpException ex = HttpException(e.what(), HTTP_INTERNAL_SERVER_ERROR);
+		std::cerr << "std::exception: " << e.what() << std::endl;
+		tmp_isRecvCompleted = isRecvCompleted_;
+		initRequestState();
+		Response response(ex.getHttpStatus(), ex.makeErrorHtml(request_->getLocationBlock().getErrorPage(ex.getHttpCode())));
+		return send(response.createMessage()) && tmp_isRecvCompleted;
+	}
+}
+
+void Worker::setPollfd(struct pollfd *pollfd) {
+	pollfd_ = pollfd;
+	pollfd_->fd = connectSocket_;
+	pollfd_->events = POLLIN | POLLOUT;
 	pollfd_->revents = 0;
 }

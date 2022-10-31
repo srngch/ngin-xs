@@ -5,13 +5,13 @@ Response::Response(const std::string &status) {
 	makeDefaultHeaders();
 }
 
-Response::Response(const std::string &status, const std::vector<char> &result, ft_bool isCgi) {
-	std::vector<char>::const_iterator	it;
-	const char 							*crlf = "\r\n\r\n";
-	std::string 						cgiHeaders;
-	std::vector<std::string>			splitedHeaders;
-	std::vector<std::string>			splitedHeaderLine;
-	std::vector<std::string>::iterator	sIt;
+Response::Response(const std::string &status, const vectorChar &result, ft_bool isCgi) {
+	vectorCharConstIter	it;
+	const char 			*crlf = "\r\n\r\n";
+	std::string 		cgiHeaders;
+	vectorString		splitedHeaders;
+	vectorString		splitedHeaderLine;
+	vectorStringIter	sIt;
 
 	statusLine_ = "HTTP/1.1 " + status;
 	body_ = result;
@@ -39,9 +39,9 @@ Response::Response(const std::string &status, const std::vector<char> &result, f
 Response::~Response() {}
 
 std::string Response::makeDateValue() {
-	std::time_t		t = std::time(0);
-	struct tm		*tm = gmtime(&t);
-	char			ret[30];
+	std::time_t	t = std::time(0);
+	struct tm	*tm = gmtime(&t);
+	char		ret[30];
 
 	strftime(ret, 30, "%a, %d %b %Y %H:%M:%S GMT", tm);
 	return std::string(ret);
@@ -59,16 +59,17 @@ void Response::makeDefaultHeaders() {
 }
 
 const std::string Response::getHeaderValue(const std::string &fieldName) {
-	std::map<std::string, std::string>::iterator it = headers_.find(fieldName);
+	mapStringStringIter	it = headers_.find(fieldName);
+
 	if (it == headers_.end())
 		return std::string("");
 	return it->second;
 }
 
-const std::vector<char>	&Response::createMessage() {
-	std::map<std::string, std::string>::iterator	it;
-	const char 										*crlf = CRLF;
-	const char 										*headerDelim = ": ";
+const vectorChar &Response::createMessage() {
+	mapStringStringIter	it;
+	const char 			*crlf = CRLF;
+	const char 			*headerDelim = ": ";
 
 	// status line
 	message_.insert(message_.end(), statusLine_.begin(), statusLine_.end());
@@ -88,7 +89,11 @@ const std::vector<char>	&Response::createMessage() {
 	return message_;
 }
 
-void	Response::setContentType(const std::string &fileExtension) {
+void Response::appendHeader(const std::string &fieldName, const std::string &value) {
+	headers_.insert(std::pair<std::string, std::string>(fieldName, value));
+}
+
+void Response::setContentType(const std::string &fileExtension) {
 	headers_.erase("content-type");
 	if (fileExtension == "html")
 		appendHeader("content-type", MIME_HTML);
@@ -116,8 +121,4 @@ void	Response::setContentType(const std::string &fileExtension) {
 		appendHeader("content-type", MIME_APP_ZIP);
 	else // .bin .exe .dll or unknown MIME
 		appendHeader("content-type", MIME_OCTET);
-}
-
-void	Response::appendHeader(const std::string &fieldName, const std::string &value) {
-	headers_.insert(std::pair<std::string, std::string>(fieldName, value));
 }

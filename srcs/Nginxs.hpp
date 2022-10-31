@@ -1,19 +1,9 @@
 #ifndef __NGINXS_HPP__
 #define __NGINXS_HPP__
 
-#include <vector>
-#include <exception>
 #include "Master.hpp"
-#include "Request.hpp"
 #include "config/Config.hpp"
 
-/*
- * POLLFDSLEN 
- * : number of servers + number of clients
- * thus, number of max client
- * : POLLFDSLEN - number of servers
-*/
- 
 #define POLLFDSLEN 1000
 
 class Nginxs {
@@ -22,9 +12,7 @@ private:
 	Config					config_;
 	struct pollfd			pollfds_[POLLFDSLEN];
 
-	struct pollfd			*findEmptyPollfd();
-
-	Nginxs();
+	struct pollfd	*findEmptyPollfd();
 
 public:
 	Nginxs(const char *confFilePath);

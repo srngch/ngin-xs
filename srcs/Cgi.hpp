@@ -3,34 +3,23 @@
 
 #include <unistd.h>
 #include <fcntl.h>
-#include <string>
-#include <map>
-#include <vector>
-#include <iterator>
-#include <iostream>
-#include <cctype>
-#include <algorithm>
-#include <exception>
-#include "macro.hpp"
 #include "Request.hpp"
-#include "utils.hpp"
 
 class Cgi {
 private:
-	Request						*request_;
-	std::vector<std::string>	env_;
-	std::vector<char>			result_;
+	Request			*request_;
+	vectorString	env_;
+	vectorChar		result_;
 
-	void	setEnv();
 	char	**getEnv();
 
-	Cgi();
+	void	setEnv();
 
 public:
 	Cgi(Request *request);
 	~Cgi();
 
-	const std::vector<char>	&execute();
+	const vectorChar	&execute();
 };
 
 #endif
