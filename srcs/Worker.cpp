@@ -306,7 +306,7 @@ ft_bool Worker::send(const vectorChar &message) {
 	ret = ::send(pollfd_->fd, reinterpret_cast<char*>(&m[0]), m.size(), 0);
 	timestamp("Complete!", start, connectSocket_);
 	std::cerr << "===================" << std::endl;
-	if (ret == FT_ERROR)
+	if (ret == FT_FALSE || ret == FT_ERROR)
 		throw HttpException("send: send() failed", HTTP_INTERNAL_SERVER_ERROR);
 	if (request_->getHeaderValue("connection") == "close")
 		return FT_FALSE;
