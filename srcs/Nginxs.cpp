@@ -19,7 +19,6 @@ void	Nginxs::initPollFds() {
 	for (it = serverBlocks.begin();	it != serverBlocks.end(); it++) {
 		Master *m = new Master(*it);
 		m->setPollIndex(i);
-		std::cout << "setPollIndex: " << i << std::endl;
 		masters_.push_back(m);
 
 		pollfds_[i].fd = m->getListenSocket();
@@ -36,10 +35,8 @@ void	Nginxs::initPollFds() {
 struct pollfd *Nginxs::findEmptyPollfd()
 {
 	for (int i = 0; i < POLLFDSLEN; i++) {
-		if (pollfds_[i].fd == -1) {
-			std::cout << "pollfd index: " << i << std::endl;
+		if (pollfds_[i].fd == -1)
 			return &pollfds_[i];
-		}
 	}
 	return nullptr;
 }
@@ -62,11 +59,8 @@ void Nginxs::run() {
 			throw std::runtime_error("run: poll() failed");
 		}
 		for (it = masters_.begin(); it != masters_.end(); it++) {
-			if (pollfds_[(*it)->getPollIndex()].revents & POLLIN) {
-				struct pollfd	*emptyPollFd = findEmptyPollfd();
-				// TODO?: response 503 when pollfd is full
-				(*it)->appendWorker(emptyPollFd);
-			}
+			if (pollfds_[(*it)->getPollIndex()].revents & POLLIN)
+				(*it)->appendWorker(findEmptyPollfd());
 			(*it)->run();
 		}
 	}

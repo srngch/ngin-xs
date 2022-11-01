@@ -16,7 +16,7 @@ Block::InvalidConfigFileException::~InvalidConfigFileException() throw() {}
 
 Block::Block()
 	: host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""),
-	index_("index.html"), autoIndex_("off"), cgi_("") {
+	index_("index.html"), autoIndex_("off"), cgi_(""), redirect_("") {
 	setServerDirectivesMap();
 }
 
@@ -44,6 +44,7 @@ Block &Block::operator=(const Block &origin) {
 		index_ = origin.index_;
 		autoIndex_ = origin.autoIndex_;
 		cgi_ = origin.cgi_;
+		redirect_ = origin.redirect_;
 	}
 	return (*this);
 }
@@ -490,6 +491,10 @@ Block Block::getLocationBlock(std::string uri) const {
 	return ret;
 }
 
+const std::string &Block::getRedirect() const {
+	return redirect_;
+}
+
 void Block::setDefaultBlock(const char *file) {
 	vectorString	tokens;
 	int				tokenSize;
@@ -542,6 +547,7 @@ void Block::setLocationDirectivesMap() {
 	directivesMap_["root"] = &Block::setWebRoot;
 	directivesMap_["allowed_methods"] = &Block::setAllowedMethods;
 	directivesMap_["error_page"] = &Block::setErrorPages;
+	directivesMap_["redirect"] = &Block::setRedirect;
 }
 
 void Block::setChildLocationBlock(const Block &parent) {
@@ -639,4 +645,10 @@ void Block::setCgi(vectorString args) {
 	if (args.size() != 1)
 		throw InvalidConfigFileException("setCgi: falied");
 	cgi_ = args[0];
+}
+
+void Block::setRedirect(vectorString args) {
+	if (args.size() != 1)
+		throw InvalidConfigFileException("setRedirect: falied");
+	redirect_ = args[0];
 }

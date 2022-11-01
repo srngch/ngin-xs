@@ -50,7 +50,6 @@ Worker::Worker(int listenSocket, const Block &serverBlock)
 	socklen_t			addressLen = sizeof(clientAddress);
 
 	connectSocket_ = accept(listenSocket, (struct sockaddr *)&clientAddress, &addressLen);
-	std::cout << "connectSocket_: " << connectSocket_ << std::endl;
 	if (connectSocket_ == -1) {
 		close(listenSocket);
 		throw std::runtime_error("Worker constructor: accept() failed");
@@ -63,7 +62,7 @@ Worker::~Worker() {
 }
 
 void Worker::setNewRequest() {
-	timestamp("recv start", start, connectSocket_);
+	timestamp("New Request!", start, connectSocket_);
 	delete request_;
 	request_ = new Request();
 	isNewRequest_ = FT_FALSE;
@@ -214,6 +213,10 @@ ft_bool Worker::executeGet() {
 		redirect(request_->getUri()->getParsedUri() + request_->getUri()->getPathInfo() + "/" + request_->getUri()->getQueryString());
 		return FT_TRUE;
 	}
+	if (request_->getLocationBlock().getRedirect().length() > 0) {
+		redirect(request_->getLocationBlock().getRedirect() + request_->getUri()->getPathInfo() + "/" + request_->getUri()->getQueryString());
+		return FT_TRUE;
+	}
 	std::string indexPath = request_->getLocationBlock().getIndex();
 	ft_bool	isAutoindex = request_->getLocationBlock().getAutoIndex();
 	if (isFileExist(filePath + indexPath))
@@ -225,7 +228,7 @@ ft_bool Worker::executeGet() {
 	}
 	if (isDirectory(filePath))
 		filePath += indexPath;
-	if (isCgi(filePath)) {
+	if (isFileExist(filePath) == FT_FALSE && isCgi(filePath)) {
 		Cgi cgi(request_);
 		Response response(HTTP_OK, cgi.execute(), FT_TRUE);
 		return send(response.createMessage());
@@ -245,10 +248,7 @@ ft_bool Worker::executePost() {
 		throw HttpException("executePost: Invaild POST request", HTTP_NO_CONTENT);
 	if (isCgi(request_->getFilePath())) {
 		Cgi cgi(request_);
-		timestamp("response make start", start, connectSocket_);
 		Response response(HTTP_CREATED, cgi.execute(), FT_TRUE);
-		timestamp("response make end", start, connectSocket_);
-		timestamp("createMessage start", start, connectSocket_);
 		return send(response.createMessage());
 	}
 	return FT_TRUE;
@@ -303,11 +303,10 @@ ft_bool Worker::send(const vectorChar &message) {
 	int			ret;
 	vectorChar	m = message;
 
-	timestamp("Send start", start, connectSocket_);
 	ret = ::send(pollfd_->fd, reinterpret_cast<char*>(&m[0]), m.size(), 0);
-	timestamp("Send end", start, connectSocket_);
+	timestamp("Complete!", start, connectSocket_);
 	std::cerr << "===================" << std::endl;
-	if (ret == FT_ERROR)
+	if (ret == FT_FALSE || ret == FT_ERROR)
 		throw HttpException("send: send() failed", HTTP_INTERNAL_SERVER_ERROR);
 	if (request_->getHeaderValue("connection") == "close")
 		return FT_FALSE;
@@ -336,10 +335,7 @@ ft_bool Worker::work() {
 			if (ret == FT_FALSE)
 				return ret;
 		} else if (pollfd_->revents == POLLOUT && isRecvCompleted_ == FT_TRUE) {
-			timestamp("recv end", start, connectSocket_);
-			timestamp("setBody start", start, connectSocket_);
 			request_->setBody();
-			timestamp("setBody end", start, connectSocket_);
 			initRequestState();
 			validate();
 			request_->setFilePath();
