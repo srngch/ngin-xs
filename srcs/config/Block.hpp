@@ -14,6 +14,7 @@ private:
 	std::vector<Block>	locationBlocks_;
 	directivesMap		directivesMap_;
 	setString			supportedExtensions_;
+	std::string			hostPort_;
 	std::string			host_;
 	int					port_;
 	setString			serverNames_;
@@ -54,6 +55,7 @@ public:
 	directivesMap				getDirectivesMap() const;
 	const setString				&getSupportedExtensions() const;
 	const std::vector<Block>	&getLocationBlocks() const;
+	const std::string			&getHostPort() const;
 	std::string					getHost() const;
 	const int					&getPort() const;
 	const setString				&getServerNames() const;

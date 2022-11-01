@@ -7,9 +7,12 @@
 
 class Config {
 private:
-	std::vector<Block>	serverBlocks_;
+	std::vector<Block>			serverBlocks_;
+	std::set<std::string>		hostPorts_;
 
 	vectorString	readAndSplit(const char *filePath);
+
+	void	setHostPorts();
 
 public:
 	Config();
@@ -20,7 +23,8 @@ public:
 	void	parseConfigFile(const char *filePath);
 
 	const std::vector<Block>	&getServerBlocks() const;
-	const Block					&getServerBlock(int port) const;
+	const Block					&getServerBlock(int port, const std::string &serverName);
+	const std::set<std::string>	&getHostPorts() const;
 };
 
 #endif

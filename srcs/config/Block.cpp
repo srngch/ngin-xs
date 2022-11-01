@@ -15,7 +15,7 @@ const char *Block::InvalidConfigFileException::what() const throw() {
 Block::InvalidConfigFileException::~InvalidConfigFileException() throw() {}
 
 Block::Block()
-	: host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""),
+	: hostPort_(""), host_(""), port_(0), webRoot_(""), clientMaxBodySize_(0), uri_(""),
 	index_("index.html"), autoIndex_("off"), cgi_(""), redirect_("") {
 	setServerDirectivesMap();
 }
@@ -362,6 +362,13 @@ const std::vector<Block> &Block::getLocationBlocks() const {
 	return locationBlocks_;
 }
 
+const std::string &Block::getHostPort() const {
+	if (hostPort_ != "")
+		return hostPort_;
+	std::cout << "- getHostPort: hostPort_: " << hostPort_ << std::endl;
+	return Block::defaultBlock_.getHostPort();
+}
+
 std::string Block::getHost() const {
 	if (host_ == "localhost")
 		return "0.0.0.0";
@@ -552,6 +559,7 @@ void Block::setLocationDirectivesMap() {
 
 void Block::setChildLocationBlock(const Block &parent) {
 	setLocationDirectivesMap();
+	hostPort_ = parent.hostPort_;
 	host_ = parent.host_;
 	port_ = parent.port_;
 	serverNames_ = parent.serverNames_;
@@ -570,6 +578,8 @@ void Block::setHostPort(vectorString args) {
 
 	if (args.size() != 1)
 		throw InvalidConfigFileException("setHostPort: failed");
+	hostPort_ = std::string(args[0]);
+	std::cout << "- setHostPort: hostPort_: " << hostPort_ << std::endl;
 	hostport = parseHostPort(args[0]);
 	host_ = hostport[0];
 	port_ = atoi(hostport[1].c_str());
