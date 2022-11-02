@@ -313,44 +313,6 @@ void Block::gatherSupportedExtensions() {
 	}
 }
 
-void Block::printBlock() const {
-	setStringIter		itset;
-	mapIntString		pages;
-	mapIntStringIter	itmap;
-
-	std::cout << "Host: " << getHost() << std::endl;
-	std::cout << "Port: " << getPort() << std::endl;
-	std::cout << "Server names: ";
-	for (itset = getServerNames().begin(); itset != getServerNames().end(); itset++)
-		std::cout << *itset << " ";
-	std::cout << std::endl;
-	std::cout << "Web root: ";
-	std::cout << getWebRoot() << std::endl;
-	std::cout << "Client max body size: ";
-	std::cout << getClientMaxBodySize() << std::endl;
-	std::cout << "Error pages: " << std::endl;
-	pages = getErrorPages();
-	for (itmap = pages.begin(); itmap != pages.end(); itmap++)
-		std::cout << itmap->first << " " << itmap->second << std::endl;
-	std::cout << "Index: ";
-	std::cout << getIndex() << std::endl;
-	try {
-		std::cout << "Cgi: ";
-		std::cout << getCgi() << std::endl;
-	}
-	catch (std::exception &e) {
-		std::cout << e.what() << std::endl;
-	}
-	std::cout << "Auto index: ";
-	std::cout << getAutoIndex() << std::endl;
-	std::cout << "Allowed methods: " << std::endl;
-	for (itset = getAllowedMethods().begin(); itset != getAllowedMethods().end(); itset++)
-		std::cout << *itset << " ";
-	std::cout << std::endl;
-	std::cout << "Uri: ";
-	std::cout << getUri() << std::endl;
-}
-
 directivesMap Block::getDirectivesMap() const {
 	return directivesMap_;
 }

@@ -50,7 +50,6 @@ public:
 	void	applyWildCard(std::string &uri, int &dot) const;
 	void	removeFileName(std::string &uri, int &dot) const;
 	void	gatherSupportedExtensions();
-	void	printBlock() const;
 
 	directivesMap				getDirectivesMap() const;
 	const setString				&getSupportedExtensions() const;

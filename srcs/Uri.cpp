@@ -92,15 +92,6 @@ void Uri::parseBasename(const std::string &locationUri, const std::string &webro
 void Uri::parseUri(const Block &locationBlock) {
 	parsePathInfo(locationBlock.getSupportedExtensions());
 	parseBasename(locationBlock.getUri(), locationBlock.getWebRoot());
-
-	// std::cout << "locationBlock.getUri(): " << locationBlock.getUri() << std::endl;
-	// std::cout << "[Uri Class]" << std::endl;
-	// std::cout << "OriginalUri: " << originalUri_ << std::endl;
-	// std::cout << "uriDir: " << uriDir_ << std::endl;
-	// std::cout << "pathDir_: " << pathDir_ << std::endl;
-	// std::cout << "basename_: " << basename_ << std::endl;
-	// std::cout << "pathInfo_: " << pathInfo_ << std::endl;
-	// std::cout << "queryString_: " << queryString_ << std::endl << std::endl;
 }
 
 const std::string &Uri::getOriginalUri() const {
