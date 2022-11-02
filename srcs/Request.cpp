@@ -15,15 +15,15 @@ void Request::appendBody(const vectorCharIter &startIt, const vectorCharIter &en
 
 void Request::parseHeader(const vectorString &splitedMessage) {
 	vectorStringConstIter	it = splitedMessage.begin();
-	vectorString			splitedRequstLine = split(*it, " ");
+	vectorString			splitedRequestLine = split(*it, " ");
 	vectorString			splitedHeaderLine;
 
 	// request line
-	if (splitedRequstLine.size() != 3)
+	if (splitedRequestLine.size() != 3)
 		throw std::runtime_error("parseHeader: request line parsing failed");
-	method_ = splitedRequstLine[0];
-	uri_ = new Uri(splitedRequstLine[1]);
-	version_ = splitedRequstLine[2];
+	method_ = splitedRequestLine[0];
+	uri_ = new Uri(splitedRequestLine[1]);
+	version_ = splitedRequestLine[2];
 	it++;
 	// headers
 	while (it != splitedMessage.end()) {
@@ -131,10 +131,6 @@ void Request::setHeaders() {
 
 	splitedMessage = split(std::string(originalHeader_.begin(), originalHeader_.end()), CRLF);
 	parseHeader(splitedMessage);
-
-	// mapStringStringIter	iter;
-	// for (iter = headers_.begin(); iter != headers_.end(); iter++)
-	// 	std::cout << iter->first << " | " << iter->second << std::endl;
 }
 
 void Request::setFilePath() {
