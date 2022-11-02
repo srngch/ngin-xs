@@ -2,13 +2,16 @@
 #define __MASTER_HPP__
 
 #include "Worker.hpp"
+
 class Master {
 private:
 	vectorString			env_;
+	std::string				host_;
+	int						port_;
 	struct sockaddr_in 		serverAddress_;
 	int						listenSocket_;
 	std::vector<Worker *>	workers_;
-	Block					serverBlock_;
+	std::vector<Block *>	serverBlocks_;
 	std::size_t				pollIndex_;
 
 	void	initListenSocket();
@@ -16,7 +19,7 @@ private:
 	void	listen();
 
 public:
-	Master(const Block &serverBlock);
+	Master(const std::string &hostPort, std::vector<Block *> serverBlocks);
 	~Master();
 	
 	void	run();

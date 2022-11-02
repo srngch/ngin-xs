@@ -1,8 +1,6 @@
 #include "Config.hpp"
 
-Config::Config() {
-	Block::setDefaultBlock(DEFAULT_CONF_FILE_PATH);
-}
+Config::Config() {}
 
 Config::Config(const Config &origin) {
 	*this = origin; 
@@ -47,6 +45,13 @@ vectorString Config::readAndSplit(const char *filePath) {
 	return tokens;
 }
 
+void Config::setHostPorts() {
+	std::vector<Block>::iterator	it;
+
+	for (it = serverBlocks_.begin(); it != serverBlocks_.end(); it++)
+		hostPorts_.insert(it->getHostPort());
+}
+
 void Config::parseConfigFile(const char *filePath) {
 	vectorString	tokens;
 	int				tokenSize;
@@ -55,6 +60,7 @@ void Config::parseConfigFile(const char *filePath) {
 		filePath = DEFAULT_CONF_FILE_PATH;
 	tokens = readAndSplit(filePath);
 	tokenSize = tokens.size();
+
 	for (int i = 0; i < tokenSize; i++) {
 		if (tokens[i] == "server") {
 			Block	tmpServerBlock;
@@ -68,18 +74,24 @@ void Config::parseConfigFile(const char *filePath) {
 		} else
 			throw std::runtime_error("parseConfigFile: Wrong directive type in configuration file");
 	}
+	setHostPorts();
 }
 
 const std::vector<Block> &Config::getServerBlocks() const {
 	return serverBlocks_;
 }
 
-const Block &Config::getServerBlock(int port) const {
-	std::vector<Block>::const_iterator	it;
+std::vector<Block *> Config::getServerBlocks(std::string hostPort) {
+	std::vector<Block>::iterator	it;
+	std::vector<Block *>			ret;
 
 	for (it = serverBlocks_.begin(); it != serverBlocks_.end(); it++) {
-		if (it->getPort() == port)
-			return (*it);
+		if (it->getHostPort() == hostPort)
+			ret.push_back(&(*it));
 	}
-	return (serverBlocks_[0]);
+	return ret;
+}
+
+const std::set<std::string> &Config::getHostPorts() const {
+	return hostPorts_;
 }

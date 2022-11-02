@@ -43,8 +43,8 @@ int Worker::HttpException::getHttpCode() {
 	return httpCode_;
 }
 
-Worker::Worker(int listenSocket, const Block &serverBlock)
-	: serverBlock_(serverBlock), request_(nullptr),
+Worker::Worker(int listenSocket, const std::vector<Block *>&serverBlocks)
+	: serverBlocks_(serverBlocks), request_(nullptr),
 	isHeaderSet_(FT_FALSE), isRecvCompleted_(FT_FALSE), isNewRequest_(FT_TRUE) {
 	struct sockaddr_in	clientAddress;
 	socklen_t			addressLen = sizeof(clientAddress);
@@ -68,9 +68,27 @@ void Worker::setNewRequest() {
 	isNewRequest_ = FT_FALSE;
 }
 
-void Worker::findLocationBlock() {
+const Block &Worker::findServerBlock(const std::string &serverName) {
+	// 현재 요청의 Host 헤더를 server_name으로 가지고 있는 서버블록 가져오기
+	std::vector<Block *>::iterator	it;
+	Block							*ret;
+
+	for (it = serverBlocks_.begin(); it != serverBlocks_.end(); it++) {
+		setString		serverNames = (*it)->getServerNames();
+		setStringIter	sIt;
+
+		ret = *it;
+		for (sIt = serverNames.begin(); sIt != serverNames.end(); sIt++) {
+			if (*sIt == serverName)
+				return **it;
+		}
+	}
+	return *ret;
+}
+
+void Worker::findLocationBlock(const Block &serverBlock) {
 	// 현재 요청에 대한 conf 파일의 location block 가져오기
-	Block locationBlock = serverBlock_.getLocationBlock(request_->getUri()->getParsedUri());
+	Block locationBlock = serverBlock.getLocationBlock(request_->getUri()->getParsedUri());
 
 	if (locationBlock.getUri() == "")
 		throw HttpException("recv: Location block not found", HTTP_NOT_FOUND);
@@ -159,6 +177,7 @@ void Worker::processBodyAfterHeaderSet(const char *buf, int ret) {
 ft_bool Worker::recv() {
 	char		buf[RECV_BUF_SIZE];
 	int 		ret;
+	Block		serverBlock;
 
 	memset(buf, 0, RECV_BUF_SIZE);
 	ret = ::recv(pollfd_->fd, buf, RECV_BUF_SIZE - 1, 0);
@@ -177,7 +196,8 @@ ft_bool Worker::recv() {
 	if (isHeaderSet_ == FT_FALSE) {
 		if (processHeader(buf, ret) == FT_FALSE)
 			return FT_TRUE;
-		findLocationBlock();
+		serverBlock = findServerBlock(request_->getHeaderValue("host"));
+		findLocationBlock(serverBlock);
 		processBodyBeforeHeaderSet(ret);
 		return FT_TRUE;
 	}

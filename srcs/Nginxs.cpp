@@ -1,6 +1,7 @@
 #include "Nginxs.hpp"
 
 Nginxs::Nginxs(const char *confFilePath) {
+	Block::setDefaultBlock(DEFAULT_CONF_FILE_PATH);
 	config_.parseConfigFile(confFilePath);
 }
 
@@ -12,12 +13,12 @@ Nginxs::~Nginxs() {
 }
 
 void	Nginxs::initPollFds() {
-	std::size_t						i = 0; 
-	std::vector<Block>				serverBlocks = config_.getServerBlocks();
-	std::vector<Block>::iterator	it;
-	
-	for (it = serverBlocks.begin();	it != serverBlocks.end(); it++) {
-		Master *m = new Master(*it);
+	std::size_t		i = 0; 
+	setString		hostPorts = config_.getHostPorts();
+	setStringIter	it;
+
+	for (it = hostPorts.begin(); it != hostPorts.end(); it++) {
+		Master *m = new Master(*it, config_.getServerBlocks(*it));
 		m->setPollIndex(i);
 		masters_.push_back(m);
 
@@ -59,7 +60,7 @@ void Nginxs::run() {
 			throw std::runtime_error("run: poll() failed");
 		}
 		for (it = masters_.begin(); it != masters_.end(); it++) {
-			if (pollfds_[(*it)->getPollIndex()].revents & POLLIN)
+			if (pollfds_[(*it)->getPollIndex()].revents & POLLIN) 
 				(*it)->appendWorker(findEmptyPollfd());
 			(*it)->run();
 		}

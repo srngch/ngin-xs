@@ -1,17 +1,22 @@
 #include "Master.hpp"
 
-Master::Master(const Block &serverBlock)
-	: serverBlock_(serverBlock) {
+Master::Master(const std::string &hostPort, std::vector<Block *> serverBlocks)
+	: serverBlocks_(serverBlocks) {
+	vectorString s = split(hostPort, ":");
+	
+	host_ = s[0];
+	port_ = atoi(s[1].c_str());
 	initListenSocket();
 	bindListenSocket();
 	listen();
 }
 
 Master::~Master() {
-	std::vector<Worker *>::iterator	it;
+	std::vector<Worker *>::iterator	itWorker;
+	std::vector<Block *>::iterator itBlock;
 
-	for (it = workers_.begin(); it != workers_.end(); it++)
-		delete *it;
+	for (itWorker = workers_.begin(); itWorker != workers_.end(); itWorker++)
+		delete *itWorker;
 	close(listenSocket_);
 }
 
@@ -20,7 +25,7 @@ void Master::initListenSocket() {
 
 	listenSocket_ = socket(PF_INET, SOCK_STREAM, 0);
 	std::cout << "listenSocket: " << listenSocket_ << std::endl;
-	std::cout << "Port: " << serverBlock_.getPort() << std::endl;
+	std::cout << "Port: " << port_ << std::endl;
 	if (listenSocket_ == FT_ERROR)
 		throw std::runtime_error("init: socket() failed");
 
@@ -28,8 +33,8 @@ void Master::initListenSocket() {
 	memset(&serverAddress_, 0, sizeof(serverAddress_));
 	serverAddress_.sin_len = sizeof(struct sockaddr_in);
 	serverAddress_.sin_family = PF_INET;
-	serverAddress_.sin_port = htons(serverBlock_.getPort());
-	serverAddress_.sin_addr.s_addr = htonl(inet_addr(serverBlock_.getHost().c_str()));
+	serverAddress_.sin_port = htons(port_);
+	serverAddress_.sin_addr.s_addr = htonl(inet_addr(host_.c_str()));
 	setsockopt(listenSocket_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 }
 
@@ -69,7 +74,7 @@ void Master::run() {
 }
 
 void Master::appendWorker(struct pollfd *pollFd) {
-	Worker	*worker = new Worker(listenSocket_, serverBlock_);
+	Worker	*worker = new Worker(listenSocket_, serverBlocks_);
 
 	worker->setPollfd(pollFd);
 	workers_.push_back(worker);
