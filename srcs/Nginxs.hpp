@@ -4,7 +4,7 @@
 #include "Master.hpp"
 #include "config/Config.hpp"
 
-#define POLLFDSLEN 1000
+#define POLLFDSLEN 140
 
 class Nginxs {
 private:
