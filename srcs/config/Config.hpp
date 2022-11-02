@@ -23,7 +23,7 @@ public:
 	void	parseConfigFile(const char *filePath);
 
 	const std::vector<Block>	&getServerBlocks() const;
-	const Block					&getServerBlock(int port, const std::string &serverName);
+	std::vector<Block *>		getServerBlocks(std::string hostPort);
 	const std::set<std::string>	&getHostPorts() const;
 };
 

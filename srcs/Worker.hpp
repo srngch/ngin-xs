@@ -12,34 +12,35 @@
 
 class Worker {
 private:
-	Block			serverBlock_;
-	int				connectSocket_;
-	struct pollfd	*pollfd_;
-	Request			*request_;
-	ft_bool			isHeaderSet_;
-	ft_bool			isRecvCompleted_;
-	ft_bool			isNewRequest_;
+	std::vector<Block *>	serverBlocks_;
+	int						connectSocket_;
+	struct pollfd			*pollfd_;
+	Request					*request_;
+	ft_bool					isHeaderSet_;
+	ft_bool					isRecvCompleted_;
+	ft_bool					isNewRequest_;
 
-	void	setNewRequest();
-	void	findLocationBlock();
-	ft_bool	processHeader(const char *buf, int ret);
-	void	processChunkedBody();
-	void	processBodyBeforeHeaderSet(int ret);
-	void	processBodyAfterHeaderSet(const char *buf, int ret);
-	ft_bool	recv();
-	void	validate();
-	ft_bool	executePutToTest();
-	ft_bool	executeGet();
-	ft_bool	executePost();
-	ft_bool	executeDelete();
-	ft_bool	redirect(const std::string &des);
-	void	initRequestState();
-	ft_bool	isCgi(const std::string &filePath);
-	ft_bool	send(const vectorChar &message);
-	void	resetPollfd();
+	void		setNewRequest();
+	const Block	&findServerBlock(const std::string &serverName);
+	void		findLocationBlock(const Block &serverBlock);
+	ft_bool		processHeader(const char *buf, int ret);
+	void		processChunkedBody();
+	void		processBodyBeforeHeaderSet(int ret);
+	void		processBodyAfterHeaderSet(const char *buf, int ret);
+	ft_bool		recv();
+	void		validate();
+	ft_bool		executePutToTest();
+	ft_bool		executeGet();
+	ft_bool		executePost();
+	ft_bool		executeDelete();
+	ft_bool		redirect(const std::string &des);
+	void		initRequestState();
+	ft_bool		isCgi(const std::string &filePath);
+	ft_bool		send(const vectorChar &message);
+	void		resetPollfd();
 
 public:
-	Worker(int listenSocket, const Block &serverBlock);
+	Worker(int listenSocket, const std::vector<Block *> &serverBlocks);
 	~Worker();
 
 	ft_bool	work();

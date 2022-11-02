@@ -1,8 +1,6 @@
 #include "Config.hpp"
 
-Config::Config() {
-	// Block::setDefaultBlock(DEFAULT_CONF_FILE_PATH);
-}
+Config::Config() {}
 
 Config::Config(const Config &origin) {
 	*this = origin; 
@@ -83,23 +81,15 @@ const std::vector<Block> &Config::getServerBlocks() const {
 	return serverBlocks_;
 }
 
-const Block &Config::getServerBlock(int port, const std::string &serverName) {
+std::vector<Block *> Config::getServerBlocks(std::string hostPort) {
 	std::vector<Block>::iterator	it;
-	Block							*ret;
+	std::vector<Block *>			ret;
 
 	for (it = serverBlocks_.begin(); it != serverBlocks_.end(); it++) {
-		if (it->getPort() == port) {
-			setString		serverNames = it->getServerNames();
-			setStringIter	sIt;
-
-			ret = &(*it);
-			for (sIt = serverNames.begin(); sIt != serverNames.end(); sIt++) {
-				if (*sIt == serverName)
-					return *it;
-			}
-		}
+		if (it->getHostPort() == hostPort)
+			ret.push_back(&(*it));
 	}
-	return *ret;
+	return ret;
 }
 
 const std::set<std::string> &Config::getHostPorts() const {

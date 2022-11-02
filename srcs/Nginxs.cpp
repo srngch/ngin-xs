@@ -13,34 +13,24 @@ Nginxs::~Nginxs() {
 }
 
 void	Nginxs::initPollFds() {
-	// std::size_t						i = 0; 
-	// std::vector<Block>				serverBlocks = config_.getServerBlocks();
-	// std::vector<Block>::iterator	it;
-
-	// Test getPorts
+	std::size_t		i = 0; 
 	setString		hostPorts = config_.getHostPorts();
-	setStringIter	testIt;
-	
-	std::cout << "<hostPorts>" << std::endl;
-	for (testIt = hostPorts.begin(); testIt != hostPorts.end(); testIt++) {
-		std::cout << "hostPorts: " << *testIt << std::endl;
+	setStringIter	it;
+
+	for (it = hostPorts.begin(); it != hostPorts.end(); it++) {
+		Master *m = new Master(*it, config_.getServerBlocks(*it));
+		m->setPollIndex(i);
+		masters_.push_back(m);
+
+		pollfds_[i].fd = m->getListenSocket();
+		pollfds_[i].events = POLLIN | POLLOUT;
+		pollfds_[i].revents = 0;	
+		i++;
 	}
 
-	// TODO: 포트 개수만큼 master 만들기
-	// for (it = serverBlocks.begin();	it != serverBlocks.end(); it++) {
-	// 	Master *m = new Master(*it);
-	// 	m->setPollIndex(i);
-	// 	masters_.push_back(m);
-
-	// 	pollfds_[i].fd = m->getListenSocket();
-	// 	pollfds_[i].events = POLLIN | POLLOUT;
-	// 	pollfds_[i].revents = 0;	
-	// 	i++;
-	// }
-
-	// // Initialize pollfds for workers
-	// for (int fds = i; fds < POLLFDSLEN; fds++)
-	// 	pollfds_[fds].fd = -1;
+	// Initialize pollfds for workers
+	for (int fds = i; fds < POLLFDSLEN; fds++)
+		pollfds_[fds].fd = -1;
 }
 
 struct pollfd *Nginxs::findEmptyPollfd()
@@ -70,7 +60,7 @@ void Nginxs::run() {
 			throw std::runtime_error("run: poll() failed");
 		}
 		for (it = masters_.begin(); it != masters_.end(); it++) {
-			if (pollfds_[(*it)->getPollIndex()].revents & POLLIN)
+			if (pollfds_[(*it)->getPollIndex()].revents & POLLIN) 
 				(*it)->appendWorker(findEmptyPollfd());
 			(*it)->run();
 		}
