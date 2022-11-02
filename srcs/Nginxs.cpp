@@ -1,6 +1,7 @@
 #include "Nginxs.hpp"
 
 Nginxs::Nginxs(const char *confFilePath) {
+	Block::setDefaultBlock(DEFAULT_CONF_FILE_PATH);
 	config_.parseConfigFile(confFilePath);
 }
 

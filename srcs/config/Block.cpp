@@ -33,6 +33,7 @@ Block &Block::operator=(const Block &origin) {
 		locationBlocks_ = origin.locationBlocks_;
 		directivesMap_ = origin.directivesMap_;
 		supportedExtensions_ = origin.supportedExtensions_;
+		hostPort_ = origin.hostPort_;
 		host_ = origin.host_;
 		port_ = origin.port_;
 		serverNames_ = origin.serverNames_;
@@ -365,7 +366,6 @@ const std::vector<Block> &Block::getLocationBlocks() const {
 const std::string &Block::getHostPort() const {
 	if (hostPort_ != "")
 		return hostPort_;
-	std::cout << "- getHostPort: hostPort_: " << hostPort_ << std::endl;
 	return Block::defaultBlock_.getHostPort();
 }
 
@@ -578,8 +578,7 @@ void Block::setHostPort(vectorString args) {
 
 	if (args.size() != 1)
 		throw InvalidConfigFileException("setHostPort: failed");
-	hostPort_ = std::string(args[0]);
-	std::cout << "- setHostPort: hostPort_: " << hostPort_ << std::endl;
+	hostPort_ = args[0];
 	hostport = parseHostPort(args[0]);
 	host_ = hostport[0];
 	port_ = atoi(hostport[1].c_str());

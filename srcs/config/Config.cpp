@@ -1,7 +1,7 @@
 #include "Config.hpp"
 
 Config::Config() {
-	Block::setDefaultBlock(DEFAULT_CONF_FILE_PATH);
+	// Block::setDefaultBlock(DEFAULT_CONF_FILE_PATH);
 }
 
 Config::Config(const Config &origin) {
@@ -62,6 +62,7 @@ void Config::parseConfigFile(const char *filePath) {
 		filePath = DEFAULT_CONF_FILE_PATH;
 	tokens = readAndSplit(filePath);
 	tokenSize = tokens.size();
+
 	for (int i = 0; i < tokenSize; i++) {
 		if (tokens[i] == "server") {
 			Block	tmpServerBlock;
