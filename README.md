@@ -2,10 +2,14 @@
 
 NGIN-XS is a simple, lightweight, and fast web server written in C++.
 
+</br>
+
 ## 🚀 Contributers
 [🍀 sokim](https://github.com/S0YKIM) | [🌙 heehkim](https://github.com/hhkim0729) | [🌰 sarchoi](https://github.com/srngch)
 
 [🔗 노션 정리](https://pouncing-elbow-0a4.notion.site/Webserv-8a8bdaaf878040d1b2267b928d09e5a8)
+
+</br>
 
 ## 🚧 File Structure
 ```
@@ -22,10 +26,37 @@ NGIN-XS is a simple, lightweight, and fast web server written in C++.
 └── Makefile
 ```
 
+</br>
+
+
+## ❓ Usage
+
+### 🖐️ Clone
+```
+$ git clone https://github.com/srngch/ngin-xs.git
+```
+
+### 🖐️ Compile
+```
+$ make
+```
+
+### 🖐️ Execute
+```
+$ ./webserv [configuration file]
+```
+
+### 🖐️ Connect
+```
+Type [http://servername:port] in the address bar   
+```
+```
+For example [http://localhost:80]
+```
+
+</br>
 
 ## Features
-
-## Usage
 
 ## Flowchart
 
