@@ -56,11 +56,11 @@ For example [http://localhost:80]
 
 </br>
 
-## Features
+<!-- ## Features -->
 
-## Flowchart
+<!-- ## Flowchart -->
 
-## Logs
+## 👭 Logs
 
 ### 2022-09-21
 
