@@ -39,12 +39,115 @@ NGIN-XS is a simple, lightweight, and fast web server written in C++.
 
 ### 2022-09-28
 
-- Fix bug when multiple clients request connection: [code](https://github.com/srngch/ngin-xs/commit/59191f716e7169a5c5fd36d710b3b0417c2a0940)
+- Fixed bug when multiple clients request connection: [code](https://github.com/srngch/ngin-xs/commit/59191f716e7169a5c5fd36d710b3b0417c2a0940)
   - Close socket and initialize fd & revents when POLLHUP event occurs
-  - Remove while loop in recv()
-- Fix bug regarding to EADDRINUSE: [code](https://github.com/srngch/ngin-xs/commit/b6cc8b2da0165fbd7955a64daa59b6a69a5f0b47)
-  - Add close(listen_socket) when error occurs
-  - Add setsockopt() to reuse port already in use
+  - Removed while loop in recv()
+- Fixed bug regarding to EADDRINUSE: [code](https://github.com/srngch/ngin-xs/commit/b6cc8b2da0165fbd7955a64daa59b6a69a5f0b47)
+  - Added close(listen_socket) when error occurs
+  - Added setsockopt() to reuse port already in use
 - Specified classes
   - Member variables
   - Member functions
+
+### 2022-09-29
+
+- Made a simple server program: [Issue](https://github.com/srngch/ngin-xs/issues/1), [PR](https://github.com/srngch/ngin-xs/pull/2)
+
+### 2022-10-01
+
+- Made a request syntax error exception: [Issue](https://github.com/srngch/ngin-xs/issues/5), [PR](https://github.com/srngch/ngin-xs/pull/7)
+- Implemented Response class: [Issue](https://github.com/srngch/ngin-xs/issues/6), [PR](https://github.com/srngch/ngin-xs/pull/8)
+
+### 2022-10-02
+
+- Implemented GET method for static files: [Issue](https://github.com/srngch/ngin-xs/issues/9), [PR](https://github.com/srngch/ngin-xs/pull/12)
+- Implemented request validation: [Issue](https://github.com/srngch/ngin-xs/issues/10), [PR](https://github.com/srngch/ngin-xs/pull/11)
+
+### 2022-10-03
+
+- Implemented calling CGI program with GET: [Issue](https://github.com/srngch/ngin-xs/issues/15), [PR](https://github.com/srngch/ngin-xs/pull/16)
+
+### 2022-10-10
+
+- Implemented autoindex: [Issue](https://github.com/srngch/ngin-xs/issues/17), [PR](https://github.com/srngch/ngin-xs/pull/20)
+- Implemented POST method: [Issue](https://github.com/srngch/ngin-xs/issues/14), [PR](https://github.com/srngch/ngin-xs/pull/22)
+- Changed header data type: [Issue](https://github.com/srngch/ngin-xs/issues/24), [PR](https://github.com/srngch/ngin-xs/pull/26)
+- [WIP] Parse configuration file: [Issue](https://github.com/srngch/ngin-xs/issues/18)
+
+### 2022-10-12
+
+- Implemented DELETE method: [Issue](https://github.com/srngch/ngin-xs/issues/21), [PR](https://github.com/srngch/ngin-xs/pull/28)
+- [WIP] Parse configuration file: [Issue](https://github.com/srngch/ngin-xs/issues/18)
+
+### 2022-10-13
+
+- Handled chunked request: [Issue](https://github.com/srngch/ngin-xs/issues/30), [PR](https://github.com/srngch/ngin-xs/pull/33)
+- Parse configuration file: [Issue](https://github.com/srngch/ngin-xs/issues/18)
+
+### 2022-10-14
+
+- Parsed configuration file: [Issue](https://github.com/srngch/ngin-xs/issues/18), [PR](https://github.com/srngch/ngin-xs/pull/35)
+- [WIP] Implement directory path redirection: [Issue](https://github.com/srngch/ngin-xs/issues/19)
+
+### 2022-10-15
+
+- Implemented directory path redirection: [Issue](https://github.com/srngch/ngin-xs/issues/19), [PR](https://github.com/srngch/ngin-xs/pull/36)
+- [WIP] Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34)
+- [WIP] Implement python-cgi: [Issue](https://github.com/srngch/ngin-xs/issues/32)
+
+### 2022-10-17
+
+- [WIP] Implement python-cgi: [Issue](https://github.com/srngch/ngin-xs/issues/32)
+- [WIP] Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34)
+
+### 2022-10-18
+
+- Implemented python-cgi: [Issue](https://github.com/srngch/ngin-xs/issues/32), [PR](https://github.com/srngch/ngin-xs/pull/37)
+- Updated function to set response header: [Issue](https://github.com/srngch/ngin-xs/issues/25), [PR](https://github.com/srngch/ngin-xs/pull/38)
+- [WIP] Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34)
+
+### 2022-10-19
+
+- Implemented CUI client: [Issue](https://github.com/srngch/ngin-xs/issues/41), [PR](https://github.com/srngch/ngin-xs/pull/43)
+- Added multipart/form-data file upload to python-cgi: [Issue](https://github.com/srngch/ngin-xs/issues/31), [PR](https://github.com/srngch/ngin-xs/pull/46)
+- Fixed infinite validation when request header is invalid: [Issue](https://github.com/srngch/ngin-xs/issues/45), [PR](https://github.com/srngch/ngin-xs/pull/48)
+- Fixed CRLF issue when response binary file: [Issue](https://github.com/srngch/ngin-xs/issues/49), [PR](https://github.com/srngch/ngin-xs/pull/51)
+- [WIP] Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34)
+
+### 2022-10-20
+
+- Implemented handling Connection header: [Issue](https://github.com/srngch/ngin-xs/issues/47), [PR](https://github.com/srngch/ngin-xs/pull/52)
+- Implemented Limiting client max body size: [Issue](https://github.com/srngch/ngin-xs/issues/50), [PR](https://github.com/srngch/ngin-xs/pull/53)
+- Refactored exception: [Issue](https://github.com/srngch/ngin-xs/issues/54), [PR](https://github.com/srngch/ngin-xs/pull/55)
+- Get required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34), [PR](https://github.com/srngch/ngin-xs/pull/42)
+
+### 2022-10-21
+
+- Implemented web client: [Issue](https://github.com/srngch/ngin-xs/issues/40), [PR](https://github.com/srngch/ngin-xs/pull/56)
+- Implemented getting required values from config class: [Issue](https://github.com/srngch/ngin-xs/issues/34), [PR](https://github.com/srngch/ngin-xs/pull/42)
+- [WIP] Implement running multiple servers: [Issue](https://github.com/srngch/ngin-xs/issues/57)
+
+### 2022-10-22
+
+- Implemented running multiple servers: [Issue](https://github.com/srngch/ngin-xs/issues/57), [PR](https://github.com/srngch/ngin-xs/pull/58)
+
+### 2022-10-23
+
+- [WIP] Apply Config class: [Issue](https://github.com/srngch/ngin-xs/issues/39)
+
+### 2022-10-24
+
+- Implemented applying Config class: [Issue](https://github.com/srngch/ngin-xs/issues/39), [PR](https://github.com/srngch/ngin-xs/pull/60)
+- [WIP] Try tester program given by subject: [Issue](https://github.com/srngch/ngin-xs/issues/61)
+
+### 2022-10-25
+
+- [WIP] Try tester program given by subject: [Issue](https://github.com/srngch/ngin-xs/issues/61)
+
+### 2022-10-26
+
+- [WIP😭] Try tester program given by subject: [Issue](https://github.com/srngch/ngin-xs/issues/61)
+
+### 2022-10-27
+
+- Tested subject tester: [Issue](https://github.com/srngch/ngin-xs/issues/61), [PR](https://github.com/srngch/ngin-xs/pull/63)
